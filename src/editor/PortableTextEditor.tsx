@@ -1,5 +1,5 @@
 import React from 'react'
-import {randomKey} from '@sanity/block-tools'
+import {randomKey} from '../utils/randomKey'
 import {flatten} from 'lodash'
 import {SlateEditor} from './SlateEditor'
 import {PatchEvent} from '../PatchEvent'
@@ -8,15 +8,17 @@ import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {createOperationToPatches} from '../utils/createOperationToPatches'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {PortableTextType} from '../types/schema'
-import {EditorNode, EditorOperation} from '../types/editor'
+import {EditorOperation} from '../types/editor'
 
 export const keyGenerator = () => randomKey(12)
 
 export type Props = {
-  value?: PortableTextBlock[]
-  type: PortableTextType
-  onChange: (arg0: PatchEvent) => void
+  hotkeys?: {}
+  keyGenerator?: () => string
+  onChange: (arg0: PatchEvent, value: PortableTextBlock[] | undefined) => void
   placeholderText?: string
+  type: PortableTextType
+  value?: PortableTextBlock[]
 }
 
 export class PortableTextEditor extends React.Component<Props, {}> {
@@ -33,23 +35,23 @@ export class PortableTextEditor extends React.Component<Props, {}> {
     // Get the block types feature set
     this.portableTextFeatures = getPortableTextFeatures(this.type)
     // Create patch and editor operation translation based on this spesific type
-    this.operationToPatches = createOperationToPatches(this.portableTextFeatures, this.type)
+    this.operationToPatches = createOperationToPatches()
   }
-  private handleEditorChange = (operations: EditorOperation[], editorValue: EditorNode[]) => {
-    console.log(JSON.stringify(editorValue, null, 2))
+  private handleSlateEditorChange = (operations: EditorOperation[], editorValue: PortableTextBlock[] | undefined) => {
     const patches = flatten(
       operations.map(operation => this.operationToPatches(operation, editorValue, this.props.value))
     )
-    this.props.onChange(PatchEvent.from(patches))
+    this.props.onChange(PatchEvent.from(patches), editorValue)
   }
   render() {
     return (
       <SlateEditor
         portableTextFeatures={this.portableTextFeatures}
         placeholderText={this.props.placeholderText}
-        keyGenerator={keyGenerator}
+        keyGenerator={this.props.keyGenerator || keyGenerator}
+        hotkeys={this.props.hotkeys}
+        onChange={this.handleSlateEditorChange}
         value={this.props.value}
-        onChange={this.handleEditorChange}
       />
     )
   }

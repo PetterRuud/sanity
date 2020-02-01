@@ -56,3 +56,5 @@ export type DiffMatchPatch = {
 }
 
 export type Patch = SetPatch | SetIfMissingPatch | UnsetPatch | InsertPatch | DiffMatchPatch
+
+export type GradientPatch = Record<string, any>

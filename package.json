@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "build": "ttsc --module commonjs",
-    "demo": "next dev ./demo",
+    "demo": "npm run build && next dev ./demo",
     "clean": "rimraf lib coverage",
     "posttest": "tsc --noEmit",
     "postcss:build": "postcss src/**/*.css --base src --dir lib",
@@ -39,8 +39,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@sanity/block-tools": "^0.147.6",
     "@sanity/schema": "^0.147.6",
+    "get-random-values": "^1.2.0",
     "is-hotkey": "^0.1.6",
     "lodash": "^4.17.15",
     "rxjs": "^6.5.3",

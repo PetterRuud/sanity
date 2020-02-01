@@ -14,12 +14,11 @@ export const Element = (props: ElementProps) => {
   const {attributes, children, element, portableTextFeatures} = props
   switch (element._type) {
     case portableTextFeatures.types.block.name:
+    default:
       return (
         <Block attributes={attributes} block={element} portableTextFeatures={portableTextFeatures}>
           {children}
         </Block>
       )
-    default:
-      return <p {...attributes}>{children}</p>
   }
 }

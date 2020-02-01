@@ -16,6 +16,7 @@ export type Block = {
 
 export type Span = {
   _key: string
+  _type: 'span'
   text: string
   marks: string[]
 }

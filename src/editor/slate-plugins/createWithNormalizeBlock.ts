@@ -1,13 +1,12 @@
 import {Element, Transforms, Editor, Node} from 'slate'
-import {ReactEditor} from 'slate-react'
 import {PortableTextFeatures} from 'src/types/portableText'
 
 // This plugins ensures that every node in the value is normalized
-export function createWithNormalizeBlockPlugin(
+export function normalizeAsPortableText(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {
-  return function withNormalizeBlock(editor: Editor & ReactEditor) {
+  return function withNormalizeBlock(editor: Editor) {
     const {normalizeNode} = editor
     editor.normalizeNode = entry => {
       const [node, path] = entry

@@ -1,26 +1,48 @@
+import React, {useState, useEffect} from 'react'
 import {PortableTextEditor} from '../../lib'
 import {PatchEvent} from '../../lib/PatchEvent'
-// import {PortableTextType} from '../../lib/types/schema'
+import {PortableTextType, Type} from '../../lib/types/schema'
+import {PortableTextBlock, Block} from '../../lib/types/portableText'
+import {ValueContainer, EditorContainer} from '../components/containers'
 
-const editorStyle = {width: '800px', height: '400px', border: '1px solid black'}
+let key = 0
+const keyGenerator = () => {
+  return `${new Date().getTime()}-${key++}`
+}
 
-const initialPortableText = [
+const initialPortableText: Block[] = [
   {
+    _key: keyGenerator(),
     _type: 'block',
     markDefs: [],
     children: [
-      {_type: 'span', text: 'This is editable '},
-      {_type: 'span', text: 'rich', marks: ['strong']},
-      {_type: 'span', text: ' text, '},
-      {_type: 'span', text: 'much', marks: ['em']},
-      {_type: 'span', text: ' better than a '},
-      {_type: 'span', text: '<textarea>', marks: ['code', 'strong']},
-      {_type: 'span', text: '!'}
+      {_key: keyGenerator(), _type: 'span', text: 'This is editable ', marks: []},
+      {_key: keyGenerator(), _type: 'span', text: 'rich', marks: ['strong']},
+      {_key: keyGenerator(), _type: 'span', text: ' text, ', marks: []},
+      {_key: keyGenerator(), _type: 'span', text: 'much', marks: ['em']},
+      {_key: keyGenerator(), _type: 'span', text: ' better than a ', marks: []},
+      {_key: keyGenerator(), _type: 'span', text: '<textarea>', marks: ['code', 'strong']},
+      {_key: keyGenerator(), _type: 'span', text: '!', marks: []}
     ]
   }
 ]
 
-const blockType = {
+const getThrouhPropsValue = (): Block[] => {
+  return [
+    {
+      _key: keyGenerator(),
+      _type: 'block',
+      markDefs: [],
+      children: [
+        {_key: keyGenerator(), _type: 'span', text: 'Hello at ', marks: []},
+        {_key: keyGenerator(), _type: 'span', text: new Date().toISOString(), marks: ['strong']},
+        {_key: keyGenerator(), _type: 'span', text: ' from outside props ', marks: []},
+      ]
+    }
+  ]
+}
+
+const blockType: PortableTextType = {
   type: 'block',
   styles: [
     {title: 'Normal', value: 'normal'},
@@ -34,31 +56,54 @@ const blockType = {
   ]
 }
 
-const imageType = {
+const imageType: Type = {
   type: 'image',
   name: 'blockImage'
 }
 
-const arrayType = {
+const portableTextType: PortableTextType = {
   type: 'array',
   name: 'body',
   of: [blockType, imageType]
 }
 
-function handleChange(event: PatchEvent) {
-  // console.log(event)
+const hotkeys = {
+  'mod+b': 'strong',
+  'mod+i': 'em',
+  'mod+´': 'code'
 }
 
+/**
+ * A basic standalone editor with hotkeys and value inspection
+ */
 const Standalone = () => {
+  const [value, setValue] = useState()
+  useEffect(() => {
+    if (!value) {
+      setValue(initialPortableText)
+    }
+  })
+  const handleChange = (event: PatchEvent, value: PortableTextBlock[] | undefined) => {
+    // console.log(JSON.stringify(event, null, 2))
+    setValue(value)
+  }
   return (
-    <div style={editorStyle}>
-      <PortableTextEditor
-        placeholderText="Type here
-        !"
-        value={initialPortableText}
-        type={arrayType}
-        onChange={handleChange}
-      />
+    <div>
+      <h2>Portable Text Editor</h2>
+      <button onClick={() => setValue(getThrouhPropsValue())}>Set value from props</button>
+      <p>Hotkeys: {JSON.stringify(hotkeys)}</p>
+      <EditorContainer>
+        <PortableTextEditor
+          placeholderText="Type here!"
+          type={portableTextType}
+          onChange={handleChange}
+          hotkeys={hotkeys}
+          value={value || initialPortableText}
+          keyGenerator={keyGenerator}
+        />
+      </EditorContainer>
+      <h3>Editor value:</h3>
+      <ValueContainer>{value ? JSON.stringify(value, null, 2) : 'Not set'}</ValueContainer>
     </div>
   )
 }

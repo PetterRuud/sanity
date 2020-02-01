@@ -1,3 +1,4 @@
-export {createWithKeysPlugin} from './createWithKeysPlugin'
-export {createWithNormalizeBlockPlugin} from './createWithNormalizeBlockPlugin'
+export {createWithKeys} from './createWithKeys'
+export {normalizeAsPortableText} from './createWithNormalizeBlock'
 export {createWithPortableTextMarkModel} from './createWithPortableTextMarkModel'
+export {createEnsurePlaceHolderBlock} from './ensurePlaceHolder'
