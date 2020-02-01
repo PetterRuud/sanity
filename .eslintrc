@@ -1,0 +1,49 @@
+{
+  "env": {
+    "node": true,
+    "browser": true
+  },
+  "parser": "babel-eslint",
+  "extends": [
+    "./node_modules/eslint-config-sanity/index.js",
+    "./node_modules/eslint-config-sanity/react.js",
+    "./node_modules/eslint-config-sanity/import.js",
+    "prettier",
+    "prettier/react",
+    "prettier/@typescript-eslint",
+
+  ],
+  "rules": {
+    "newline-per-chained-call": 0,
+    "sort-imports": 0,
+    "import/no-unresolved": [
+      "error",
+      {
+        "ignore": [
+          ".*:.*"
+        ]
+      }
+    ],
+    "prettier/prettier": "error",
+    "import/no-extraneous-dependencies": "off",
+    "import/unambiguous": "off",
+    "react/jsx-filename-extension": ["error", {"extensions": [".tsx"]}]
+  },
+  "globals": {
+    "__DEV__": true
+  },
+  "settings": {
+    "import/resolver": "webpack",
+    "import/ignore": [
+      "\\.css$",
+      ".*node_modules.*",
+      ".*:.*"
+    ]
+  },
+  "plugins": [
+    "import",
+    "prettier",
+    "react",
+    "@typescript-eslint"
+  ]
+}
