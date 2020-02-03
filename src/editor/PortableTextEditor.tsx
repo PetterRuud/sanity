@@ -1,4 +1,5 @@
 import React from 'react'
+import {Editor} from 'slate'
 import {randomKey} from '../utils/randomKey'
 import {flatten} from 'lodash'
 import {SlateEditor} from './SlateEditor'
@@ -8,7 +9,6 @@ import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {createOperationToPatches} from '../utils/createOperationToPatches'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {PortableTextType} from '../types/schema'
-import {EditorOperation} from '../types/editor'
 
 export const keyGenerator = () => randomKey(12)
 
@@ -35,11 +35,17 @@ export class PortableTextEditor extends React.Component<Props, {}> {
     // Get the block types feature set
     this.portableTextFeatures = getPortableTextFeatures(this.type)
     // Create patch and editor operation translation based on this spesific type
-    this.operationToPatches = createOperationToPatches()
+    this.operationToPatches = createOperationToPatches(
+      this.portableTextFeatures,
+      this.props.keyGenerator || keyGenerator
+    )
   }
-  private handleSlateEditorChange = (operations: EditorOperation[], nextEditorValue: PortableTextBlock[] | undefined) => {
+  private handleSlateEditorChange = (
+    editor: Editor,
+    nextEditorValue: PortableTextBlock[] | undefined
+  ) => {
     const patches = flatten(
-      operations.map(operation => this.operationToPatches(operation, nextEditorValue, this.props.value))
+      editor.operations.map(operation => this.operationToPatches(editor, operation, this.props.value))
     )
     this.props.onChange(PatchEvent.from(patches), nextEditorValue)
   }

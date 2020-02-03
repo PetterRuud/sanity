@@ -4,7 +4,7 @@ import {
   normalizeAsPortableText,
   createWithKeys,
   createWithPortableTextMarkModel,
-  createEnsurePlaceHolderBlock
+  // createEnsurePlaceHolderBlock
 } from './slate-plugins'
 import {PortableTextFeatures} from 'src/types/portableText'
 
@@ -15,6 +15,6 @@ export function createPortableTextEditor(portableTextFeatures: PortableTextFeatu
   const withNormalizeAsPortableText = normalizeAsPortableText(portableTextFeatures, keyGenerator)
   const withKeys = createWithKeys(keyGenerator)
   const withPortableTextMarkModel = createWithPortableTextMarkModel()
-  const ensurePlaceHolderBlock = createEnsurePlaceHolderBlock(portableTextFeatures, keyGenerator)
-  return withHistory(withNormalizeAsPortableText(withPortableTextMarkModel(withKeys(ensurePlaceHolderBlock(createEditor())))))
+  // const ensurePlaceHolderBlock = createEnsurePlaceHolderBlock(portableTextFeatures, keyGenerator)
+  return withHistory(withNormalizeAsPortableText(withPortableTextMarkModel(withKeys(createEditor()))))
 }

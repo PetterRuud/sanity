@@ -2,7 +2,6 @@ import React, {useCallback, useMemo} from 'react'
 import isHotkey from 'is-hotkey'
 import {Editor} from 'slate'
 import {Editable, Slate, withReact} from 'slate-react'
-import {EditorOperation} from '../types/editor'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {Leaf} from './SlateLeaf'
 import {Element} from './SlateElement'
@@ -18,13 +17,13 @@ const DEFAULT_HOTKEYS = {
 export type Props = {
   keyGenerator: () => string
   value?: PortableTextBlock[]
-  onChange: (operations: EditorOperation[], value: PortableTextBlock[] | undefined) => void
+  onChange: (editor: Editor, value: PortableTextBlock[] | undefined) => void
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
   hotkeys?: {}
 }
 
-export const SlateEditor = (props: Props) => {
+export const SlateEditor = function(props: Props) {
   const createPlaceHolderBlock = () => [
     {
       _type: portableTextFeatures.types.block.name,
@@ -61,7 +60,7 @@ export const SlateEditor = (props: Props) => {
   )
 
   const handleSlateChange = (value: any) => {
-    props.onChange(editor.operations, value)
+    props.onChange(editor, value)
   }
   const hotkeys = props.hotkeys || DEFAULT_HOTKEYS
   return (

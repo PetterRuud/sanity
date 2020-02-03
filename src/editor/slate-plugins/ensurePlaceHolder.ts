@@ -1,7 +1,7 @@
 import {Editor} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
 
-const PLACEHOLDERKEY = '__placeholder__'
+export const PLACEHOLDERKEY = '__placeholder__'
 
 export function createEnsurePlaceHolderBlock(
   portableTextFeatures: PortableTextFeatures,
@@ -17,6 +17,9 @@ export function createEnsurePlaceHolderBlock(
       if (['insert_text', 'insert_node', 'split_node', 'merge_node'].includes(operation.type)) {
         unsetPlaceHolderBlockKey(editor, keyGenerator)
       }
+      // if (['set_node'].includes(operation.type)) {
+      //   removePlaceHolderBlock(editor)
+      // }
       insertPlaceHolderBlock(editor, keyGenerator, portableTextFeatures)
     }
     return editor

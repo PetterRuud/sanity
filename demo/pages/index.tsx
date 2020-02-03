@@ -5,6 +5,7 @@ import {PortableTextType, Type} from '../../lib/types/schema'
 import {PortableTextBlock, Block} from '../../lib/types/portableText'
 import {ValueContainer, EditorContainer} from '../components/containers'
 import {applyAll} from './patch/applyPatch'
+import {isEqual} from 'lodash'
 
 let key = 0
 const keyGenerator = () => {
@@ -80,13 +81,21 @@ const hotkeys = {
 const Standalone = () => {
   const [value, setValue] = useState()
   useEffect(() => {
-    if (!value) {
-      setValue(initialPortableText)
-    }
+    // if (!value) {
+    //   setValue(initialPortableText)
+    // }
   })
-  const handleChange = (event: PatchEvent, value: PortableTextBlock[] | undefined) => {
-    // console.log(JSON.stringify(event, null, 2))
-    setValue(applyAll(value, event.patches))
+  const handleChange = (event: PatchEvent, editorValue: PortableTextBlock[]) => {
+    console.log('PATCHES', JSON.stringify(event.patches, null, 2))
+    // console.log('VALUE BEFORE:', JSON.stringify(value, null, 2))
+    const appliedValue = applyAll(value, event.patches)
+    // console.log('VALUE AFTER:', JSON.stringify(applied, null, 2))
+    if (value && !isEqual(appliedValue, editorValue)) {
+      alert('Model deviation!!!!')
+      console.log('editorValue:', JSON.stringify(editorValue, null, 2))
+      console.log('appliedValue:', JSON.stringify(appliedValue, null, 2))
+    }
+    setValue(appliedValue)
   }
   return (
     <div>
@@ -99,7 +108,7 @@ const Standalone = () => {
           type={portableTextType}
           onChange={handleChange}
           hotkeys={hotkeys}
-          value={value || initialPortableText}
+          value={value}
           keyGenerator={keyGenerator}
         />
       </EditorContainer>

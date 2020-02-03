@@ -14,13 +14,10 @@ export function createWithPortableTextMarkModel() {
     // Normalize after 'merge_node' operation
     const {apply} = editor
     editor.apply = (operation: EditorOperation) => {
-      // const originalSelection = editor.selection
       apply(operation)
       if (operation.type === 'merge_node' && editor.selection) {
         const selection = Editor.range(editor, [editor.selection.anchor.path[0]], [editor.selection.focus.path[0]])
         normalizeSimilarSiblings(editor, selection)
-        // TODO: Set back to original offset
-        console.log('Should set back original offset')
       }
     }
 
@@ -115,5 +112,11 @@ function normalizeSimilarSiblings(editor: Editor, selection?: Range) {
         Transforms.removeNodes(editor, {at: nextPath})
       }
     }
+    // if (editor.selection) {
+    //   alert('Readjusting selection')
+    //   // const point = {path: [firstPath[0], firstPath[1]], offset: 0}
+    //   // Transforms.select(editor, {anchor: point, focus: point})
+    //   // editor.onChange()
+    // }
   }
 }
