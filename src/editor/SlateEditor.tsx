@@ -1,10 +1,13 @@
 import React, {useCallback, useMemo} from 'react'
 import isHotkey from 'is-hotkey'
-import {Editor} from 'slate'
+import {Editor, Text, Range} from 'slate'
 import {Editable, Slate, withReact} from 'slate-react'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
-import {Leaf} from './SlateLeaf'
-import {Element} from './SlateElement'
+import {Subject} from 'rxjs'
+
+import {Patch} from '../types/patch'
+import {SlateLeaf} from './SlateLeaf'
+import {SlateElement} from './SlateElement'
 import {createPortableTextEditor} from './createPortableTextEditor'
 
 const DEFAULT_HOTKEYS = {
@@ -17,10 +20,11 @@ const DEFAULT_HOTKEYS = {
 export type Props = {
   keyGenerator: () => string
   value?: PortableTextBlock[]
-  onChange: (editor: Editor, value: PortableTextBlock[] | undefined) => void
+  onChange: (editor: Editor) => void
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
-  hotkeys?: {}
+  hotkeys?: {marks: {}}
+  patchSubject: Subject<{patches: Patch[]; editor: Editor}>
 }
 
 export const SlateEditor = function(props: Props) {
@@ -40,44 +44,88 @@ export const SlateEditor = function(props: Props) {
       ]
     }
   ]
-  const {portableTextFeatures} = props
-  const renderElement = useCallback(
-    cProps => <Element {...cProps} portableTextFeatures={portableTextFeatures} />,
-    []
-  )
-  const renderLeaf = useCallback(
-    cProps => <Leaf {...cProps} portableTextFeatures={portableTextFeatures} />,
-    []
-  )
+  const {portableTextFeatures, keyGenerator} = props
 
   // Track editor value
   const value = getValue(props.value, createPlaceHolderBlock())
 
   // Init Editor
   const editor = useMemo(
-    () => withReact(createPortableTextEditor(portableTextFeatures, props.keyGenerator)),
+    () =>
+      withReact(
+        createPortableTextEditor({
+          portableTextFeatures,
+          keyGenerator,
+          patchSubject: props.patchSubject
+        })
+      ),
     []
   )
 
-  const handleSlateChange = (value: any) => {
-    props.onChange(editor, value)
+  const renderElement = useCallback(
+    cProps => <SlateElement {...cProps} portableTextFeatures={portableTextFeatures} />,
+    []
+  )
+  const renderLeaf = useCallback(
+    cProps => <SlateLeaf {...cProps} portableTextFeatures={portableTextFeatures} />,
+    []
+  )
+
+  const handleSlateChange = () => {
+    props.onChange(editor)
   }
+
+  const onKeyDown = event => {
+    Object.keys(hotkeys).forEach(cat => {
+      for (const hotkey in hotkeys[cat]) {
+        if (isHotkey(hotkey, event.nativeEvent)) {
+          event.preventDefault()
+          const mark = hotkeys[cat][hotkey]
+          toggleMark(editor, mark)
+        }
+      }
+    })
+  }
+
   const hotkeys = props.hotkeys || DEFAULT_HOTKEYS
+
+
+  // Test Slate decorations. Highlight the word 'banan'
+  const banan = 'banan'
+  const decorate = useCallback(
+    ([node, path]) => {
+      const ranges: Range[] = []
+
+      if (banan && Text.isText(node)) {
+        const { text } = node
+        const parts = text.split(banan)
+        let offset = 0
+
+        parts.forEach((part, i) => {
+          if (i !== 0) {
+            ranges.push({
+              anchor: { path, offset: offset - banan.length },
+              focus: { path, offset },
+              highlight: true,
+            })
+          }
+
+          offset = offset + part.length + banan.length
+        })
+      }
+      return ranges
+    },
+    [banan]
+  )
+
   return (
     <Slate editor={editor} value={value} onChange={handleSlateChange}>
       <Editable
         placeholder={props.placeholderText}
         renderElement={renderElement}
         renderLeaf={renderLeaf}
-        onKeyDown={event => {
-          for (const hotkey in hotkeys) {
-            if (isHotkey(hotkey, event.nativeEvent)) {
-              event.preventDefault()
-              const mark = hotkeys[hotkey]
-              toggleMark(editor, mark)
-            }
-          }
-        }}
+        onKeyDown={onKeyDown}
+        decorate={decorate}
       />
     </Slate>
   )

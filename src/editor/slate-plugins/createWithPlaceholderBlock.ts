@@ -3,11 +3,11 @@ import {PortableTextFeatures} from '../../types/portableText'
 
 export const PLACEHOLDERKEY = '__placeholder__'
 
-export function createEnsurePlaceHolderBlock(
+export function createWithPlaceholderBlock(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {
-  return function ensurePlaceHolderBlock(editor: Editor) {
+  return function withPlaceholderBlock(editor: Editor) {
     const {apply} = editor
     editor.apply = operation => {
       apply(operation)

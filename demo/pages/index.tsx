@@ -1,119 +1,61 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState} from 'react'
 import {PortableTextEditor} from '../../lib'
 import {PatchEvent} from '../../lib/PatchEvent'
-import {PortableTextType, Type} from '../../lib/types/schema'
-import {PortableTextBlock, Block} from '../../lib/types/portableText'
+import {PortableTextBlock} from '../../lib/types/portableText'
 import {ValueContainer, EditorContainer} from '../components/containers'
-import {applyAll} from './patch/applyPatch'
+import {applyAll} from '../../src/patch/applyPatch'
 import {isEqual} from 'lodash'
+import {keyGenerator} from '../keyGenerator'
+import {createHelloFromPropsValue} from '../fixtures/values'
+import {portableTextType} from '../schema'
 
-let key = 0
-const keyGenerator = () => {
-  return `${new Date().getTime()}-${key++}`
-}
-
-const initialPortableText: Block[] = [
-  {
-    _key: keyGenerator(),
-    _type: 'block',
-    markDefs: [],
-    children: [
-      {_key: keyGenerator(), _type: 'span', text: 'This is editable ', marks: []},
-      {_key: keyGenerator(), _type: 'span', text: 'rich', marks: ['strong']},
-      {_key: keyGenerator(), _type: 'span', text: ' text, ', marks: []},
-      {_key: keyGenerator(), _type: 'span', text: 'much', marks: ['em']},
-      {_key: keyGenerator(), _type: 'span', text: ' better than a ', marks: []},
-      {_key: keyGenerator(), _type: 'span', text: '<textarea>', marks: ['code', 'strong']},
-      {_key: keyGenerator(), _type: 'span', text: '!', marks: []}
-    ]
+const HOTKEYS = {
+  marks: {
+    'mod+b': 'strong',
+    'mod+i': 'em',
+    'mod+´': 'code'
   }
-]
-
-const getThrouhPropsValue = (): Block[] => {
-  return [
-    {
-      _key: keyGenerator(),
-      _type: 'block',
-      markDefs: [],
-      children: [
-        {_key: keyGenerator(), _type: 'span', text: 'Hello at ', marks: []},
-        {_key: keyGenerator(), _type: 'span', text: new Date().toISOString(), marks: ['strong']},
-        {_key: keyGenerator(), _type: 'span', text: ' from outside props ', marks: []},
-      ]
-    }
-  ]
-}
-
-const blockType: PortableTextType = {
-  type: 'block',
-  styles: [
-    {title: 'Normal', value: 'normal'},
-    {title: 'H1', value: 'h1'},
-    {title: 'H2', value: 'h2'},
-    {title: 'H3', value: 'h3'},
-    {title: 'H4', value: 'h4'},
-    {title: 'H5', value: 'h5'},
-    {title: 'H6', value: 'h6'},
-    {title: 'Quote', value: 'blockquote'}
-  ]
-}
-
-const imageType: Type = {
-  type: 'image',
-  name: 'blockImage'
-}
-
-const portableTextType: PortableTextType = {
-  type: 'array',
-  name: 'body',
-  of: [blockType, imageType]
-}
-
-const hotkeys = {
-  'mod+b': 'strong',
-  'mod+i': 'em',
-  'mod+´': 'code'
 }
 
 /**
  * A basic standalone editor with hotkeys and value inspection
  */
 const Standalone = () => {
+  const [patches, setPatches] = useState([])
   const [value, setValue] = useState()
-  useEffect(() => {
-    // if (!value) {
-    //   setValue(initialPortableText)
-    // }
-  })
   const handleChange = (event: PatchEvent, editorValue: PortableTextBlock[]) => {
-    console.log('PATCHES', JSON.stringify(event.patches, null, 2))
-    // console.log('VALUE BEFORE:', JSON.stringify(value, null, 2))
+    setPatches(event.patches)
     const appliedValue = applyAll(value, event.patches)
-    // console.log('VALUE AFTER:', JSON.stringify(applied, null, 2))
-    if (value && !isEqual(appliedValue, editorValue)) {
-      alert('Model deviation!!!!')
-      console.log('editorValue:', JSON.stringify(editorValue, null, 2))
-      console.log('appliedValue:', JSON.stringify(appliedValue, null, 2))
-    }
     setValue(appliedValue)
   }
   return (
     <div>
       <h2>Portable Text Editor</h2>
-      <button onClick={() => setValue(getThrouhPropsValue())}>Set value from props</button>
-      <p>Hotkeys: {JSON.stringify(hotkeys)}</p>
+      <p>
+        This editor is completely controlled by outside props. When something changes in the editor,
+        a patch is received here, and applied to the local value state. This state is then sent down
+        as the value prop to the editor, making it a fully controlled component.
+      </p>
+      <button onClick={() => setValue(createHelloFromPropsValue())}>Set value from props</button>
+      <p>
+        <strong>Registered hotkeys:</strong> {JSON.stringify(HOTKEYS)}
+      </p>
       <EditorContainer>
         <PortableTextEditor
           placeholderText="Type here!"
           type={portableTextType}
           onChange={handleChange}
-          hotkeys={hotkeys}
+          hotkeys={HOTKEYS}
           value={value}
           keyGenerator={keyGenerator}
         />
       </EditorContainer>
       <h3>Editor value:</h3>
       <ValueContainer>{value ? JSON.stringify(value, null, 2) : 'Not set'}</ValueContainer>
+      <h3>Editor patches:</h3>
+      <ValueContainer style="small">
+        {value ? JSON.stringify(patches, null, 2) : 'None'}
+      </ValueContainer>
     </div>
   )
 }

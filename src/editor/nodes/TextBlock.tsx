@@ -1,26 +1,27 @@
 import React from 'react'
+import {Element} from 'slate'
 import ListItem from './ListItem'
 import Text from './Text'
 import {PortableTextFeatures} from '../../types/portableText'
-import {TextBlock} from './index'
+import {TextBlock as TextBlockWrapper} from './index'
 
 type Props = {
   attributes?: {}
-  block: any
+  element: Element
   portableTextFeatures: PortableTextFeatures
 }
-export default class Block extends React.Component<Props, {}> {
+export default class TextBlock extends React.Component<Props, {}> {
   render() {
-    const {attributes, portableTextFeatures, children, block} = this.props
-    const listItem = block.listItem || null
-    const level = block.level || 1
-    const style = block.style || 'normal'
+    const {attributes, portableTextFeatures, children, element} = this.props
+    const listItem = element.listItem || undefined
+    const level = element.level || 1
+    const style = element.style || 'normal'
     // Should we render a custom style?
     let styleComponent
     const customStyle =
-    portableTextFeatures && style
+      portableTextFeatures && style
         ? portableTextFeatures.styles.find(item => item.value === style)
-        : null
+        : undefined
     if (customStyle) {
       styleComponent = customStyle.blockEditor && customStyle.blockEditor.render
     }
@@ -34,11 +35,11 @@ export default class Block extends React.Component<Props, {}> {
       )
     }
     return (
-      <TextBlock {...attributes}>
+      <TextBlockWrapper {...attributes}>
         <Text style={style} styleComponent={styleComponent}>
           {children}
         </Text>
-      </TextBlock>
+      </TextBlockWrapper>
     )
   }
 }

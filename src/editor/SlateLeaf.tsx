@@ -1,17 +1,17 @@
 import React, {ReactElement} from 'react'
+import {Element} from 'slate'
 import {uniq} from 'lodash'
 import Decorator from './nodes/Decorator'
-import {EditorNode} from '../types/editor'
 import {PortableTextFeatures} from '../types/portableText'
 
 type LeafProps = {
   attributes: string
   children: ReactElement
-  leaf: EditorNode
+  leaf: Element
   portableTextFeatures: PortableTextFeatures
 }
 
-export const Leaf = (props: LeafProps) => {
+export const SlateLeaf = (props: LeafProps) => {
   const {attributes, children, leaf, portableTextFeatures} = props
   let returnedChildren = children
   if (leaf._type === 'span') {
@@ -28,5 +28,5 @@ export const Leaf = (props: LeafProps) => {
       )
     })
   }
-  return <span {...attributes}>{returnedChildren}</span>
+  return <span {...attributes} style={{backgroundColor: leaf.highlight ? '#ff0' : '#fff'}}>{returnedChildren}</span>
 }

@@ -1,4 +1,5 @@
 export {createWithKeys} from './createWithKeys'
-export {normalizeAsPortableText} from './createWithNormalizeBlock'
 export {createWithPortableTextMarkModel} from './createWithPortableTextMarkModel'
-export {createEnsurePlaceHolderBlock} from './ensurePlaceHolder'
+export {createWithPlaceholderBlock} from './createWithPlaceholderBlock'
+export {createWithSchemaTypes} from './createWithSchemaTypes'
+export {createWithPatches} from './createWithPatches'

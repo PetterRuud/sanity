@@ -4,6 +4,7 @@ export type Type = {
   readOnly?: boolean
   of?: Type[]
   options?: {}
+  fields?: Type[]
 }
 
 export type PortableTextType = Type & {

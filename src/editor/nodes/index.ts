@@ -12,6 +12,10 @@ function getHeaderSize(type: string) {
 export const TextBlock = styled.div`
   font-size: 1em;
   font-weight: 400;
+  width: 100%;
+  line-height: 1.5em;
+  margin-bottom: 0.5em;
+  border: 1px solid #eee;
 `
 
 export const ListItem = styled.div`
@@ -37,4 +41,32 @@ export const Em = styled.span`
 `
 
 export const Code = styled.code`
+`
+
+export const BlockObject = styled.div`
+  padding: 1em;
+  background: #eee;
+  position: relative;
+  border: ${props => {
+    if (props.focused) {
+      return '1px solid red'
+    }
+    if (props.selected) {
+      return '1px solid red'
+    }
+    return 'none'
+  }};
+`
+
+export const InlineObject = styled.span`
+  background: #999;
+  border: ${props => {
+    if (props.focused) {
+      return '1px solid red'
+    }
+    if (props.selected) {
+      return '1px solid red'
+    }
+    return 'none'
+  }};
 `

@@ -5,6 +5,7 @@ export type PortableTextBlock = {
   _type?: string
   _key?: string
   _ref?: string
+  [other: string]: any
 }
 
 export type Block = {

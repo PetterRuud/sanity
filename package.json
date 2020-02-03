@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "build": "ttsc --module commonjs",
-    "demo": "npm run build && next dev ./demo",
+    "start": "npm run build && next dev ./demo",
     "clean": "rimraf lib coverage",
     "posttest": "tsc --noEmit",
     "postcss:build": "postcss src/**/*.css --base src --dir lib",

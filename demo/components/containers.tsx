@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 
 export const ValueContainer = styled.pre`
-  font-size: 0.8em;
+  font-size: ${(props: {style: string}) => (props.style === 'small' ? '0.7em' : '0.9em')};
   background: #eee;
   padding: 2em;
 `
@@ -9,7 +9,9 @@ export const EditorContainer = styled.div`
   width: 500px;
   height: 250px;
   border: 1px solid #ccc;
+  overflow-y: scroll;
 `
 export const AppContainer = styled.div`
-  flex: 1;
+  font-family: arial;
+  font-size: 0.8em;
 `

@@ -1,19 +1,20 @@
 import React from 'react'
 import {Editor} from 'slate'
 import {randomKey} from '../utils/randomKey'
-import {flatten} from 'lodash'
 import {SlateEditor} from './SlateEditor'
 import {PatchEvent} from '../PatchEvent'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
-import {createOperationToPatches} from '../utils/createOperationToPatches'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {PortableTextType} from '../types/schema'
+import {Patch} from '../types/patch'
+import {Subject} from 'rxjs'
+import {setIfMissing} from '../utils/patches'
 
 export const keyGenerator = () => randomKey(12)
 
 export type Props = {
-  hotkeys?: {}
+  hotkeys?: {marks: {}}
   keyGenerator?: () => string
   onChange: (arg0: PatchEvent, value: PortableTextBlock[] | undefined) => void
   placeholderText?: string
@@ -21,10 +22,13 @@ export type Props = {
   value?: PortableTextBlock[]
 }
 
+const patchSubject = new Subject<{patches: Patch[]; editor: Editor}>()
+
 export class PortableTextEditor extends React.Component<Props, {}> {
   type: PortableTextType
   private portableTextFeatures: PortableTextFeatures
-  private operationToPatches
+  private patchSubscriber: any
+  private pendingPatches: Patch[]
   constructor(props: Props) {
     super(props)
     // Test if we have a compiled schema type, if not, conveniently compile it
@@ -34,20 +38,23 @@ export class PortableTextEditor extends React.Component<Props, {}> {
     }
     // Get the block types feature set
     this.portableTextFeatures = getPortableTextFeatures(this.type)
-    // Create patch and editor operation translation based on this spesific type
-    this.operationToPatches = createOperationToPatches(
-      this.portableTextFeatures,
-      this.props.keyGenerator || keyGenerator
-    )
+    this.pendingPatches = []
+    this.patchSubscriber = patchSubject.subscribe({
+      next: val => {
+        this.pendingPatches = [...this.pendingPatches, ...val.patches]
+      }
+    })
   }
-  private handleSlateEditorChange = (
-    editor: Editor,
-    nextEditorValue: PortableTextBlock[] | undefined
-  ) => {
-    const patches = flatten(
-      editor.operations.map(operation => this.operationToPatches(editor, operation, this.props.value))
-    )
-    this.props.onChange(PatchEvent.from(patches), nextEditorValue)
+  private handleEditorChange = (editor: Editor) => {
+    let patches = this.pendingPatches
+    if (!this.props.value) {
+      patches = [setIfMissing(editor.children, []), ...patches]
+    }
+    this.props.onChange(PatchEvent.from(patches), editor.children)
+    this.pendingPatches = []
+  }
+  componentWillUnmount() {
+    this.patchSubscriber.unsubscribe()
   }
   render() {
     return (
@@ -56,8 +63,9 @@ export class PortableTextEditor extends React.Component<Props, {}> {
         placeholderText={this.props.placeholderText}
         keyGenerator={this.props.keyGenerator || keyGenerator}
         hotkeys={this.props.hotkeys}
-        onChange={this.handleSlateEditorChange}
+        onChange={this.handleEditorChange}
         value={this.props.value}
+        patchSubject={patchSubject}
       />
     )
   }

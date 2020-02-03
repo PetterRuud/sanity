@@ -1,24 +1,55 @@
 import React, {ReactElement} from 'react'
-import {EditorNode} from '../types/editor'
+import {Element} from 'slate'
+import {useSlate, useFocused, useSelected} from 'slate-react'
 import {PortableTextFeatures} from '../types/portableText'
-import Block from './nodes/Block'
+import Block from './nodes/TextBlock'
+import {BlockObject} from './nodes/BlockObject'
+import {InlineObject} from './nodes/InlineObject'
 
 type ElementProps = {
   attributes: string
   children: ReactElement
-  element: EditorNode
+  element: Element
   portableTextFeatures: PortableTextFeatures
 }
 
-export const Element = (props: ElementProps) => {
+export const SlateElement = (props: ElementProps) => {
+  const editor = useSlate()
+  const selected = useSelected()
+  const focused = useFocused()
   const {attributes, children, element, portableTextFeatures} = props
+  // Test for inline objects first
+  if (editor.isInline(element)) {
+    return (
+      <InlineObject
+        attributes={attributes}
+        element={element}
+        focused={focused}
+        selected={selected}
+      />
+    )
+  }
+  // If not inline, it's either a block (text) or a block object (non-text)
   switch (element._type) {
     case portableTextFeatures.types.block.name:
-    default:
       return (
-        <Block attributes={attributes} block={element} portableTextFeatures={portableTextFeatures}>
+        <Block
+          attributes={attributes}
+          element={element}
+          portableTextFeatures={portableTextFeatures}
+        >
           {children}
         </Block>
+      )
+    default:
+      return (
+        <BlockObject
+          attributes={attributes}
+          portableTextFeatures={portableTextFeatures}
+          element={element}
+          focused={focused}
+          selected={selected}
+        />
       )
   }
 }

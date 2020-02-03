@@ -1,6 +1,5 @@
 import {Editor, Range, Transforms, Text, Path} from 'slate'
 import {isEqual, flatten} from 'lodash'
-import { EditorOperation } from 'src/types/editor'
 
 /**
  *
@@ -10,17 +9,6 @@ import { EditorOperation } from 'src/types/editor'
  */
 export function createWithPortableTextMarkModel() {
   return function withPortableTextMarkModel(editor: Editor) {
-
-    // Normalize after 'merge_node' operation
-    const {apply} = editor
-    editor.apply = (operation: EditorOperation) => {
-      apply(operation)
-      if (operation.type === 'merge_node' && editor.selection) {
-        const selection = Editor.range(editor, [editor.selection.anchor.path[0]], [editor.selection.focus.path[0]])
-        normalizeSimilarSiblings(editor, selection)
-      }
-    }
-
     editor.addMark = (mark: string) => {
       if (editor.selection) {
         if (Range.isExpanded(editor.selection)) {
@@ -44,7 +32,7 @@ export function createWithPortableTextMarkModel() {
           })
           normalizeSimilarSiblings(editor)
         } else {
-          const existingMarks =
+          const existingMarks: string[] =
             {
               ...(Editor.marks(editor) || {})
             }.marks || []
@@ -72,7 +60,7 @@ export function createWithPortableTextMarkModel() {
           })
           normalizeSimilarSiblings(editor)
         } else {
-          const existingMarks =
+          const existingMarks: string[] =
             {
               ...(Editor.marks(editor) || {})
             }.marks || []
@@ -112,11 +100,5 @@ function normalizeSimilarSiblings(editor: Editor, selection?: Range) {
         Transforms.removeNodes(editor, {at: nextPath})
       }
     }
-    // if (editor.selection) {
-    //   alert('Readjusting selection')
-    //   // const point = {path: [firstPath[0], firstPath[1]], offset: 0}
-    //   // Transforms.select(editor, {anchor: point, focus: point})
-    //   // editor.onChange()
-    // }
   }
 }
