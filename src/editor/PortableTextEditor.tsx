@@ -37,11 +37,11 @@ export class PortableTextEditor extends React.Component<Props, {}> {
     // Create patch and editor operation translation based on this spesific type
     this.operationToPatches = createOperationToPatches()
   }
-  private handleSlateEditorChange = (operations: EditorOperation[], editorValue: PortableTextBlock[] | undefined) => {
+  private handleSlateEditorChange = (operations: EditorOperation[], nextEditorValue: PortableTextBlock[] | undefined) => {
     const patches = flatten(
-      operations.map(operation => this.operationToPatches(operation, editorValue, this.props.value))
+      operations.map(operation => this.operationToPatches(operation, nextEditorValue, this.props.value))
     )
-    this.props.onChange(PatchEvent.from(patches), editorValue)
+    this.props.onChange(PatchEvent.from(patches), nextEditorValue)
   }
   render() {
     return (

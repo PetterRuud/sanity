@@ -1,9 +1,9 @@
-import React, {useState, useMemo, useCallback, useEffect} from 'react'
+import React, {useCallback, useMemo} from 'react'
 import isHotkey from 'is-hotkey'
 import {Editor} from 'slate'
-import {Slate, Editable, withReact} from 'slate-react'
+import {Editable, Slate, withReact} from 'slate-react'
 import {EditorOperation} from '../types/editor'
-import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
+import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {Leaf} from './SlateLeaf'
 import {Element} from './SlateElement'
 import {createPortableTextEditor} from './createPortableTextEditor'
@@ -52,21 +52,15 @@ export const SlateEditor = (props: Props) => {
   )
 
   // Track editor value
-  const [value, setValue] = useState(getValue(props.value, createPlaceHolderBlock()))
+  const value = getValue(props.value, createPlaceHolderBlock())
 
   // Init Editor
-  const editor = useMemo(() => withReact(createPortableTextEditor(portableTextFeatures, props.keyGenerator)), [])
-
-  // TODO: figure out how to deal with props.value
-  useEffect(() => {
-    if (props.value !== value) {
-      setValue(props.value)
-      console.log('Set new value')
-    }
-  })
+  const editor = useMemo(
+    () => withReact(createPortableTextEditor(portableTextFeatures, props.keyGenerator)),
+    []
+  )
 
   const handleSlateChange = (value: any) => {
-    setValue(value)
     props.onChange(editor.operations, value)
   }
   const hotkeys = props.hotkeys || DEFAULT_HOTKEYS

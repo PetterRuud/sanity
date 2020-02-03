@@ -4,6 +4,7 @@ import {PatchEvent} from '../../lib/PatchEvent'
 import {PortableTextType, Type} from '../../lib/types/schema'
 import {PortableTextBlock, Block} from '../../lib/types/portableText'
 import {ValueContainer, EditorContainer} from '../components/containers'
+import {applyAll} from './patch/applyPatch'
 
 let key = 0
 const keyGenerator = () => {
@@ -85,7 +86,7 @@ const Standalone = () => {
   })
   const handleChange = (event: PatchEvent, value: PortableTextBlock[] | undefined) => {
     // console.log(JSON.stringify(event, null, 2))
-    setValue(value)
+    setValue(applyAll(value, event.patches))
   }
   return (
     <div>
