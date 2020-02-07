@@ -8,8 +8,6 @@ export const createHelloFromPropsValue = (): PortableTextBlock[] => {
       _type: 'block',
       markDefs: [],
       children: [
-        {_key: keyGenerator(), _type: 'span', text: 'Hello at ', marks: []},
-        {_key: keyGenerator(), _type: 'span', text: new Date().toISOString(), marks: ['strong']},
         {_key: keyGenerator(), _type: 'gotcha', children: [{text: ''}]},
         {_key: keyGenerator(), _type: 'span', text: ' from props change ', marks: []},
       ]
@@ -21,7 +19,7 @@ export const createHelloFromPropsValue = (): PortableTextBlock[] => {
       children: [
         {_key: keyGenerator(), _type: 'span', text: 'Some more text', marks: []},
       ]
-    },
+    }
   ]
 }
 
