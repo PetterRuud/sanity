@@ -3,3 +3,4 @@ export {createWithPortableTextMarkModel} from './createWithPortableTextMarkModel
 export {createWithPlaceholderBlock} from './createWithPlaceholderBlock'
 export {createWithSchemaTypes} from './createWithSchemaTypes'
 export {createWithPatches} from './createWithPatches'
+export {createWithMaxBlocks} from './createWithMaxBlocks'

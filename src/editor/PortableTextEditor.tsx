@@ -18,8 +18,10 @@ export type Props = {
   keyGenerator?: () => string
   onChange: (arg0: PatchEvent, value: PortableTextBlock[] | undefined) => void
   placeholderText?: string
+  maxBlocks?: number | string
   type: PortableTextType
   value?: PortableTextBlock[]
+  readOnly?: boolean
 }
 
 const patchSubject = new Subject<{patches: Patch[]; editor: Editor}>()
@@ -66,6 +68,8 @@ export class PortableTextEditor extends React.Component<Props, {}> {
         onChange={this.handleEditorChange}
         value={this.props.value}
         patchSubject={patchSubject}
+        readOnly={this.props.readOnly}
+        maxBlocks={this.props.maxBlocks ? Number(this.props.maxBlocks) || undefined : undefined}
       />
     )
   }

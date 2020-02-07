@@ -2,7 +2,7 @@ import {Editor, Element} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
 
 /**
- * This plugin makes shure that shema types are recognized properly by Slate as blocks, voids, inlines
+ * This plugin makes sure that shema types are recognized properly by Slate as blocks, voids, inlines
  *
  */
 export function createWithSchemaTypes(portableTextFeatures: PortableTextFeatures) {

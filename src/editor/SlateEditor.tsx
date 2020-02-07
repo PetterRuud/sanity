@@ -25,6 +25,8 @@ export type Props = {
   portableTextFeatures: PortableTextFeatures
   hotkeys?: {marks: {}}
   patchSubject: Subject<{patches: Patch[]; editor: Editor}>
+  maxBlocks?: number
+  readOnly?: boolean
 }
 
 export const SlateEditor = function(props: Props) {
@@ -56,7 +58,8 @@ export const SlateEditor = function(props: Props) {
         createPortableTextEditor({
           portableTextFeatures,
           keyGenerator,
-          patchSubject: props.patchSubject
+          patchSubject: props.patchSubject,
+          maxBlocks: props.maxBlocks
         })
       ),
     []
@@ -89,7 +92,6 @@ export const SlateEditor = function(props: Props) {
 
   const hotkeys = props.hotkeys || DEFAULT_HOTKEYS
 
-
   // Test Slate decorations. Highlight the word 'banan'
   const banan = 'banan'
   const decorate = useCallback(
@@ -97,16 +99,16 @@ export const SlateEditor = function(props: Props) {
       const ranges: Range[] = []
 
       if (banan && Text.isText(node)) {
-        const { text } = node
+        const {text} = node
         const parts = text.split(banan)
         let offset = 0
 
         parts.forEach((part, i) => {
           if (i !== 0) {
             ranges.push({
-              anchor: { path, offset: offset - banan.length },
-              focus: { path, offset },
-              highlight: true,
+              anchor: {path, offset: offset - banan.length},
+              focus: {path, offset},
+              highlight: true
             })
           }
 
@@ -126,6 +128,7 @@ export const SlateEditor = function(props: Props) {
         renderLeaf={renderLeaf}
         onKeyDown={onKeyDown}
         decorate={decorate}
+        readOnly={props.readOnly}
       />
     </Slate>
   )

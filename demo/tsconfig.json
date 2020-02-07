@@ -1,6 +1,6 @@
 {
   "include": [
-    "demo/**/*.ts",
+    "dem/**/*.ts",
     "demo/**/*.tsx"
   ],
   "compilerOptions": {

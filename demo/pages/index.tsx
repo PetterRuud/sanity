@@ -4,7 +4,6 @@ import {PatchEvent} from '../../lib/PatchEvent'
 import {PortableTextBlock} from '../../lib/types/portableText'
 import {ValueContainer, EditorContainer} from '../components/containers'
 import {applyAll} from '../../src/patch/applyPatch'
-import {isEqual} from 'lodash'
 import {keyGenerator} from '../keyGenerator'
 import {createHelloFromPropsValue} from '../fixtures/values'
 import {portableTextType} from '../schema'
@@ -48,6 +47,8 @@ const Standalone = () => {
           hotkeys={HOTKEYS}
           value={value}
           keyGenerator={keyGenerator}
+          maxBlocks={-1}
+          readOnly={false}
         />
       </EditorContainer>
       <h3>Editor value:</h3>
