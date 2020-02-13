@@ -8,6 +8,15 @@ import {isEqual, flatten} from 'lodash'
  * Slate default-normalization. We must therefor do it ourselves (see normalizeSimilarSiblings)
  */
 export function withPortableTextMarkModel(editor: Editor) {
+  // Merge spans with same set of .marks when doing merge_node operations
+  const {normalizeNode} = editor
+  editor.normalizeNode = nodeEntry => {
+    normalizeNode(nodeEntry)
+    if (editor.operations.some(op => op.type === 'merge_node')) {
+      mergeSpans(editor)
+    }
+  }
+
   editor.addMark = (mark: string) => {
     if (editor.selection) {
       if (Range.isExpanded(editor.selection)) {
@@ -26,7 +35,7 @@ export function withPortableTextMarkModel(editor: Editor) {
           const marks = [...(node.marks || []).filter((eMark: string) => eMark !== mark), mark]
           Transforms.setNodes(editor, {marks}, {at: path})
         })
-        normalizeSimilarSiblings(editor)
+        mergeSpans(editor)
       } else {
         const existingMarks: string[] =
           {
@@ -54,7 +63,7 @@ export function withPortableTextMarkModel(editor: Editor) {
             {at: path}
           )
         })
-        normalizeSimilarSiblings(editor)
+        mergeSpans(editor)
       } else {
         const existingMarks: string[] =
           {
@@ -73,25 +82,24 @@ export function withPortableTextMarkModel(editor: Editor) {
 }
 
 /**
- * Normalize re-marked Text nodes in selection
+ * Normalize re-marked spans in selection
  *
  * @param {Editor} editor
  */
-function normalizeSimilarSiblings(editor: Editor, selection?: Range) {
-  const _selection = selection || editor.selection
-  if (_selection) {
+function mergeSpans(editor: Editor) {
+  const {selection} = editor
+  if (selection) {
     for (const [node, path] of Array.from(
       Editor.nodes(editor, {
-        at: Editor.range(editor, [_selection.anchor.path[0]], [_selection.focus.path[0]]),
+        at: Editor.range(editor, [selection.anchor.path[0]], [selection.focus.path[0]]),
         match: Text.isText
       })
     ).reverse()) {
       const [parent] = Editor.node(editor, Path.parent(path))
       const nextPath = [path[0], path[1] + 1]
-      const nextText = parent.children[nextPath[1]]
-      if (nextText && isEqual(nextText.marks, node.marks)) {
-        Transforms.insertText(editor, nextText.text, {at: {path, offset: node.text.length}})
-        Transforms.removeNodes(editor, {at: nextPath})
+      const nextTextNode = parent.children[nextPath[1]]
+      if (nextTextNode && nextTextNode.text && isEqual(nextTextNode.marks, node.marks)) {
+        Transforms.mergeNodes(editor, { at: nextPath, voids: true })
       }
     }
   }

@@ -14,8 +14,8 @@ export function createWithPatches({
     const {apply} = editor
     let patches = []
     editor.apply = (operation: Operation) => {
-      // beforeValue is needed to figure out the _key of deleted nodes when producing patches
-      // from operations that have removed nodes (we will no longer find them in the current editor value)
+      // beforeValue is needed to figure out the _key of deleted nodes. The editor.children would no
+      // longer contain that information if the node is already deleted.
       const beforeValue = editor.children
 
       // Apply the operation
@@ -48,16 +48,16 @@ export function createWithPatches({
           patches = []
       }
 
-      // TODO: remove this debugging!
+      // TODO: remove this debug integrity check!
       if (true) {
         const appliedValue = applyAll(beforeValue, patches)
         if (!isEqual(appliedValue, editor.children)) {
-          alert('Model deviation!')
           console.log('operation', JSON.stringify(operation, null, 2))
           console.log('beforeValue', JSON.stringify(beforeValue, null, 2))
           console.log('afterValue', JSON.stringify(editor.children, null, 2))
           console.log('appliedValue', JSON.stringify(appliedValue, null, 2))
           console.log('patches', JSON.stringify(patches, null, 2))
+          debugger
         }
       }
 
