@@ -3,7 +3,6 @@ import {withHistory} from 'slate-history'
 import {
   createWithKeys,
   withPortableTextMarkModel,
-  // createWithPlaceholderBlock,
   createWithSchemaTypes,
   createWithPatches,
   createWithMaxBlocks
@@ -32,9 +31,8 @@ export function createPortableTextEditor(options: Options) {
   const withKeys = createWithKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
   const operationToPatches = createOperationToPatches(portableTextFeatures)
-  const withPatches = createWithPatches(operationToPatches, patchSubject)
+  const withPatches = createWithPatches(operationToPatches, patchSubject, portableTextFeatures)
   const withMaxBlocks = options.maxBlocks ? createWithMaxBlocks(options.maxBlocks) : NOOPPlugin
-  // const withPlaceholderBlock = createWithPlaceholderBlock(portableTextFeatures, keyGenerator)
   return withMaxBlocks(
     withHistory(
       withPatches(

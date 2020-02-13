@@ -35,7 +35,7 @@ export function createWithKeys(
           }
         }
       }
-      // Fall back to the original `normalizeNode` to enforce other constraints.
+      // Do the original `normalizeNode` to enforce other constraints.
       normalizeNode(entry)
     }
 

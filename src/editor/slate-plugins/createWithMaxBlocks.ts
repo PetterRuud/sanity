@@ -1,11 +1,11 @@
 import {Editor} from 'slate'
 
 /**
- * This plugin makes sure that the PTE rows prop is respected
+ * This plugin makes sure that the PTE maxBlocks prop is respected
  *
  */
 export function createWithMaxBlocks(rows: number) {
-  return function withRows(editor: Editor) {
+  return function withMaxBlocks(editor: Editor) {
     const {apply} = editor
     editor.apply = operation => {
       if (editor.children.length <= rows) {

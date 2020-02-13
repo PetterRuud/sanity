@@ -55,7 +55,7 @@ const Standalone = () => {
       <ValueContainer>{value ? JSON.stringify(value, null, 2) : 'Not set'}</ValueContainer>
       <h3>Editor patches:</h3>
       <ValueContainer style="small">
-        {value ? JSON.stringify(patches, null, 2) : 'None'}
+        {patches ? JSON.stringify(patches, null, 2) : 'None'}
       </ValueContainer>
     </div>
   )

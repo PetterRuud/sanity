@@ -9,7 +9,6 @@ import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {PortableTextType} from '../types/schema'
 import {Patch} from '../types/patch'
 import {Subject} from 'rxjs'
-import {setIfMissing} from '../utils/patches'
 
 export const keyGenerator = () => randomKey(12)
 
@@ -48,11 +47,7 @@ export class PortableTextEditor extends React.Component<Props, {}> {
     })
   }
   private handleEditorChange = (editor: Editor) => {
-    let patches = this.pendingPatches
-    if (!this.props.value) {
-      patches = [setIfMissing(editor.children, []), ...patches]
-    }
-    this.props.onChange(PatchEvent.from(patches), editor.children)
+    this.props.onChange(PatchEvent.from(this.pendingPatches), editor.children)
     this.pendingPatches = []
   }
   componentWillUnmount() {
