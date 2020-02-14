@@ -1,6 +1,6 @@
 import {isEqual} from 'lodash'
 import {applyAll} from '../../patch/applyPatch'
-import {unset, setIfMissing} from '../../PatchEvent'
+import {unset, setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation} from 'slate'
 import {Patch} from '../../types/patch'
 import {PortableTextFeatures} from '../../types/portableText'

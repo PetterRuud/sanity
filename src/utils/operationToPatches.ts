@@ -1,4 +1,4 @@
-import {set, insert, unset} from '../PatchEvent'
+import {set, insert, unset} from '../patch/PatchEvent'
 import {EditorOperation} from '../types/editor'
 import {Patch} from '../types/patch'
 import {Editor} from 'slate'

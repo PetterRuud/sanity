@@ -1,8 +1,8 @@
-import {prefixPath, set, unset, setIfMissing, insert, inc, dec} from './utils/patches'
+import {prefixPath, set, unset, setIfMissing, insert, inc, dec} from './patches'
 
 import {flatten} from 'lodash'
-import {Patch} from './types/patch'
-import {PathSegment} from './types/path'
+import {Patch} from '../types/patch'
+import {PathSegment} from '../types/path'
 
 type PatchArg = Patch | Array<Patch>
 
