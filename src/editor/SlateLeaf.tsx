@@ -28,5 +28,6 @@ export const SlateLeaf = (props: LeafProps) => {
       )
     })
   }
+  // TODO: remove hightlight stuff as test for decorations
   return <span {...attributes} style={{backgroundColor: leaf.highlight ? '#ff0' : '#fff'}}>{returnedChildren}</span>
 }

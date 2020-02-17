@@ -3,6 +3,7 @@ import {applyAll} from '../../patch/applyPatch'
 import {unset, setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation} from 'slate'
 import {Patch} from '../../types/patch'
+import {toSlateValue, fromSlateValue} from '../../utils/toSlateValue'
 import {PortableTextFeatures} from '../../types/portableText'
 export function createWithPatches(
   {
@@ -81,8 +82,24 @@ export function createWithPatches(
 
       // TODO: remove this debug integrity check!
       if (!editorIsEmpty) {
-        const appliedValue = applyAll(beforeValue, patches)
-        if (!isEqual(appliedValue, editor.children)) {
+        const appliedValue = applyAll(
+          fromSlateValue(beforeValue, portableTextFeatures.types.block.name),
+          patches
+        )
+        if (
+          !isEqual(
+            appliedValue,
+            fromSlateValue(editor.children, portableTextFeatures.types.block.name)
+          )
+        ) {
+          console.log(
+            'toSlateValue',
+            JSON.stringify(
+              toSlateValue(appliedValue, portableTextFeatures.types.block.name),
+              null,
+              2
+            )
+          )
           console.log('operation', JSON.stringify(operation, null, 2))
           console.log('beforeValue', JSON.stringify(beforeValue, null, 2))
           console.log('afterValue', JSON.stringify(editor.children, null, 2))

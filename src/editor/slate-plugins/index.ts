@@ -1,4 +1,4 @@
-export {createWithKeys} from './createWithKeys'
+export {createWithObjectKeys} from './createWithObjectKeys'
 export {withPortableTextMarkModel} from './withPortableTextMarkModel'
 export {createWithSchemaTypes} from './createWithSchemaTypes'
 export {createWithPatches} from './createWithPatches'

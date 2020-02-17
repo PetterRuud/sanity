@@ -1,6 +1,5 @@
 import {Patch} from '../types/patch'
 
-
 /**
  * Try to compact a set of patches
  *

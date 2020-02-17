@@ -2,7 +2,9 @@ import {set, insert, unset} from '../patch/PatchEvent'
 import {EditorOperation} from '../types/editor'
 import {Patch} from '../types/patch'
 import {Editor} from 'slate'
-import {PortableTextFeatures, PortableTextBlock} from 'src/types/portableText'
+import {omitBy, isUndefined} from 'lodash'
+import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
+import {fromSlateValue} from '../utils/toSlateValue'
 
 export function createOperationToPatches(portableTextFeatures: PortableTextFeatures) {
   function insertTextPatch(editor: Editor, operation: EditorOperation) {
@@ -37,48 +39,66 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
 
   function setNodePatch(editor: Editor, operation: EditorOperation) {
     if (operation.path.length === 1) {
-      return [set(operation.properties, [{_key: editor.children[operation.path[0]]._key}])]
+      const setNode = omitBy(
+        {...editor.children[operation.path[0]], ...operation.newProperties},
+        isUndefined
+      )
+      return [
+        set(fromSlateValue([setNode], portableTextFeatures.types.block.name)[0], [
+          {_key: editor.children[operation.path[0]]._key}
+        ])
+      ]
     } else if (operation.path.length === 2) {
       const child = editor.children[operation.path[0]].children[operation.path[1]]
       return [
-        set({...child, ...operation.newProperties}, [
-          {_key: editor.children[operation.path[0]]._key},
-          'children',
-          {_key: child._key}
-        ])
+        set(
+          {...child, ...operation.newProperties},
+          [{_key: editor.children[operation.path[0]]._key}, 'children', {_key: child._key}]
+        )
       ]
     } else {
-      // Set the whole block
-      const block = editor.children[operation.path[0]]
-      return [set(block, [{_key: editor.children[operation.path[0]]._key}])]
+      throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
     }
   }
 
-  function insertNodePatch(editor: Editor, operation: EditorOperation, beforeValue: PortableTextBlock[]) {
+  function insertNodePatch(
+    editor: Editor,
+    operation: EditorOperation,
+    beforeValue: PortableTextBlock[]
+  ) {
     const block = beforeValue[operation.path[0]]
+    const isTextBlock =
+      editor.children[operation.path[0]]._type === portableTextFeatures.types.block.name
     if (operation.path.length === 1 && block && block._key) {
       const position = operation.path[0] === 0 ? 'before' : 'after'
-      const targetKey = operation.path[0] === 0 ? block._key : beforeValue[operation.path[0] - 1]._key
+      const targetKey =
+        operation.path[0] === 0 ? block._key : beforeValue[operation.path[0] - 1]._key
       if (targetKey) {
-        return [insert(operation.node, position, [{_key: targetKey}])]
+        return [
+          insert(
+            isTextBlock
+              ? operation.node
+              : fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0],
+            position,
+            [{_key: targetKey}]
+          )
+        ]
       }
       throw new Error('Target key not found!')
-    } else if (
-      operation.path.length === 2 &&
-      editor.children[operation.path[0]] &&
-      editor.children[operation.path[0]]._type === portableTextFeatures.types.block.name
-    ) {
-      const position = block.children.length === 0 || !block.children[operation.path[1] - 1] ? 'before' : 'after'
+    } else if (operation.path.length === 2 && editor.children[operation.path[0]] && isTextBlock) {
+      const position =
+        block.children.length === 0 || !block.children[operation.path[1] - 1] ? 'before' : 'after'
       return [
         insert(operation.node, position, [
           {_key: block._key},
           'children',
-          block.children.length <= 1 || !block.children[operation.path[1] - 1] ? 0 : {_key: block.children[operation.path[1] - 1]._key}
+          block.children.length <= 1 || !block.children[operation.path[1] - 1]
+            ? 0
+            : {_key: block.children[operation.path[1] - 1]._key}
         ])
       ]
     } else {
-      // TODO: figure out how to insert something in a block type we don't know the structure of
-      throw new Error('This must be figured out!')
+      throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
     }
   }
 
@@ -143,12 +163,15 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       const spanToRemove = block.children[operation.path[1]]
       return [unset([{_key: block._key}, 'children', {_key: spanToRemove._key}])]
     } else {
-      console.error('UNHANDLED OPERATION:', JSON.stringify(operation, null, 2))
-      throw new Error('This must be figured out!')
+      throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
     }
   }
 
-  function mergeNodePatch(editor: Editor, operation: EditorOperation, beforeValue: PortableTextBlock[]) {
+  function mergeNodePatch(
+    editor: Editor,
+    operation: EditorOperation,
+    beforeValue: PortableTextBlock[]
+  ) {
     const patches: Patch[] = []
     if (operation.path.length === 1) {
       const targetKey = beforeValue[operation.path[0]]._key
@@ -163,12 +186,12 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         throw new Error('Targetkey not found!')
       }
     } else if (operation.path.length === 2) {
-      // TODO: maybe make this more atomic
+      // TODO: maybe make this more atomic instead of setting the whole block
       patches.push(
-        set(editor.children[operation.path[0]], [
-          {_key: editor.children[operation.path[0]]._key}
-        ])
+        set(editor.children[operation.path[0]], [{_key: editor.children[operation.path[0]]._key}])
       )
+    } else {
+      throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
     }
     return patches
   }

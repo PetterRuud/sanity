@@ -83,7 +83,7 @@ export function withPortableTextMarkModel(editor: Editor) {
   }
 
   // Custom editor function to toggle a mark
-  editor.toggleMark = (editor: Editor, mark: string) => {
+  editor.pteToggleMark = (editor: Editor, mark: string) => {
     const isActive = isMarkActive(editor, mark)
     if (isActive) {
       Editor.removeMark(editor, mark)

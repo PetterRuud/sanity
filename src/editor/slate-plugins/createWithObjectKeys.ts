@@ -5,7 +5,7 @@ import {PortableTextFeatures} from 'src/types/portableText'
  * This plugin makes sure that every new node in the editor get a new _key prop when created
  *
  */
-export function createWithKeys(
+export function createWithObjectKeys(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {

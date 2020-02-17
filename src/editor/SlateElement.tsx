@@ -3,8 +3,8 @@ import {Element} from 'slate'
 import {useSlate, useFocused, useSelected} from 'slate-react'
 import {PortableTextFeatures} from '../types/portableText'
 import Block from './nodes/TextBlock'
-import {BlockObject} from './nodes/BlockObject'
 import {InlineObject} from './nodes/InlineObject'
+import {BlockObject} from './nodes/BlockObject'
 
 type ElementProps = {
   attributes: string
@@ -43,13 +43,10 @@ export const SlateElement = (props: ElementProps) => {
       )
     default:
       return (
-        <BlockObject
-          attributes={attributes}
-          portableTextFeatures={portableTextFeatures}
-          element={element}
-          focused={focused}
-          selected={selected}
-        />
+        <div {...attributes}>
+          <BlockObject element={element} selected={selected} editor={editor} />
+          {children}
+        </div>
       )
   }
 }

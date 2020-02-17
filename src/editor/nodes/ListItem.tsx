@@ -18,8 +18,8 @@ export default function ListItemComponent(props: Props) {
     )
   }
   return (
-    <ListItem level={level} listStyle={listStyle} {...attributes}>
-      <ListItemInner>{props.children}</ListItemInner>
+    <ListItem {...attributes}>
+      <ListItemInner level={level} listStyle={listStyle}>{props.children}</ListItemInner>
     </ListItem>
   )
 }

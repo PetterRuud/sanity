@@ -1,7 +1,7 @@
 import {createEditor, Editor} from 'slate'
 import {withHistory} from 'slate-history'
 import {
-  createWithKeys,
+  createWithObjectKeys,
   withPortableTextMarkModel,
   createWithSchemaTypes,
   createWithPatches,
@@ -31,7 +31,7 @@ const NOOPPlugin = (editor: Editor) => {
  */
 export function createPortableTextEditor(options: Options) {
   const {portableTextFeatures, keyGenerator, patchSubject} = options
-  const withKeys = createWithKeys(portableTextFeatures, keyGenerator)
+  const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
   const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withPatches = createWithPatches(operationToPatches, patchSubject, portableTextFeatures)
@@ -44,7 +44,7 @@ export function createPortableTextEditor(options: Options) {
         withPatches(
           withPortableTextLists(
             withPortableTextMarkModel(
-              withKeys(
+              withObjectKeys(
                 withScemaTypes(
                   createEditor()
                 )

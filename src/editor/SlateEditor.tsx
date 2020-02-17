@@ -1,16 +1,19 @@
-import React, {useCallback, useMemo} from 'react'
-import {Editor, Text, Range} from 'slate'
-import {Editable, Slate, withReact} from 'slate-react'
-import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
+import {isEqual} from 'lodash'
+import React, {useCallback, useMemo, useEffect} from 'react'
+import {Editor, Text, Range, Transforms, Node} from 'slate'
+import {Editable, Slate, withReact, ReactEditor} from 'slate-react'
+import {PortableTextFeatures} from '../types/portableText'
+import {EditorSelection} from '../types/editor'
 import {Subject} from 'rxjs'
 
 import {Patch} from '../types/patch'
 import {SlateLeaf} from './SlateLeaf'
 import {SlateElement} from './SlateElement'
 import {createPortableTextEditor} from './createPortableTextEditor'
-
+import {toSlateRange} from '../utils/selection'
 
 export type Props = {
+  editorRef: any
   hotkeys?: {marks: {}}
   keyGenerator: () => string
   maxBlocks?: number
@@ -20,10 +23,11 @@ export type Props = {
   portableTextFeatures: PortableTextFeatures
   readOnly?: boolean
   spellCheck?: boolean
-  value?: PortableTextBlock[]
+  value: Node[] | undefined
+  selection: EditorSelection
 }
 
-export const SlateEditor = function(props: Props) {
+export const SlateEditor = (props: Props) => {
   const createPlaceHolderBlock = () => [
     {
       _type: portableTextFeatures.types.block.name,
@@ -59,6 +63,8 @@ export const SlateEditor = function(props: Props) {
       ),
     []
   )
+
+  props.editorRef({editor, focus: () => ReactEditor.focus(editor)})
 
   const renderElement = useCallback(
     cProps => <SlateElement {...cProps} portableTextFeatures={portableTextFeatures} />,
@@ -102,11 +108,27 @@ export const SlateEditor = function(props: Props) {
     [banan]
   )
 
+  // Set the selection according to props
+  useEffect(() => {
+    if (props.selection) {
+      const range = toSlateRange(props.selection, props.value)
+      if (range && !isEqual(range, editor.selection)) {
+        Transforms.select(editor, range)
+        editor.onChange()
+      }
+    }
+  }, [props.selection])
+
   return (
-    <Slate editor={editor} value={value} onChange={handleSlateChange}>
+    <Slate
+      selection={toSlateRange(props.selection, props.value) || editor.selection}
+      editor={editor}
+      value={value}
+      onChange={handleSlateChange}
+    >
       <Editable
         decorate={decorate}
-        onKeyDown={event => editor.withHotKeys(editor, event)}
+        onKeyDown={event => editor.pteWithHotKeys(editor, event)}
         placeholder={props.placeholderText}
         readOnly={props.readOnly}
         renderElement={renderElement}
