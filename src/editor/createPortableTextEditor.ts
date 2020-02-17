@@ -5,7 +5,9 @@ import {
   withPortableTextMarkModel,
   createWithSchemaTypes,
   createWithPatches,
-  createWithMaxBlocks
+  createWithMaxBlocks,
+  createWithPortableTextLists,
+  createWithHotkeys
 } from './slate-plugins'
 import {PortableTextFeatures} from 'src/types/portableText'
 import {Patch} from 'src/types/patch'
@@ -16,7 +18,8 @@ type Options = {
   portableTextFeatures: PortableTextFeatures
   keyGenerator: () => string
   patchSubject: Subject<{patches: Patch[]; editor: Editor}>
-  maxBlocks?: number
+  maxBlocks?: number,
+  hotkeys?: {marks: {}}
 }
 
 const NOOPPlugin = (editor: Editor) => {
@@ -33,13 +36,19 @@ export function createPortableTextEditor(options: Options) {
   const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withPatches = createWithPatches(operationToPatches, patchSubject, portableTextFeatures)
   const withMaxBlocks = options.maxBlocks ? createWithMaxBlocks(options.maxBlocks) : NOOPPlugin
+  const withPortableTextLists = createWithPortableTextLists(portableTextFeatures)
+  const withHotkeys = createWithHotkeys(options.hotkeys)
   return withMaxBlocks(
     withHistory(
-      withPatches(
-        withPortableTextMarkModel(
-          withKeys(
-            withScemaTypes(
-              createEditor()
+      withHotkeys(
+        withPatches(
+          withPortableTextLists(
+            withPortableTextMarkModel(
+              withKeys(
+                withScemaTypes(
+                  createEditor()
+                )
+              )
             )
           )
         )

@@ -1,5 +1,4 @@
 import React, {useCallback, useMemo} from 'react'
-import isHotkey from 'is-hotkey'
 import {Editor, Text, Range} from 'slate'
 import {Editable, Slate, withReact} from 'slate-react'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
@@ -10,23 +9,18 @@ import {SlateLeaf} from './SlateLeaf'
 import {SlateElement} from './SlateElement'
 import {createPortableTextEditor} from './createPortableTextEditor'
 
-const DEFAULT_HOTKEYS = {
-  'mod+b': 'strong',
-  'mod+i': 'em',
-  'mod+u': 'underline',
-  'mod+`': 'code'
-}
 
 export type Props = {
+  hotkeys?: {marks: {}}
   keyGenerator: () => string
-  value?: PortableTextBlock[]
+  maxBlocks?: number
   onChange: (editor: Editor) => void
+  patchSubject: Subject<{patches: Patch[]; editor: Editor}>
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
-  hotkeys?: {marks: {}}
-  patchSubject: Subject<{patches: Patch[]; editor: Editor}>
-  maxBlocks?: number
   readOnly?: boolean
+  spellCheck?: boolean
+  value?: PortableTextBlock[]
 }
 
 export const SlateEditor = function(props: Props) {
@@ -59,7 +53,8 @@ export const SlateEditor = function(props: Props) {
           portableTextFeatures,
           keyGenerator,
           patchSubject: props.patchSubject,
-          maxBlocks: props.maxBlocks
+          maxBlocks: props.maxBlocks,
+          hotkeys: props.hotkeys
         })
       ),
     []
@@ -78,21 +73,8 @@ export const SlateEditor = function(props: Props) {
     props.onChange(editor)
   }
 
-  const onKeyDown = event => {
-    Object.keys(hotkeys).forEach(cat => {
-      for (const hotkey in hotkeys[cat]) {
-        if (isHotkey(hotkey, event.nativeEvent)) {
-          event.preventDefault()
-          const mark = hotkeys[cat][hotkey]
-          toggleMark(editor, mark)
-        }
-      }
-    })
-  }
-
-  const hotkeys = props.hotkeys || DEFAULT_HOTKEYS
-
   // Test Slate decorations. Highlight the word 'banan'
+  // TODO: remove this
   const banan = 'banan'
   const decorate = useCallback(
     ([node, path]) => {
@@ -123,12 +105,13 @@ export const SlateEditor = function(props: Props) {
   return (
     <Slate editor={editor} value={value} onChange={handleSlateChange}>
       <Editable
+        decorate={decorate}
+        onKeyDown={event => editor.withHotKeys(editor, event)}
         placeholder={props.placeholderText}
+        readOnly={props.readOnly}
         renderElement={renderElement}
         renderLeaf={renderLeaf}
-        onKeyDown={onKeyDown}
-        decorate={decorate}
-        readOnly={props.readOnly}
+        spellCheck={props.spellCheck}
       />
     </Slate>
   )
@@ -139,21 +122,4 @@ function getValue(propsValue, initialValue) {
     return propsValue
   }
   return initialValue
-}
-
-function isMarkActive(editor: Editor, mark: string) {
-  const existingMarks =
-    {
-      ...(Editor.marks(editor) || {})
-    }.marks || []
-  return existingMarks ? existingMarks.includes(mark) : false
-}
-
-function toggleMark(editor: Editor, format: string) {
-  const isActive = isMarkActive(editor, format)
-  if (isActive) {
-    Editor.removeMark(editor, format)
-  } else {
-    Editor.addMark(editor, format, true)
-  }
 }

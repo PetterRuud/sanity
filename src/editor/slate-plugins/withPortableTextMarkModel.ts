@@ -17,6 +17,7 @@ export function withPortableTextMarkModel(editor: Editor) {
     }
   }
 
+  // Override built in addMark function
   editor.addMark = (mark: string) => {
     if (editor.selection) {
       if (Range.isExpanded(editor.selection)) {
@@ -50,6 +51,8 @@ export function withPortableTextMarkModel(editor: Editor) {
       }
     }
   }
+
+  // Override built in removeMark function
   editor.removeMark = (mark: string) => {
     if (editor.selection) {
       if (Range.isExpanded(editor.selection)) {
@@ -78,6 +81,17 @@ export function withPortableTextMarkModel(editor: Editor) {
       }
     }
   }
+
+  // Custom editor function to toggle a mark
+  editor.toggleMark = (editor: Editor, mark: string) => {
+    const isActive = isMarkActive(editor, mark)
+    if (isActive) {
+      Editor.removeMark(editor, mark)
+    } else {
+      Editor.addMark(editor, mark, true)
+    }
+  }
+
   return editor
 }
 
@@ -104,3 +118,21 @@ function mergeSpans(editor: Editor) {
     }
   }
 }
+
+
+
+/**
+ * Test if a mark is active
+ *
+ * @param {Editor} editor
+ * @param {string} mark
+ * @returns
+ */
+function isMarkActive(editor: Editor, mark: string) {
+  const existingMarks =
+    {
+      ...(Editor.marks(editor) || {})
+    }.marks || []
+  return existingMarks ? existingMarks.includes(mark) : false
+}
+

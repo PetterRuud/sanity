@@ -74,6 +74,7 @@ export function createWithPatches(
           patches = []
       }
 
+      // Unset the value if editor has become empty
       if (!editorWasEmpty && editorIsEmpty) {
         patches = patches.concat(unset([]))
       }

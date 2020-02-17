@@ -1,6 +1,6 @@
 import React, {useState} from 'react'
 import {PortableTextEditor} from '../../lib'
-import {PatchEvent} from '../../lib/PatchEvent'
+import {PatchEvent} from '../../lib/patch/PatchEvent'
 import {PortableTextBlock} from '../../lib/types/portableText'
 import {ValueContainer, EditorContainer} from '../components/containers'
 import {applyAll} from '../../src/patch/applyPatch'
@@ -48,6 +48,7 @@ const Standalone = () => {
           value={value}
           keyGenerator={keyGenerator}
           maxBlocks={-1}
+          spellCheck
           readOnly={false}
         />
       </EditorContainer>
