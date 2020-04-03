@@ -10,7 +10,7 @@ type Props = {
   element: Element
   portableTextFeatures: PortableTextFeatures
 }
-export default class TextBlock extends React.Component<Props, {}> {
+export default class TextBlock extends React.PureComponent<Props, {}> {
   render() {
     const {attributes, portableTextFeatures, children, element} = this.props
     const listItem = element.listItem || undefined

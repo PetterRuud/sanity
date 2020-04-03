@@ -77,8 +77,8 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         return [
           insert(
             isTextBlock
-              ? operation.node
-              : fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0],
+              ? [operation.node]
+              : [fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0]],
             position,
             [{_key: targetKey}]
           )
@@ -89,7 +89,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       const position =
         block.children.length === 0 || !block.children[operation.path[1] - 1] ? 'before' : 'after'
       return [
-        insert(operation.node, position, [
+        insert([operation.node], position, [
           {_key: block._key},
           'children',
           block.children.length <= 1 || !block.children[operation.path[1] - 1]

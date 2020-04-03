@@ -9,16 +9,16 @@ import {
   createWithPortableTextLists,
   createWithHotkeys
 } from './slate-plugins'
-import {PortableTextFeatures} from 'src/types/portableText'
-import {Patch} from 'src/types/patch'
+import {PortableTextFeatures} from '../types/portableText'
 import {createOperationToPatches} from '../utils/operationToPatches'
 import {Subject} from 'rxjs'
+import {EditorChange} from 'src/types/editor'
 
 type Options = {
   portableTextFeatures: PortableTextFeatures
   keyGenerator: () => string
-  patchSubject: Subject<{patches: Patch[]; editor: Editor}>
-  maxBlocks?: number,
+  changes: Subject<EditorChange>
+  maxBlocks?: number
   hotkeys?: {marks: {}}
 }
 
@@ -30,26 +30,20 @@ const NOOPPlugin = (editor: Editor) => {
  * Creates a new Portable Text Editor (which can be used without React)
  */
 export function createPortableTextEditor(options: Options) {
-  const {portableTextFeatures, keyGenerator, patchSubject} = options
+  const {portableTextFeatures, keyGenerator, changes} = options
   const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
   const operationToPatches = createOperationToPatches(portableTextFeatures)
-  const withPatches = createWithPatches(operationToPatches, patchSubject, portableTextFeatures)
+  const withPatches = createWithPatches(operationToPatches, changes, portableTextFeatures)
   const withMaxBlocks = options.maxBlocks ? createWithMaxBlocks(options.maxBlocks) : NOOPPlugin
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures)
   const withHotkeys = createWithHotkeys(options.hotkeys)
-  return withMaxBlocks(
-    withHistory(
-      withHotkeys(
-        withPatches(
+  return withPatches(
+    withMaxBlocks(
+      withHistory(
+        withHotkeys(
           withPortableTextLists(
-            withPortableTextMarkModel(
-              withObjectKeys(
-                withScemaTypes(
-                  createEditor()
-                )
-              )
-            )
+            withPortableTextMarkModel(withObjectKeys(withScemaTypes(createEditor())))
           )
         )
       )

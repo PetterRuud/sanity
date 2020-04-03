@@ -1,10 +1,12 @@
-import {isEqual} from 'lodash'
+import {isEqual, debounce} from 'lodash'
+import {Subject} from 'rxjs'
 import {applyAll} from '../../patch/applyPatch'
 import {unset, setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation} from 'slate'
 import {Patch} from '../../types/patch'
 import {toSlateValue, fromSlateValue} from '../../utils/toSlateValue'
 import {PortableTextFeatures} from '../../types/portableText'
+import { EditorChange } from 'src/types/editor'
 export function createWithPatches(
   {
     insertNodePatch,
@@ -15,7 +17,7 @@ export function createWithPatches(
     setNodePatch,
     splitNodePatch
   },
-  patchSubject: any,
+  changes: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures
 ) {
   function isEmptyEditor(children) {
@@ -29,6 +31,9 @@ export function createWithPatches(
         children[0].children[0].text === '')
     )
   }
+  const cancelThrottle = debounce(() => {
+    changes.next({type: 'throttle', throttle: false})
+  }, 1000)
   return function withPatches(editor: Editor) {
     const {apply} = editor
     editor.apply = (operation: Operation) => {
@@ -110,7 +115,9 @@ export function createWithPatches(
       }
 
       if (patches.length > 0) {
-        patchSubject.next({patches, editor})
+        changes.next({type: 'throttle', throttle: true})
+        changes.next({type: 'patches', patches: patches})
+        cancelThrottle()
       }
     }
     return editor

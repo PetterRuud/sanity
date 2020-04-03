@@ -1,5 +1,7 @@
-import {Editor, Point, Node, Location, Path} from 'slate'
-import {EditorSelection} from '../types/editor'
+import {Editor, Point, Path as SlatePath} from 'slate'
+import {EditorSelection, EditorSelectionPoint} from '../types/editor'
+// import {Path} from '../types/path'
+import {PortableTextBlock} from 'src/types/portableText'
 
 function createKeyedPath(point: Point, editor: Editor) {
   const first = {_key: editor.children[point.path[0]]._key}
@@ -10,19 +12,69 @@ function createKeyedPath(point: Point, editor: Editor) {
   return second ? [first, 'children', second] : [first]
 }
 
-function createArrayedPath(point: any, nodes: Node[] | undefined): Path {
-  if (!nodes) {
+function createArrayedPath(
+  point: EditorSelectionPoint,
+  value: PortableTextBlock[] | undefined
+): SlatePath {
+  if (!value) {
     return []
   }
-  const first = nodes.findIndex(blk => blk._key === point.path[0]._key)
+  const first = value.findIndex(blk => blk._key === point.path[0]['_key'])
   let second: any
   if (point.path[2]) {
-    const blk =  nodes.find(item => item._key === point.path[0]._key)
+    const blk = value.find(item => item._key === point.path[0]['_key'])
     if (blk) {
-      second = blk.children.findIndex(child => child._key === point.path[2]._key)
+      second = blk.children.findIndex(child => child._key === point.path[2]['_key'])
     }
   }
- return second !== undefined ? [first, second] : [first]
+  return second !== undefined ? [first, second] : [first]
+}
+
+function normalizePoint(point: any, value: PortableTextBlock[]) {
+  if (!point || !value) {
+    return null
+  }
+  const newPath: any = []
+  let newOffset: number = point.offset || 0
+  const block: PortableTextBlock | undefined = value.find(
+    blk =>  blk._key === point.path[0]._key
+  )
+  if (block) {
+    newPath.push({_key: block._key})
+  } else {
+    return null
+  }
+  if (block && point.path[1] === 'children') {
+    const child = block.children.find(
+      cld =>  cld._key === point.path[2]._key
+    )
+    newPath.push('children')
+    newPath.push({_key: child._key})
+    newOffset = child.text && child.text.length >= point.offset ? point.offset : child.text.length
+  }
+  return {path: newPath, offset: newOffset}
+}
+
+export function normalizeSelection(
+  selection: EditorSelection,
+  value: PortableTextBlock[] | undefined
+) {
+  if (!selection || !value || value.length === 0) {
+    return null
+  }
+  let newAnchor: EditorSelectionPoint | null = null
+  let newFocus: EditorSelectionPoint | null = null
+  const {anchor, focus} = selection
+  if (anchor) {
+    newAnchor = normalizePoint(anchor, value)
+  }
+  if (focus) {
+    newFocus = normalizePoint(focus, value)
+  }
+  if (newAnchor && newFocus) {
+    return {anchor: newAnchor, focus: newFocus}
+  }
+  return null
 }
 
 export function toPortableTextRange(editor: Editor) {
@@ -41,18 +93,24 @@ export function toPortableTextRange(editor: Editor) {
   return range
 }
 
-export function toSlateRange(selection: EditorSelection, nodes: Node[] | undefined): Location | null {
-  if (!selection || !nodes) {
+export function toSlateRange(
+  selection: EditorSelection,
+  value: PortableTextBlock[] | undefined
+): any | null {
+  if (!selection || !value) {
     return null
   }
   const anchor = {
-    path: createArrayedPath(selection.anchor, nodes),
+    path: createArrayedPath(selection.anchor, value),
     offset: selection.anchor.offset
   }
   const focus = {
-    path: createArrayedPath(selection.focus, nodes),
+    path: createArrayedPath(selection.focus, value),
     offset: selection.focus.offset
   }
-  const range = {anchor, focus}
+  if (focus.path[0] === -1) {
+    return null
+  }
+  const range = anchor && focus ? {anchor, focus} : null
   return range
 }

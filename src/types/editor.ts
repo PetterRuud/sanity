@@ -1,4 +1,6 @@
 import {Node as SlateNode, Operation as SlateOperation, Editor as SlateEditor} from 'slate'
+import {Path} from '../types/path'
+import {Patch} from '../types/patch'
 
 export type EditorNode = SlateNode & {
   _key: string
@@ -7,9 +9,8 @@ export type EditorNode = SlateNode & {
 
 export type EditorOperation = SlateOperation
 
-export type EditorSelection = any
-
-
+export type EditorSelectionPoint = {path: Path, offset: number}
+export type EditorSelection = {anchor: EditorSelectionPoint, focus: EditorSelectionPoint} | null
 export interface PortableTextSlateEditor extends SlateEditor {
   /**
    * Increments selected list items levels, or decrements them if @reverse is true.
@@ -40,4 +41,12 @@ export interface PortableTextSlateEditor extends SlateEditor {
    * @param {string} mark
    */
   pteToggleMark: (editor: SlateEditor, mark: string) => void
+}
+
+export type EditorChange = {
+  type: 'patches' | 'editor' | 'selection' | 'throttle'
+  patches?: Patch[]
+  editor?: PortableTextSlateEditor
+  selection?: EditorSelection
+  throttle?: boolean
 }

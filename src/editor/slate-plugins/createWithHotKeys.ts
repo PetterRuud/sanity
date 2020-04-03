@@ -1,6 +1,6 @@
 import {Editor} from 'slate'
 import isHotkey from 'is-hotkey'
-import {PortableTextSlateEditor} from 'src/types/editor'
+import {PortableTextSlateEditor} from '../../types/editor'
 
 const DEFAULT_HOTKEYS = {
   marks: {

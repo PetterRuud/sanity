@@ -1,6 +1,8 @@
 export type Type = {
   type: string
   name?: string
+  title?: string
+  description?: string
   readOnly?: boolean
   of?: Type[]
   options?: {}

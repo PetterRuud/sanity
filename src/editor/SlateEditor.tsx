@@ -1,29 +1,27 @@
-import {isEqual} from 'lodash'
-import React, {useCallback, useMemo, useEffect} from 'react'
-import {Editor, Text, Range, Transforms, Node} from 'slate'
+import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable, Slate, withReact, ReactEditor} from 'slate-react'
-import {PortableTextFeatures} from '../types/portableText'
-import {EditorSelection} from '../types/editor'
+import {toSlateRange} from '../utils/selection'
+import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
+import {EditorSelection, EditorChange} from '../types/editor'
+import {toSlateValue} from '../utils/toSlateValue'
 import {Subject} from 'rxjs'
 
-import {Patch} from '../types/patch'
 import {SlateLeaf} from './SlateLeaf'
 import {SlateElement} from './SlateElement'
 import {createPortableTextEditor} from './createPortableTextEditor'
-import {toSlateRange} from '../utils/selection'
+import {toPortableTextRange, normalizeSelection} from '../utils/selection'
 
-export type Props = {
+type Props = {
   editorRef: any
   hotkeys?: {marks: {}}
   keyGenerator: () => string
   maxBlocks?: number
-  onChange: (editor: Editor) => void
-  patchSubject: Subject<{patches: Patch[]; editor: Editor}>
+  changes: Subject<EditorChange>
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
   readOnly?: boolean
   spellCheck?: boolean
-  value: Node[] | undefined
+  value?: PortableTextBlock[] | undefined
   selection: EditorSelection
 }
 
@@ -44,10 +42,7 @@ export const SlateEditor = (props: Props) => {
       ]
     }
   ]
-  const {portableTextFeatures, keyGenerator} = props
-
-  // Track editor value
-  const value = getValue(props.value, createPlaceHolderBlock())
+  const {portableTextFeatures, keyGenerator, editorRef} = props
 
   // Init Editor
   const editor = useMemo(
@@ -56,7 +51,7 @@ export const SlateEditor = (props: Props) => {
         createPortableTextEditor({
           portableTextFeatures,
           keyGenerator,
-          patchSubject: props.patchSubject,
+          changes: props.changes,
           maxBlocks: props.maxBlocks,
           hotkeys: props.hotkeys
         })
@@ -64,7 +59,14 @@ export const SlateEditor = (props: Props) => {
     []
   )
 
-  props.editorRef({editor, focus: () => ReactEditor.focus(editor)})
+  // Track editor value
+  const value = getValue(props.value, createPlaceHolderBlock())
+  const [stateValue, setStateValue] = useState(value)
+
+  // Track selection
+  const [selection, setSelection] = useState(editor.selection)
+
+  editorRef({editor, focus: () => ReactEditor.focus(editor)})
 
   const renderElement = useCallback(
     cProps => <SlateElement {...cProps} portableTextFeatures={portableTextFeatures} />,
@@ -75,59 +77,70 @@ export const SlateEditor = (props: Props) => {
     []
   )
 
-  const handleSlateChange = () => {
-    props.onChange(editor)
+  const handleChange = val => {
+    setStateValue(val)
+    setSelection(editor.selection)
+    props.changes.next({type: 'selection', selection: toPortableTextRange(editor)})
   }
 
   // Test Slate decorations. Highlight the word 'banan'
   // TODO: remove this
-  const banan = 'banan'
-  const decorate = useCallback(
-    ([node, path]) => {
-      const ranges: Range[] = []
+  // const banan = 'banan'
+  // const decorate = useCallback(
+  //   ([node, path]) => {
+  //     const ranges: Range[] = []
 
-      if (banan && Text.isText(node)) {
-        const {text} = node
-        const parts = text.split(banan)
-        let offset = 0
+  //     if (banan && Text.isText(node)) {
+  //       const {text} = node
+  //       const parts = text.split(banan)
+  //       let offset = 0
 
-        parts.forEach((part, i) => {
-          if (i !== 0) {
-            ranges.push({
-              anchor: {path, offset: offset - banan.length},
-              focus: {path, offset},
-              highlight: true
-            })
-          }
+  //       parts.forEach((part, i) => {
+  //         if (i !== 0) {
+  //           ranges.push({
+  //             anchor: {path, offset: offset - banan.length},
+  //             focus: {path, offset},
+  //             highlight: true
+  //           })
+  //         }
 
-          offset = offset + part.length + banan.length
-        })
-      }
-      return ranges
-    },
-    [banan]
-  )
+  //         offset = offset + part.length + banan.length
+  //       })
+  //     }
+  //     return ranges
+  //   },
+  //   [banan]
+  // )
 
-  // Set the selection according to props
+  // Restore value from props
   useEffect(() => {
+    const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
+    setStateValue(slateValueFromProps)
+  }, [props.value])
+
+  // Restore selection from props
+  useEffect(() => {
+    const pSelection = props.selection
     if (props.selection) {
-      const range = toSlateRange(props.selection, props.value)
-      if (range && !isEqual(range, editor.selection)) {
-        Transforms.select(editor, range)
-        editor.onChange()
+      const normalizedSelection = normalizeSelection(pSelection, props.value)
+      if (normalizedSelection) {
+        const slateRange = toSlateRange(normalizedSelection, props.value)
+        setSelection(slateRange)
+      } else {
+        setSelection({anchor: {path: [0, 0], offset: 0}, focus: {path: [0, 0], offset: 0}})
       }
     }
-  }, [props.selection])
+  }, [props.value])
 
   return (
     <Slate
-      selection={toSlateRange(props.selection, props.value) || editor.selection}
+      onChange={handleChange}
       editor={editor}
-      value={value}
-      onChange={handleSlateChange}
+      selection={selection}
+      value={getValue(stateValue, createPlaceHolderBlock())}
     >
       <Editable
-        decorate={decorate}
+        // decorate={decorate}
         onKeyDown={event => editor.pteWithHotKeys(editor, event)}
         placeholder={props.placeholderText}
         readOnly={props.readOnly}

@@ -1,5 +1,5 @@
 import {Element, Transforms, Editor, Node} from 'slate'
-import {PortableTextFeatures} from 'src/types/portableText'
+import {PortableTextFeatures} from '../../types/portableText'
 
 /**
  * This plugin makes sure that every new node in the editor get a new _key prop when created
