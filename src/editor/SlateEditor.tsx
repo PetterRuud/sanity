@@ -1,8 +1,8 @@
-import React, {useCallback, useMemo, useState, useEffect} from 'react'
+import React, {useCallback, useMemo, useState, useEffect, SyntheticEvent} from 'react'
 import {Editable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
-import {EditorSelection, EditorChange} from '../types/editor'
+import {EditorSelection, EditorChange, OnPasteFn} from '../types/editor'
 import {toSlateValue} from '../utils/toSlateValue'
 import {Subject} from 'rxjs'
 
@@ -12,20 +12,33 @@ import {createPortableTextEditor} from './createPortableTextEditor'
 import {toPortableTextRange, normalizeSelection} from '../utils/selection'
 
 type Props = {
+  change$: Subject<EditorChange>
   editorRef: any
   hotkeys?: {marks: {}}
   keyGenerator: () => string
   maxBlocks?: number
-  changes: Subject<EditorChange>
+  onPaste?: OnPasteFn
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
   readOnly?: boolean
+  selection: EditorSelection
   spellCheck?: boolean
   value?: PortableTextBlock[] | undefined
-  selection: EditorSelection
 }
 
 export const SlateEditor = (props: Props) => {
+  const {
+    change$,
+    editorRef,
+    hotkeys,
+    keyGenerator,
+    maxBlocks,
+    placeholderText,
+    portableTextFeatures,
+    readOnly,
+    spellCheck
+  } = props
+
   const createPlaceHolderBlock = () => [
     {
       _type: portableTextFeatures.types.block.name,
@@ -42,7 +55,6 @@ export const SlateEditor = (props: Props) => {
       ]
     }
   ]
-  const {portableTextFeatures, keyGenerator, editorRef} = props
 
   // Init Editor
   const editor = useMemo(
@@ -51,9 +63,9 @@ export const SlateEditor = (props: Props) => {
         createPortableTextEditor({
           portableTextFeatures,
           keyGenerator,
-          changes: props.changes,
-          maxBlocks: props.maxBlocks,
-          hotkeys: props.hotkeys
+          change$,
+          maxBlocks,
+          hotkeys
         })
       ),
     []
@@ -80,7 +92,7 @@ export const SlateEditor = (props: Props) => {
   const handleChange = val => {
     setStateValue(val)
     setSelection(editor.selection)
-    props.changes.next({type: 'selection', selection: toPortableTextRange(editor)})
+    change$.next({type: 'selection', selection: toPortableTextRange(editor)})
   }
 
   // Test Slate decorations. Highlight the word 'banan'
@@ -126,11 +138,16 @@ export const SlateEditor = (props: Props) => {
       if (normalizedSelection) {
         const slateRange = toSlateRange(normalizedSelection, props.value)
         setSelection(slateRange)
-      } else {
+      } else if (stateValue) {
         setSelection({anchor: {path: [0, 0], offset: 0}, focus: {path: [0, 0], offset: 0}})
       }
     }
   }, [props.value])
+
+  const handlePaste = (event: SyntheticEvent) => {
+    event.preventDefault()
+    console.log(event)
+  }
 
   return (
     <Slate
@@ -141,20 +158,23 @@ export const SlateEditor = (props: Props) => {
     >
       <Editable
         // decorate={decorate}
+        onFocus={() => change$.next({type: 'focus'})}
+        onBlur={() => change$.next({type: 'blur'})}
+        onPaste={handlePaste}
         onKeyDown={event => editor.pteWithHotKeys(editor, event)}
-        placeholder={props.placeholderText}
-        readOnly={props.readOnly}
+        placeholder={placeholderText}
+        readOnly={readOnly}
         renderElement={renderElement}
         renderLeaf={renderLeaf}
-        spellCheck={props.spellCheck}
+        spellCheck={spellCheck}
       />
     </Slate>
   )
 }
 
-function getValue(propsValue, initialValue) {
-  if (Array.isArray(propsValue) && propsValue.length > 0) {
-    return propsValue
+function getValue(value, initialValue) {
+  if (Array.isArray(value) && value.length > 0) {
+    return value
   }
   return initialValue
 }

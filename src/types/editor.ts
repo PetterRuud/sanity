@@ -1,6 +1,8 @@
 import {Node as SlateNode, Operation as SlateOperation, Editor as SlateEditor} from 'slate'
 import {Path} from '../types/path'
 import {Patch} from '../types/patch'
+import {Type} from '../types/schema'
+import {PortableTextBlock} from '../types/portableText'
 
 export type EditorNode = SlateNode & {
   _key: string
@@ -44,9 +46,31 @@ export interface PortableTextSlateEditor extends SlateEditor {
 }
 
 export type EditorChange = {
-  type: 'patches' | 'editor' | 'selection' | 'throttle'
+  type: 'mutation' | 'value' | 'selection' | 'throttle' | 'focus' | 'blur' | 'pasting'
   patches?: Patch[]
-  editor?: PortableTextSlateEditor
   selection?: EditorSelection
   throttle?: boolean
+  value?: PortableTextBlock[] | undefined
 }
+
+export type PasteProgressResult = {
+  status: string | null
+  error?: Error
+}
+
+export type OnPasteResult =
+  | (
+      | {
+          insert?: PortableTextBlock[]
+          path?: []
+        }
+      | Error)
+  | null
+export type OnPasteResultOrPromise = (OnPasteResult | Promise<OnPasteResult>) | null
+
+export type OnPasteFn = (arg0: {
+  event: React.SyntheticEvent
+  path: []
+  type: Type
+  value: PortableTextBlock[] | null
+}) => OnPasteResultOrPromise

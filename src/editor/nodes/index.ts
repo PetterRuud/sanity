@@ -1,9 +1,9 @@
 import styled from 'styled-components'
 
 function getHeaderSize(type: string) {
-  switch(type) {
+  switch (type) {
     case 'h1':
-      return  '4em'
+      return '4em'
     default:
       return `1em`
   }
@@ -19,21 +19,21 @@ function getContentForListLevelAndStyle(level, style) {
 }
 
 function getLeftForListLevel(level: number) {
-  switch(Number(level)) {
+  switch (Number(level)) {
     case 1:
-      return  '1.5em'
+      return '1.5em'
     case 2:
-      return  '3em'
+      return '3em'
     case 3:
-      return  '4.5em'
+      return '4.5em'
     case 4:
-      return  '6em'
+      return '6em'
     case 5:
-      return  '7.5em'
+      return '7.5em'
     case 6:
-      return  '9em'
+      return '9em'
     case 7:
-      return  '10.5em'
+      return '10.5em'
     case 8:
       return '12em'
     case 9:
@@ -50,8 +50,7 @@ export const TextBlock = styled.div`
   font-weight: 400;
   width: 100%;
   line-height: 1.5em;
-  margin-bottom: 0.5em;
-  border: 1px solid #eee;
+  padding-bottom: 0.5em;
 `
 
 export const ListItem = styled.div`
@@ -66,7 +65,7 @@ export const ListItemInner = styled.div`
   display: flex;
   margin: 0;
   padding: 0;
-  width: 100%;  
+  width: 100%;
   line-height: 1.5rem;
   &:before {
     content: '${props => getContentForListLevelAndStyle(props.level, props.listStyle)}';
@@ -95,8 +94,7 @@ export const Em = styled.span`
   font-style: italic;
 `
 
-export const Code = styled.code`
-`
+export const Code = styled.code``
 
 export const BlockObject = styled.div`
   padding: 1em;

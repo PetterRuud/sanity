@@ -17,7 +17,7 @@ export function createWithPatches(
     setNodePatch,
     splitNodePatch
   },
-  changes: Subject<EditorChange>,
+  change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures
 ) {
   function isEmptyEditor(children) {
@@ -32,7 +32,7 @@ export function createWithPatches(
     )
   }
   const cancelThrottle = debounce(() => {
-    changes.next({type: 'throttle', throttle: false})
+    change$.next({type: 'throttle', throttle: false})
   }, 1000)
   return function withPatches(editor: Editor) {
     const {apply} = editor
@@ -115,8 +115,8 @@ export function createWithPatches(
       }
 
       if (patches.length > 0) {
-        changes.next({type: 'throttle', throttle: true})
-        changes.next({type: 'patches', patches: patches})
+        change$.next({type: 'throttle', throttle: true})
+        change$.next({type: 'mutation', patches: patches})
         cancelThrottle()
       }
     }

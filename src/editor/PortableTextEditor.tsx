@@ -5,14 +5,13 @@ import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {Type} from '../types/schema'
-import {EditorSelection, EditorChange} from '../types/editor'
+import {EditorSelection, EditorChange, OnPasteFn} from '../types/editor'
 import {Subject} from 'rxjs'
 
 export const keyGenerator = () => randomKey(12)
 
-
 export type Props = {
-  changes: Subject<EditorChange>
+  change$: Subject<EditorChange>
   hotkeys?: {marks: {}}
   keyGenerator?: () => string
   maxBlocks?: number | string
@@ -22,6 +21,7 @@ export type Props = {
   spellCheck?: boolean
   type: Type
   value?: PortableTextBlock[]
+  onPaste?: OnPasteFn
 }
 
 export class PortableTextEditor extends React.Component<Props, {}> {
@@ -42,20 +42,31 @@ export class PortableTextEditor extends React.Component<Props, {}> {
     this.slateEditorRef.focus()
   }
   render() {
-    const {changes, spellCheck, placeholderText, maxBlocks, hotkeys, readOnly, value, selection} = this.props
+    const {
+      change$,
+      spellCheck,
+      placeholderText,
+      maxBlocks,
+      hotkeys,
+      readOnly,
+      value,
+      selection,
+      onPaste
+    } = this.props
     return (
       <SlateEditor
-        changes={changes}
+        change$={change$}
         editorRef={slateEditor => (this.slateEditorRef = slateEditor)}
         hotkeys={hotkeys}
         keyGenerator={this.props.keyGenerator || keyGenerator}
         maxBlocks={maxBlocks ? Number(maxBlocks) || undefined : undefined}
+        onPaste={onPaste}
         placeholderText={placeholderText}
         portableTextFeatures={this.portableTextFeatures}
         readOnly={readOnly}
+        selection={selection}
         spellCheck={spellCheck}
         value={value}
-        selection={selection}
       />
     )
   }

@@ -30,27 +30,25 @@ function createArrayedPath(
   return second !== undefined ? [first, second] : [first]
 }
 
-function normalizePoint(point: any, value: PortableTextBlock[]) {
+function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[]) {
   if (!point || !value) {
     return null
   }
   const newPath: any = []
   let newOffset: number = point.offset || 0
-  const block: PortableTextBlock | undefined = value.find(
-    blk =>  blk._key === point.path[0]._key
-  )
+  const block: PortableTextBlock | undefined = value.find(blk => blk._key === point.path[0]['_key'])
   if (block) {
     newPath.push({_key: block._key})
   } else {
     return null
   }
   if (block && point.path[1] === 'children') {
-    const child = block.children.find(
-      cld =>  cld._key === point.path[2]._key
-    )
-    newPath.push('children')
-    newPath.push({_key: child._key})
-    newOffset = child.text && child.text.length >= point.offset ? point.offset : child.text.length
+    const child = block.children.find(cld => cld._key === point.path[2]['_key'])
+    if (child) {
+      newPath.push('children')
+      newPath.push({_key: child._key})
+      newOffset = child.text && child.text.length >= point.offset ? point.offset : child.text.length
+    }
   }
   return {path: newPath, offset: newOffset}
 }

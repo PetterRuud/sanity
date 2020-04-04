@@ -17,7 +17,7 @@ import {EditorChange} from 'src/types/editor'
 type Options = {
   portableTextFeatures: PortableTextFeatures
   keyGenerator: () => string
-  changes: Subject<EditorChange>
+  change$: Subject<EditorChange>
   maxBlocks?: number
   hotkeys?: {marks: {}}
 }
@@ -30,11 +30,11 @@ const NOOPPlugin = (editor: Editor) => {
  * Creates a new Portable Text Editor (which can be used without React)
  */
 export function createPortableTextEditor(options: Options) {
-  const {portableTextFeatures, keyGenerator, changes} = options
+  const {portableTextFeatures, keyGenerator, change$} = options
   const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
   const operationToPatches = createOperationToPatches(portableTextFeatures)
-  const withPatches = createWithPatches(operationToPatches, changes, portableTextFeatures)
+  const withPatches = createWithPatches(operationToPatches, change$, portableTextFeatures)
   const withMaxBlocks = options.maxBlocks ? createWithMaxBlocks(options.maxBlocks) : NOOPPlugin
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures)
   const withHotkeys = createWithHotkeys(options.hotkeys)
