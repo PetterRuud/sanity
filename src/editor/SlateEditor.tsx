@@ -1,10 +1,11 @@
-import React, {useCallback, useMemo, useState, useEffect, SyntheticEvent} from 'react'
+import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
-import {EditorSelection, EditorChange, OnPasteFn} from '../types/editor'
-import {toSlateValue} from '../utils/toSlateValue'
-import {Subject} from 'rxjs'
+import {EditorSelection, EditorChanges, OnPasteFn, OnCopyFn} from '../types/editor'
+import {toSlateValue} from '../utils/values'
+import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
+import {createWithInsertData} from './slate-plugins'
 
 import {SlateLeaf} from './SlateLeaf'
 import {SlateElement} from './SlateElement'
@@ -12,12 +13,13 @@ import {createPortableTextEditor} from './createPortableTextEditor'
 import {toPortableTextRange, normalizeSelection} from '../utils/selection'
 
 type Props = {
-  change$: Subject<EditorChange>
+  change$: EditorChanges
   editorRef: any
   hotkeys?: {marks: {}}
   keyGenerator: () => string
   maxBlocks?: number
   onPaste?: OnPasteFn
+  onCopy?: OnCopyFn
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
   readOnly?: boolean
@@ -59,14 +61,20 @@ export const SlateEditor = (props: Props) => {
   // Init Editor
   const editor = useMemo(
     () =>
-      withReact(
-        createPortableTextEditor({
-          portableTextFeatures,
-          keyGenerator,
-          change$,
-          maxBlocks,
-          hotkeys
-        })
+      createWithInsertData(
+        change$,
+        portableTextFeatures,
+        keyGenerator
+      )(
+        withReact(
+          createPortableTextEditor({
+            portableTextFeatures,
+            keyGenerator,
+            change$,
+            maxBlocks,
+            hotkeys
+          })
+        )
       ),
     []
   )
@@ -144,9 +152,21 @@ export const SlateEditor = (props: Props) => {
     }
   }, [props.value])
 
-  const handlePaste = (event: SyntheticEvent) => {
-    event.preventDefault()
-    console.log(event)
+  // Handle copy in the editor
+  const handleCopy = (event: React.ClipboardEvent<HTMLDivElement>): void | ReactEditor => {
+    if (props.onCopy) {
+      const result = props.onCopy(event)
+      // CopyFn may return something to avoid doing default stuff
+      if (result !== undefined) {
+        event.preventDefault()
+        return
+      }
+    }
+    if (hasEditableTarget(editor, event.target)) {
+      // Set Portable Text on the clipboard
+      setFragmentData(event.clipboardData, editor, portableTextFeatures)
+      return editor
+    }
   }
 
   return (
@@ -158,9 +178,9 @@ export const SlateEditor = (props: Props) => {
     >
       <Editable
         // decorate={decorate}
+        onCopy={handleCopy}
         onFocus={() => change$.next({type: 'focus'})}
         onBlur={() => change$.next({type: 'blur'})}
-        onPaste={handlePaste}
         onKeyDown={event => editor.pteWithHotKeys(editor, event)}
         placeholder={placeholderText}
         readOnly={readOnly}

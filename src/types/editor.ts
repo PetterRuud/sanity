@@ -3,6 +3,7 @@ import {Path} from '../types/path'
 import {Patch} from '../types/patch'
 import {Type} from '../types/schema'
 import {PortableTextBlock} from '../types/portableText'
+import {Subject} from 'rxjs'
 
 export type EditorNode = SlateNode & {
   _key: string
@@ -11,8 +12,8 @@ export type EditorNode = SlateNode & {
 
 export type EditorOperation = SlateOperation
 
-export type EditorSelectionPoint = {path: Path, offset: number}
-export type EditorSelection = {anchor: EditorSelectionPoint, focus: EditorSelectionPoint} | null
+export type EditorSelectionPoint = {path: Path; offset: number}
+export type EditorSelection = {anchor: EditorSelectionPoint; focus: EditorSelectionPoint} | null
 export interface PortableTextSlateEditor extends SlateEditor {
   /**
    * Increments selected list items levels, or decrements them if @reverse is true.
@@ -45,28 +46,69 @@ export interface PortableTextSlateEditor extends SlateEditor {
   pteToggleMark: (editor: SlateEditor, mark: string) => void
 }
 
-export type EditorChange = {
-  type: 'mutation' | 'value' | 'selection' | 'throttle' | 'focus' | 'blur' | 'pasting'
-  patches?: Patch[]
-  selection?: EditorSelection
-  throttle?: boolean
-  value?: PortableTextBlock[] | undefined
+export type MutationChange = {
+  type: 'mutation'
+  patches: Patch[]
 }
 
-export type PasteProgressResult = {
-  status: string | null
-  error?: Error
+export type ValueChange = {
+  type: 'value'
+  value: PortableTextBlock[] | undefined
 }
 
-export type OnPasteResult =
+export type SelectionChange = {
+  type: 'selection'
+  selection: EditorSelection
+}
+
+export type ThrottleChange = {
+  type: 'throttle'
+  throttle: boolean
+}
+
+export type FocusChange = {
+  type: 'focus'
+}
+
+export type BlurChange = {
+  type: 'blur'
+}
+
+export type LoadingChange = {
+  type: 'loading'
+  isLoading: boolean
+}
+
+export type EditorErrorResolution = null | {patches: Patch[]; description: string; action: string}[]
+
+export type ErrorChange = {
+  type: 'error'
+  error: 'invalidValue'
+  resolution: EditorErrorResolution
+}
+
+export type EditorChange =
+  | MutationChange
+  | ValueChange
+  | SelectionChange
+  | ThrottleChange
+  | FocusChange
+  | BlurChange
+  | LoadingChange
+  | ErrorChange
+
+export type EditorChanges = Subject<EditorChange>
+
+type OnPasteResult =
   | (
       | {
           insert?: PortableTextBlock[]
           path?: []
         }
-      | Error)
+      | Error
+    )
   | null
-export type OnPasteResultOrPromise = (OnPasteResult | Promise<OnPasteResult>) | null
+type OnPasteResultOrPromise = (OnPasteResult | Promise<OnPasteResult>) | null
 
 export type OnPasteFn = (arg0: {
   event: React.SyntheticEvent
@@ -74,3 +116,5 @@ export type OnPasteFn = (arg0: {
   type: Type
   value: PortableTextBlock[] | null
 }) => OnPasteResultOrPromise
+
+export type OnCopyFn = (event: React.ClipboardEvent<HTMLDivElement>) => undefined | any

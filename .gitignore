@@ -16,3 +16,7 @@ lib
 
 # Compiled demo files
 demo/.next
+
+# Docs
+docs
+

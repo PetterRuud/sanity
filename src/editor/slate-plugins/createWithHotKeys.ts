@@ -11,7 +11,7 @@ const DEFAULT_HOTKEYS = {
   }
 }
 
-const RESERVED_HOTKEYS = ['enter', 'tab']
+const RESERVED_HOTKEYS = ['enter', 'tab', 'shift']
 
 /**
  * This plugin takes care of all hotkeys in the editor
@@ -43,6 +43,7 @@ export function createWithHotkeys(hotkeys) {
 
       const isEnter = isHotkey('enter', event.nativeEvent)
       const isTab = isHotkey('tab', event.nativeEvent)
+      const isShiftEnter = isHotkey('shift+enter', event.nativeEvent)
       const isShiftTab = isHotkey('shift+tab', event.nativeEvent)
       const isBackspace = isHotkey('backspace', event.nativeEvent)
 
@@ -57,7 +58,7 @@ export function createWithHotkeys(hotkeys) {
           editor.selection &&
           editor.selection.focus.offset === 0 &&
           backspaceCount < 1
-        ) { 
+        ) {
           event.preventDefault()
           backspaceCount++
         } else if (backspaceCount >= 1) {
@@ -71,8 +72,14 @@ export function createWithHotkeys(hotkeys) {
       }
 
       // Deal with list item enter key
-      if (isEnter) {
+      if (isEnter && !isShiftEnter) {
         editor.pteEndList(editor) && event.preventDefault()
+      }
+
+      // Deal with soft line breaks
+      if (isShiftEnter) {
+        event.preventDefault()
+        editor.insertText('\n')
       }
     }
     return editor

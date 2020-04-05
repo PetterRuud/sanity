@@ -4,7 +4,7 @@ import {Patch} from '../types/patch'
 import {Editor} from 'slate'
 import {omitBy, isUndefined} from 'lodash'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
-import {fromSlateValue} from '../utils/toSlateValue'
+import {fromSlateValue} from './values'
 
 export function createOperationToPatches(portableTextFeatures: PortableTextFeatures) {
   function insertTextPatch(editor: Editor, operation: EditorOperation) {
@@ -69,16 +69,14 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     const block = beforeValue[operation.path[0]]
     const isTextBlock =
       editor.children[operation.path[0]]._type === portableTextFeatures.types.block.name
-    if (operation.path.length === 1 && block && block._key) {
+    if (operation.path.length === 1) {
       const position = operation.path[0] === 0 ? 'before' : 'after'
       const targetKey =
         operation.path[0] === 0 ? block._key : beforeValue[operation.path[0] - 1]._key
       if (targetKey) {
         return [
           insert(
-            isTextBlock
-              ? [operation.node]
-              : [fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0]],
+            [fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0]],
             position,
             [{_key: targetKey}]
           )
@@ -98,7 +96,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         ])
       ]
     } else {
-      throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
+      throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)} - ${JSON.stringify(beforeValue)}`)
     }
   }
 

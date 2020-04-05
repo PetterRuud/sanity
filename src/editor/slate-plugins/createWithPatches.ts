@@ -4,7 +4,7 @@ import {applyAll} from '../../patch/applyPatch'
 import {unset, setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation} from 'slate'
 import {Patch} from '../../types/patch'
-import {toSlateValue, fromSlateValue} from '../../utils/toSlateValue'
+import {toSlateValue, fromSlateValue} from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
 import { EditorChange } from 'src/types/editor'
 export function createWithPatches(
@@ -33,7 +33,8 @@ export function createWithPatches(
   }
   const cancelThrottle = debounce(() => {
     change$.next({type: 'throttle', throttle: false})
-  }, 1000)
+  }, 400)
+
   return function withPatches(editor: Editor) {
     const {apply} = editor
     editor.apply = (operation: Operation) => {
@@ -85,12 +86,15 @@ export function createWithPatches(
         patches = patches.concat(unset([]))
       }
 
-      // TODO: remove this debug integrity check!
-      if (!editorIsEmpty) {
+      // TODO: Detect debugger
+      const debug = true
+      if (debug && !editorIsEmpty) {
         const appliedValue = applyAll(
           fromSlateValue(beforeValue, portableTextFeatures.types.block.name),
           patches
         )
+        // change$.next({type: 'value', value: appliedValue})
+
         if (
           !isEqual(
             appliedValue,

@@ -1,6 +1,5 @@
 import {Editor, Point, Path as SlatePath} from 'slate'
 import {EditorSelection, EditorSelectionPoint} from '../types/editor'
-// import {Path} from '../types/path'
 import {PortableTextBlock} from 'src/types/portableText'
 
 function createKeyedPath(point: Point, editor: Editor) {
@@ -43,6 +42,9 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
     return null
   }
   if (block && point.path[1] === 'children') {
+    if (!block.children || block.children.length === 0) {
+      return null
+    }
     const child = block.children.find(cld => cld._key === point.path[2]['_key'])
     if (child) {
       newPath.push('children')
