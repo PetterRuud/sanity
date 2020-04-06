@@ -1,7 +1,7 @@
 import React, {ReactElement} from 'react'
 import {Element} from 'slate'
 import {useSlate, useFocused, useSelected} from 'slate-react'
-import {PortableTextFeatures} from '../types/portableText'
+import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import Block from './nodes/TextBlock'
 import {InlineObject} from './nodes/InlineObject'
 import {BlockObject} from './nodes/BlockObject'
@@ -10,22 +10,43 @@ type ElementProps = {
   attributes: string
   children: ReactElement
   element: Element
+  block: PortableTextBlock
+  child?: PortableTextChild
   portableTextFeatures: PortableTextFeatures
+  renderBlock?: (
+    block: PortableTextBlock,
+    attributes: {focused: boolean; selected: boolean}
+  ) => JSX.Element
+  renderChild?: (
+    child: PortableTextChild,
+    attributes: {focused: boolean; selected: boolean}
+  ) => JSX.Element
 }
 
 export const SlateElement = (props: ElementProps) => {
   const editor = useSlate()
   const selected = useSelected()
   const focused = useFocused()
-  const {attributes, children, element, portableTextFeatures} = props
+  const {
+    attributes,
+    children,
+    element,
+    portableTextFeatures,
+    block,
+    child,
+    renderBlock,
+    renderChild
+  } = props
   // Test for inline objects first
-  if (editor.isInline(element)) {
+  if (editor.isInline(element) && child) {
     return (
       <InlineObject
+        child={child}
         attributes={attributes}
         element={element}
         focused={focused}
         selected={selected}
+        renderChild={renderChild}
       />
     )
   }
@@ -44,7 +65,14 @@ export const SlateElement = (props: ElementProps) => {
     default:
       return (
         <div {...attributes}>
-          <BlockObject element={element} selected={selected} editor={editor} />
+          <BlockObject
+            block={block}
+            element={element}
+            selected={selected}
+            focused={focused}
+            editor={editor}
+            renderBlock={renderBlock}
+          />
           {children}
         </div>
       )

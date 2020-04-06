@@ -33,7 +33,7 @@ export function createWithPatches(
   }
   const cancelThrottle = debounce(() => {
     change$.next({type: 'throttle', throttle: false})
-  }, 400)
+  }, 1000)
 
   return function withPatches(editor: Editor) {
     const {apply} = editor

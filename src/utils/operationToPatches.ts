@@ -74,13 +74,15 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       const targetKey =
         operation.path[0] === 0 ? block._key : beforeValue[operation.path[0] - 1]._key
       if (targetKey) {
-        return [
-          insert(
-            [fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0]],
-            position,
-            [{_key: targetKey}]
-          )
-        ]
+        if (operation.node) {
+          return [
+            insert(
+              [fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0]],
+              position,
+              [{_key: targetKey}]
+            )
+          ]
+        }
       }
       throw new Error('Target key not found!')
     } else if (operation.path.length === 2 && editor.children[operation.path[0]] && isTextBlock) {
@@ -113,13 +115,15 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     if (operation.path.length === 1) {
       const oldBlock = beforeValue[operation.path[0]]
       if (oldBlock && oldBlock._key) {
-        const spansToMove = beforeValue[operation.path[0]].children.slice(operation.position)
-        spansToMove.forEach(span => {
-          const path = [{_key: oldBlock._key}, 'children', {_key: span._key}]
-          patches.push(unset(path))
-        })
         const targetValue = editor.children[operation.path[0] + 1]
-        patches.push(insert([targetValue], 'after', [{_key: splitBlock._key}]))
+        if (targetValue) {
+          const spansToMove = beforeValue[operation.path[0]].children.slice(operation.position)
+          spansToMove.forEach(span => {
+            const path = [{_key: oldBlock._key}, 'children', {_key: span._key}]
+            patches.push(unset(path))
+          })
+          patches.push(insert([targetValue], 'after', [{_key: splitBlock._key}]))
+        }
       }
       return patches
     }

@@ -79,12 +79,11 @@ export type LoadingChange = {
   isLoading: boolean
 }
 
-export type EditorErrorResolution = null | {patches: Patch[]; description: string; action: string}[]
+export type InvalidValueResolution = null | {patches: Patch[]; description: string; action: string}
 
-export type ErrorChange = {
-  type: 'error'
-  error: 'invalidValue'
-  resolution: EditorErrorResolution
+export type InvalidValue = {
+  type: 'invalidValue'
+  resolution: InvalidValueResolution
 }
 
 export type EditorChange =
@@ -95,7 +94,7 @@ export type EditorChange =
   | FocusChange
   | BlurChange
   | LoadingChange
-  | ErrorChange
+  | InvalidValue
 
 export type EditorChanges = Subject<EditorChange>
 

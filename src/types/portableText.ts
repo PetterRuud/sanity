@@ -2,25 +2,30 @@ import {ComponentType} from 'react'
 import {Type as SchemaType} from './schema'
 
 export type PortableTextBlock = {
-  _type?: string
-  _key?: string
-  _ref?: string
+  _type: string
+  _key: string
   [other: string]: any
 }
 
-export type Block = {
+export type TextBlock = {
   _type: string
   _key: string
-  children: Span[]
+  children: PortableTextChild[]
   markDefs: MarkDef[]
 }
 
-export type Span = {
+export type TextSpan = {
   _key: string
   _type: 'span'
   text: string
   marks: string[]
 }
+
+export type PortableTextChild = {
+  _key: string
+  _type: string
+  [other: string]: any
+} | TextSpan
 
 export type MarkDef = {_key: string; _type: string}
 

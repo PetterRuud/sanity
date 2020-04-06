@@ -19,7 +19,8 @@ type Options = {
   keyGenerator: () => string
   change$: Subject<EditorChange>
   maxBlocks?: number
-  hotkeys?: {marks: {}}
+  hotkeys?: {marks: {}},
+  searchAndReplace?: boolean
 }
 
 const NOOPPlugin = (editor: Editor) => {
@@ -30,21 +31,19 @@ const NOOPPlugin = (editor: Editor) => {
  * Creates a new Portable Text Editor (which can be used without React)
  */
 export function createPortableTextEditor(options: Options) {
-  const {portableTextFeatures, keyGenerator, change$} = options
+  const {portableTextFeatures, keyGenerator, change$, maxBlocks, searchAndReplace} = options
   const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
   const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withPatches = createWithPatches(operationToPatches, change$, portableTextFeatures)
-  const withMaxBlocks = options.maxBlocks ? createWithMaxBlocks(options.maxBlocks) : NOOPPlugin
+  const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : NOOPPlugin
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures)
-  const withHotkeys = createWithHotkeys(options.hotkeys)
+  const withHotkeys = createWithHotkeys(options.hotkeys, searchAndReplace)
   return withPatches(
-    withMaxBlocks(
-      withHistory(
-        withHotkeys(
-          withPortableTextLists(
-            withPortableTextMarkModel(withObjectKeys(withScemaTypes(createEditor())))
-          )
+    withHistory(
+      withHotkeys(
+        withPortableTextLists(
+          withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(createEditor()))))
         )
       )
     )

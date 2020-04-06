@@ -1,9 +1,9 @@
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
-import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
+import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {EditorSelection, EditorChanges, OnPasteFn, OnCopyFn} from '../types/editor'
-import {toSlateValue} from '../utils/values'
+import {toSlateValue, fromSlateValue} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
 import {createWithInsertData} from './slate-plugins'
 
@@ -23,10 +23,21 @@ type Props = {
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
   readOnly?: boolean
+  renderBlock?: (
+    block: PortableTextBlock,
+    attributes: {focused: boolean; selected: boolean}
+  ) => JSX.Element
+  renderChild?: (
+    child: PortableTextChild,
+    attributes: {focused: boolean; selected: boolean}
+  ) => JSX.Element
+  searchAndReplace?: boolean
   selection: EditorSelection
   spellCheck?: boolean
   value?: PortableTextBlock[] | undefined
 }
+
+const SELECT_TOP_DOCUMENT = {anchor: {path: [0, 0], offset: 0}, focus: {path: [0, 0], offset: 0}}
 
 export const SlateEditor = (props: Props) => {
   const {
@@ -38,6 +49,7 @@ export const SlateEditor = (props: Props) => {
     placeholderText,
     portableTextFeatures,
     readOnly,
+    searchAndReplace,
     spellCheck
   } = props
 
@@ -72,7 +84,8 @@ export const SlateEditor = (props: Props) => {
             keyGenerator,
             change$,
             maxBlocks,
-            hotkeys
+            hotkeys,
+            searchAndReplace
           })
         )
       ),
@@ -80,8 +93,12 @@ export const SlateEditor = (props: Props) => {
   )
 
   // Track editor value
-  const value = getValue(props.value, createPlaceHolderBlock())
-  const [stateValue, setStateValue] = useState(value)
+  const [stateValue, setStateValue] = useState(
+    toSlateValue(
+      getValue(props.value, createPlaceHolderBlock()),
+      portableTextFeatures.types.block.name
+    )
+  )
 
   // Track selection
   const [selection, setSelection] = useState(editor.selection)
@@ -89,12 +106,44 @@ export const SlateEditor = (props: Props) => {
   editorRef({editor, focus: () => ReactEditor.focus(editor)})
 
   const renderElement = useCallback(
-    cProps => <SlateElement {...cProps} portableTextFeatures={portableTextFeatures} />,
-    []
+    eProps => {
+      const block = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
+      if (block) {
+        const child = block.children && block.children.find(child => child._key === eProps._key)
+        return (
+          <SlateElement
+            {...eProps}
+            block={block}
+            child={child}
+            portableTextFeatures={portableTextFeatures}
+            renderBlock={props.renderBlock}
+          />
+        )
+      }
+      throw new Error('Could not resolve block')
+    },
+    [props.value, props.selection]
   )
+
   const renderLeaf = useCallback(
-    cProps => <SlateLeaf {...cProps} portableTextFeatures={portableTextFeatures} />,
-    []
+    lProps => {
+      let block
+      const blockNode =
+        editor.children &&
+        editor.children.find(blk => blk.children.find(child => child._key === lProps.leaf._key))
+      if (blockNode) {
+        block = fromSlateValue([blockNode], portableTextFeatures.types.block.name)[0]
+      }
+      return (
+        <SlateLeaf
+          {...lProps}
+          block={block}
+          portableTextFeatures={portableTextFeatures}
+          renderChild={props.renderChild}
+        ></SlateLeaf>
+      )
+    },
+    [props.value, props.selection]
   )
 
   const handleChange = val => {
@@ -147,7 +196,7 @@ export const SlateEditor = (props: Props) => {
         const slateRange = toSlateRange(normalizedSelection, props.value)
         setSelection(slateRange)
       } else if (stateValue) {
-        setSelection({anchor: {path: [0, 0], offset: 0}, focus: {path: [0, 0], offset: 0}})
+        setSelection(SELECT_TOP_DOCUMENT)
       }
     }
   }, [props.value])

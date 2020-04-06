@@ -97,8 +97,6 @@ export const Em = styled.span`
 export const Code = styled.code``
 
 export const BlockObject = styled.div`
-  padding: 1em;
-  background: #eee;
   user-select: none;
   border: ${props => {
     if (props.selected) {

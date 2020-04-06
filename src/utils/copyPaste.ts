@@ -4,7 +4,7 @@ import {fromSlateValue} from '../utils/values'
 
 import DOMNode = globalThis.Node
 import DOMText = globalThis.Text
-import {PortableTextBlock, PortableTextFeatures} from 'src/types/portableText'
+import {PortableTextFeatures} from 'src/types/portableText'
 
 const isDOMText = (value: any): value is DOMText => {
   return isDOMNode(value) && value.nodeType === 3

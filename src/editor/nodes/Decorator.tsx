@@ -21,6 +21,7 @@ export default function DecoratorComponent(props: Props) {
       <Code {...props.attributes}>{props.children}</Code>
       )
     default:
+      console.log(props)
       return (
         <span>{props.children}</span>
       )

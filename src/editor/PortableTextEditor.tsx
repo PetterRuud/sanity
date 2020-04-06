@@ -3,7 +3,7 @@ import {randomKey} from '../utils/randomKey'
 import {SlateEditor} from './SlateEditor'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
-import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
+import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
 import {Patch} from '../types/patch'
 import {EditorSelection, EditorChange, OnPasteFn, OnCopyFn, EditorChanges} from '../types/editor'
@@ -24,6 +24,15 @@ export type Props = {
   onPaste?: OnPasteFn
   placeholderText?: string
   readOnly?: boolean
+  renderBlock?: (
+    block: PortableTextBlock,
+    attributes: {focused: boolean; selected: boolean}
+  ) => JSX.Element
+  renderChild?: (
+    child: PortableTextChild,
+    attributes: {focused: boolean; selected: boolean}
+  ) => JSX.Element
+  searchAndReplace?: boolean
   selection: EditorSelection
   spellCheck?: boolean
   type: Type
@@ -68,7 +77,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     if (props.value && !validation.valid) {
       invalidValue = props.value
       this.change$.next({type: 'loading', isLoading: false})
-      this.change$.next({type: 'error', error: 'invalidValue', resolution: validation.resolution})
+      this.change$.next({type: 'invalidValue', resolution: validation.resolution})
     }
     this.state = {invalidValue}
   }
@@ -110,24 +119,27 @@ export class PortableTextEditor extends React.Component<Props, State> {
         onChange(next)
     }
   }
-
   focus() {
     this.slateEditorRef.focus()
   }
+  getPortableTextFeatures() {
+    return this.portableTextFeatures
+  }
   render() {
     if (this.state.invalidValue) {
-      return <div />
+      return null
     }
     const {
-      spellCheck,
-      placeholderText,
-      maxBlocks,
       hotkeys,
-      readOnly,
-      value,
-      selection,
+      maxBlocks,
+      onCopy,
       onPaste,
-      onCopy
+      placeholderText,
+      readOnly,
+      searchAndReplace,
+      selection,
+      spellCheck,
+      value
     } = this.props
     return (
       <SlateEditor
@@ -141,6 +153,9 @@ export class PortableTextEditor extends React.Component<Props, State> {
         placeholderText={placeholderText}
         portableTextFeatures={this.portableTextFeatures}
         readOnly={readOnly}
+        renderBlock={this.props.renderBlock}
+        renderChild={this.props.renderChild}
+        searchAndReplace={searchAndReplace}
         selection={selection}
         spellCheck={spellCheck}
         value={value}
