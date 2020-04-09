@@ -8,7 +8,8 @@ const DEFAULT_HOTKEYS = {
     'mod+i': 'em',
     'mod+u': 'underline',
     'mod+`': 'code'
-  }
+  },
+  custom: {}
 }
 
 /**
@@ -38,6 +39,18 @@ export function createWithHotkeys(hotkeys, searchAndReplace) {
               event.preventDefault()
               const mark = hotkeys[cat][hotkey]
               editor.pteToggleMark(editor, mark)
+            }
+          }
+        }
+        if (cat === 'custom') {
+          for (const hotkey in hotkeys[cat]) {
+            if (reservedHotkeys.includes(hotkey)) {
+              throw new Error(`The hotkey ${hotkey} is reserved!`)
+            }
+            if (isHotkey(hotkey, event.nativeEvent)) {
+              event.preventDefault()
+              const command = hotkeys[cat][hotkey]
+              command(event)
             }
           }
         }
@@ -89,6 +102,16 @@ export function createWithHotkeys(hotkeys, searchAndReplace) {
       if (searchAndReplace && isSearch) {
         // TODO: implement search and replace
         event.preventDefault()
+      }
+
+      // Deal with undo/redo
+      if (isHotkey('mod+z', event.nativeEvent)) {
+        event.preventDefault()
+        editor.undo()
+      }
+      if (isHotkey('mod+y', event.nativeEvent) || isHotkey('mod+shift+z', event.nativeEvent)) {
+        event.preventDefault()
+        editor.redo()
       }
     }
     return editor

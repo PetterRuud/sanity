@@ -1,4 +1,4 @@
-import {prefixPath, set, unset, setIfMissing, insert, inc, dec} from './patches'
+import {prefixPath, set, unset, setIfMissing, insert, inc, dec, diffMatchPatch} from './patches'
 
 import {flatten} from 'lodash'
 import {Patch} from '../types/patch'
@@ -30,4 +30,4 @@ export default class PatchEvent {
   }
 }
 
-export {PatchEvent, set, unset, setIfMissing, insert, inc, dec}
+export {PatchEvent, set, unset, setIfMissing, insert, inc, dec, diffMatchPatch}

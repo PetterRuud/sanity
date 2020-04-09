@@ -1,3 +1,5 @@
+import * as DMP from 'diff-match-patch'
+
 import {
   SetIfMissingPatch,
   InsertPatch,
@@ -5,7 +7,8 @@ import {
   SetPatch,
   UnsetPatch,
   IncPatch,
-  DecPatch
+  DecPatch,
+  DiffMatchPatch
 } from '../types/patch'
 import {Path, PathSegment} from '../types/path'
 
@@ -15,6 +18,16 @@ export function setIfMissing(value: any, path: Path = []): SetIfMissingPatch {
     path,
     value
   }
+}
+
+const dmp = new DMP.diff_match_patch()
+
+export function diffMatchPatch(currentValue: string, nextValue: string, path: Path = []): DiffMatchPatch {
+  const patch = dmp
+    .patch_make(currentValue, nextValue)
+    .map(patch => patch.toString())
+    .join('')
+  return {type: 'diffMatchPatch', path, value: patch}
 }
 
 export function insert(items: any[], position: InsertPosition, path: Path = []): InsertPatch {

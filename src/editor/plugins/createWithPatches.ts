@@ -2,11 +2,12 @@ import {isEqual, debounce} from 'lodash'
 import {Subject} from 'rxjs'
 import {applyAll} from '../../patch/applyPatch'
 import {unset, setIfMissing} from '../../patch/PatchEvent'
-import {Editor, Operation} from 'slate'
+import {Editor, Operation, Transforms} from 'slate'
 import {Patch} from '../../types/patch'
 import {toSlateValue, fromSlateValue} from '../../utils/values'
-import {PortableTextFeatures} from '../../types/portableText'
-import { EditorChange } from 'src/types/editor'
+// import {toPortableTextRange} from '../../utils/selection'
+import {PortableTextFeatures, PortableTextBlock} from '../../types/portableText'
+import {EditorChange} from 'src/types/editor'
 export function createWithPatches(
   {
     insertNodePatch,
@@ -18,9 +19,10 @@ export function createWithPatches(
     splitNodePatch
   },
   change$: Subject<EditorChange>,
-  portableTextFeatures: PortableTextFeatures
+  portableTextFeatures: PortableTextFeatures,
+  createPlaceHolderBlock: () => PortableTextBlock
 ) {
-  function isEmptyEditor(children) {
+  function isEqualToEmptyEditor(children) {
     return (
       children.length === 0 ||
       (children.length === 1 &&
@@ -43,12 +45,12 @@ export function createWithPatches(
       // longer contain that information if the node is already deleted.
       const beforeValue = editor.children
 
-      const editorWasEmpty = isEmptyEditor(beforeValue)
+      const editorWasEmpty = isEqualToEmptyEditor(beforeValue)
 
       // Apply the operation
       apply(operation)
 
-      const editorIsEmpty = isEmptyEditor(editor.children)
+      const editorIsEmpty = isEqualToEmptyEditor(editor.children)
 
       if (editorWasEmpty) {
         patches = [setIfMissing(beforeValue, [])]
@@ -76,17 +78,48 @@ export function createWithPatches(
         case 'merge_node':
           patches = [...patches, ...mergeNodePatch(editor, operation, beforeValue)]
           break
+        case 'move_node':
+            // Doesn't seem to be implemented in Slate at the moment (april 2020)
+            // TODO: confirm this
+          debugger
+          break
         case 'set_selection':
         default:
           patches = []
       }
 
-      // Unset the value if editor has become empty
+      // Unset the value remote if editor has become empty
+      // TODO: figure out a nice patter for this that works well with undo
       if (!editorWasEmpty && editorIsEmpty) {
-        patches = patches.concat(unset([]))
+        Transforms.deselect(editor)
+        // editor.children.forEach((_, index) => {
+        //   Transforms.removeNodes(editor, {at: [index]})
+        // })
+        // // Insert placeholderblock
+        // const nodes = toSlateValue(
+        //   [createPlaceHolderBlock()],
+        //   portableTextFeatures.types.block.name
+        // )
+        // Transforms.insertNodes(editor, nodes, {at: [0]})
+        change$.next({
+          type: 'unset',
+          placeholderValue: fromSlateValue(beforeValue, portableTextFeatures.types.block.name)
+        })
+
+        // TODO: transform undo so that it inserts a setIfMissing patch with before value first, before doing the the undo patches
+
+        // Restore the cursor in the placeholder block
+        // setTimeout(() => {
+        //   Transforms.select(editor, {
+        //     anchor: {path: [0, 0], offset: 0},
+        //     focus: {path: [0, 0], offset: 0}
+        //   })
+        // }, 100)
+        // editor.onChange()
+        patches.push(unset([]))
       }
 
-      // TODO: Detect debugger
+      // TODO: Do optional (this is heavy, and should only be done when developing on the editor)
       const debug = true
       if (debug && !editorIsEmpty) {
         const appliedValue = applyAll(
@@ -119,8 +152,19 @@ export function createWithPatches(
       }
 
       if (patches.length > 0) {
+        // Emit all patches immediately
+        patches.map(patch => {
+          change$.next({
+            type: 'patch',
+            patch
+          })
+        })
         change$.next({type: 'throttle', throttle: true})
-        change$.next({type: 'mutation', patches: patches})
+        // Emit mutation after user is done typing
+        change$.next({
+          type: 'mutation',
+          patches: patches
+        })
         cancelThrottle()
       }
     }

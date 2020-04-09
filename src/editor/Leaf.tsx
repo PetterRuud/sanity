@@ -14,7 +14,7 @@ type LeafProps = {
   portableTextFeatures: PortableTextFeatures
 }
 
-export const SlateLeaf = (props: LeafProps) => {
+export const Leaf = (props: LeafProps) => {
   const {attributes, children, leaf, portableTextFeatures} = props
   let returnedChildren = children
   if (leaf._type === portableTextFeatures.types.span.name) {
@@ -27,9 +27,12 @@ export const SlateLeaf = (props: LeafProps) => {
         </Decorator>
       )
     })
-    const annotations: PortableTextBlock[] = (leaf.marks || []).map(mark =>
-      props.block.markDefs.find(def => def._key === mark)
-    )
+    const annotations: PortableTextBlock[] = (leaf.marks || [])
+      .map(
+        mark =>
+          !decoratorValues.includes(mark) && props.block.markDefs.find(def => def._key === mark)
+      )
+      .filter(Boolean)
 
     annotations.map(annotation => {
       returnedChildren = (

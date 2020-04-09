@@ -2,7 +2,8 @@ import React, {useState, useRef} from 'react'
 import {PortableTextEditor} from '../../lib'
 import {PatchEvent} from '../../lib/patch/PatchEvent'
 import {PortableTextBlock} from '../../lib/types/portableText'
-import {EditorSelection} from '../../lib/types/editor'
+import {EditorSelection, EditorChange} from '../../lib/types/editor'
+import {Patch} from '../../lib/types/patch'
 import {ValueContainer, EditorContainer} from '../components/containers'
 import {applyAll} from '../../src/patch/applyPatch'
 import {keyGenerator} from '../keyGenerator'
@@ -17,22 +18,79 @@ const HOTKEYS = {
   }
 }
 
+const intialValue = [
+  {
+    "_type": "block",
+    "_key": "1586367983014-14",
+    "style": "normal",
+    "markDefs": [],
+    "children": [
+      {
+        "_type": "span",
+        "_key": "1586367983014-15",
+        "text": "1234",
+        "marks": []
+      }
+    ]
+  }
+]
+
 /**
  * A basic standalone editor with hotkeys and value inspection
  */
 const Standalone = () => {
   const [patches, setPatches] = useState([])
-  const [value, setValue] = useState()
+  const [value, setValue] = useState(intialValue)
   const [selection, setSelection] = useState(null)
   const editor: React.Ref<PortableTextEditor> = useRef()
-  const handleChange = (event: PatchEvent, editorValue: PortableTextBlock[]) => {
-    setPatches(event.patches)
-    const appliedValue = applyAll(value, event.patches)
-    setValue(appliedValue)
+  const handleChange = (change: EditorChange): void => {
+    switch (change.type) {
+      case 'patch':
+        const appliedValue = applyAll(value, [change.patch])
+        setValue(appliedValue)
+        setPatches(patches.concat([change.patch]))
+        break
+      case 'selection':
+        setSelection(change.selection)
+        break
+      case 'undo':
+        // TODO:
+        // const undoPatches: Patch[] = change.patches.map((undoPatch: Patch) => {
+        //   let patch: Patch | false = false
+        //   this.mutations
+        //     .filter(mut => mut.timestamp > change.timestamp)
+        //     .forEach((mutation: PatchWithOrigin) => {
+        //       patch = transformOperation(mutation, {
+        //         ...undoPatch,
+        //         origin: 'local',
+        //         timestamp: change.timestamp
+        //       })
+        //     })
+        //   return patch || undoPatch
+        // })
+        if (change.selection) {
+          setSelection(change.selection)
+        }
+        const undoedValue = applyAll(value || [], change.patches)
+        setValue(undoedValue)
+        setPatches(patches.concat(change.patches))
+        break
+      case 'mutation':
+        setPatches(change.patches)
+        break
+      case 'blur':
+      case 'mutation':
+      case 'focus':
+      case 'loading':
+      case 'invalidValue':
+      case 'value':
+      case 'unset':
+        break
+      default:
+        throw new Error(`Unhandled editor change ${JSON.stringify(change)}`)
+    }
   }
-  const handleSelectionChange = (selection: EditorSelection) => {
-    setSelection(selection)
-  }
+
   const setValueFromProps = () => {
     const ed = editor && editor.current
     const val = createHelloFromPropsValue()
@@ -69,12 +127,12 @@ const Standalone = () => {
           type={portableTextType}
           onChange={handleChange}
           selection={selection}
-          onSelectionChange={handleSelectionChange}
           hotkeys={HOTKEYS}
           value={value}
           keyGenerator={keyGenerator}
           maxBlocks={-1}
           spellCheck
+          throttle={false}
           readOnly={false}
         />
       </EditorContainer>

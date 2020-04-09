@@ -36,6 +36,7 @@ export function createWithInsertData(
         const pText = fromSlateValue(parsed, portableTextFeatures.types.block.name)
         const validation = validateValue(pText, portableTextFeatures, keyGenerator)
         if (validation.valid) {
+          console.log('foo', editor.selection)
           Transforms.insertFragment(editor, parsed)
           editor.onChange()
           change$.next({type: 'loading', isLoading: false})

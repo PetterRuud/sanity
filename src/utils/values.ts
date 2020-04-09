@@ -1,4 +1,3 @@
-import {isObject} from 'lodash'
 import {Node} from 'slate'
 import {PortableTextBlock} from '../types/portableText'
 
@@ -6,23 +5,22 @@ type Partial<T> = {
   [P in keyof T]?: T[P]
 }
 
-export function toSlateValue(value: PortableTextBlock[] | undefined | Node, textBlockType: string) {
+export function toSlateValue(
+  value: PortableTextBlock[] | undefined,
+  textBlockType: string
+): Node[] {
   if (value && Array.isArray(value)) {
     return value
-      .map(blk => {
-        if (!isObject(blk)) {
-          return null
-        }
+      .map((blk: PortableTextBlock) => {
+        const {_type, _key, ...rest} = blk
         const isPortableText = blk && blk._type === textBlockType
         if (isPortableText) {
-          return blk
+          return {_type, _key, children: blk.children, ...rest}
         }
-        const {_type, _key, ...rest} = blk
         return {_type, _key, children: [{text: ''}], value: rest}
       })
-      .filter(Boolean)
   }
-  return value
+  return []
 }
 
 export function fromSlateValue(

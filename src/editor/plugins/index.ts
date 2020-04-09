@@ -6,4 +6,5 @@ export {createWithMaxBlocks} from './createWithMaxBlocks'
 export {createWithPortableTextLists} from './createWithPortableTextLists'
 export {createWithHotkeys} from './createWithHotKeys'
 export {createWithInsertData} from './createWithInsertData'
+export {createWithUndoRedo} from './createWithUndoRedo'
 

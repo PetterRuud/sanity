@@ -1,5 +1,5 @@
 import React, {ReactElement} from 'react'
-import {Element} from 'slate'
+import {Element as SlateElement} from 'slate'
 import {useSlate, useFocused, useSelected} from 'slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import Block from './nodes/TextBlock'
@@ -9,7 +9,7 @@ import {BlockObject} from './nodes/BlockObject'
 type ElementProps = {
   attributes: string
   children: ReactElement
-  element: Element
+  element: SlateElement
   block: PortableTextBlock
   child?: PortableTextChild
   portableTextFeatures: PortableTextFeatures
@@ -23,7 +23,7 @@ type ElementProps = {
   ) => JSX.Element
 }
 
-export const SlateElement = (props: ElementProps) => {
+export const Element = (props: ElementProps) => {
   const editor = useSlate()
   const selected = useSelected()
   const focused = useFocused()

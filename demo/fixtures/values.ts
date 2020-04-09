@@ -1,4 +1,4 @@
-import {PortableTextBlock, Block} from '../../src/types/portableText'
+import {PortableTextBlock} from '../../src/types/portableText'
 import {keyGenerator} from '../keyGenerator'
 
 export const createHelloFromPropsValue = (): PortableTextBlock[] => {

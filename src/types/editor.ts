@@ -51,6 +51,11 @@ export type MutationChange = {
   patches: Patch[]
 }
 
+export type PatchChange = {
+  type: 'patch'
+  patch: Patch
+}
+
 export type ValueChange = {
   type: 'value'
   value: PortableTextBlock[] | undefined
@@ -70,6 +75,11 @@ export type FocusChange = {
   type: 'focus'
 }
 
+export type UnsetChange = {
+  type: 'unset',
+  placeholderValue: PortableTextBlock[]
+}
+
 export type BlurChange = {
   type: 'blur'
 }
@@ -86,6 +96,20 @@ export type InvalidValue = {
   resolution: InvalidValueResolution
 }
 
+export type UndoChange = {
+  type: 'undo'
+  patches: Patch[]
+  timestamp: Date
+  selection: EditorSelection | null
+}
+
+export type RedoChange = {
+  type: 'redo'
+  patches: Patch[]
+  timestamp: Date
+  selection: EditorSelection | null
+}
+
 export type EditorChange =
   | MutationChange
   | ValueChange
@@ -95,6 +119,10 @@ export type EditorChange =
   | BlurChange
   | LoadingChange
   | InvalidValue
+  | PatchChange
+  | UndoChange
+  | RedoChange
+  | UnsetChange
 
 export type EditorChanges = Subject<EditorChange>
 

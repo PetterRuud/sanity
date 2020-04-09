@@ -26,6 +26,15 @@ export function compactPatches(patches: Patch[]) {
     ) {
       return false
     }
+    // if (
+    //   nextPatch &&
+    //   nextPatch.type === 'diffMatchPatch' &&
+    //   patch.type === 'diffMatchPatch' &&
+    //   isEqual(patch.path, nextPatch.path) &&
+    //   isEqual(patch.value, nextPatch.value)
+    // ) {
+    //   return false
+    // }
     return true
   })
   if (finalPatches.length !== patches.length) {

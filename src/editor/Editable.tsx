@@ -1,14 +1,14 @@
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
-import {Editable, Slate, withReact, ReactEditor} from 'slate-react'
+import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {EditorSelection, EditorChanges, OnPasteFn, OnCopyFn} from '../types/editor'
 import {toSlateValue, fromSlateValue} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
-import {createWithInsertData} from './slate-plugins'
+import {createWithInsertData} from './plugins'
 
-import {SlateLeaf} from './SlateLeaf'
-import {SlateElement} from './SlateElement'
+import {Leaf} from './Leaf'
+import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
 import {toPortableTextRange, normalizeSelection} from '../utils/selection'
 
@@ -33,13 +33,14 @@ type Props = {
   ) => JSX.Element
   searchAndReplace?: boolean
   selection: EditorSelection
+  singleUserUndoRedo?: boolean
   spellCheck?: boolean
   value?: PortableTextBlock[] | undefined
 }
 
 const SELECT_TOP_DOCUMENT = {anchor: {path: [0, 0], offset: 0}, focus: {path: [0, 0], offset: 0}}
 
-export const SlateEditor = (props: Props) => {
+export const Editable = (props: Props) => {
   const {
     change$,
     editorRef,
@@ -50,25 +51,24 @@ export const SlateEditor = (props: Props) => {
     portableTextFeatures,
     readOnly,
     searchAndReplace,
+    singleUserUndoRedo,
     spellCheck
   } = props
 
-  const createPlaceHolderBlock = () => [
-    {
-      _type: portableTextFeatures.types.block.name,
-      _key: props.keyGenerator(),
-      style: 'normal',
-      markDefs: [],
-      children: [
-        {
-          _type: 'span',
-          _key: props.keyGenerator(),
-          text: '',
-          marks: []
-        }
-      ]
-    }
-  ]
+  const createPlaceHolderBlock = () => ({
+    _type: portableTextFeatures.types.block.name,
+    _key: props.keyGenerator(),
+    style: 'normal',
+    markDefs: [],
+    children: [
+      {
+        _type: 'span',
+        _key: props.keyGenerator(),
+        text: '',
+        marks: []
+      }
+    ]
+  })
 
   // Init Editor
   const editor = useMemo(
@@ -85,7 +85,9 @@ export const SlateEditor = (props: Props) => {
             change$,
             maxBlocks,
             hotkeys,
-            searchAndReplace
+            searchAndReplace,
+            singleUserUndoRedo,
+            createPlaceHolderBlock
           })
         )
       ),
@@ -95,7 +97,7 @@ export const SlateEditor = (props: Props) => {
   // Track editor value
   const [stateValue, setStateValue] = useState(
     toSlateValue(
-      getValue(props.value, createPlaceHolderBlock()),
+      getValue(props.value, [createPlaceHolderBlock()]),
       portableTextFeatures.types.block.name
     )
   )
@@ -111,7 +113,7 @@ export const SlateEditor = (props: Props) => {
       if (block) {
         const child = block.children && block.children.find(child => child._key === eProps._key)
         return (
-          <SlateElement
+          <Element
             {...eProps}
             block={block}
             child={child}
@@ -135,12 +137,12 @@ export const SlateEditor = (props: Props) => {
         block = fromSlateValue([blockNode], portableTextFeatures.types.block.name)[0]
       }
       return (
-        <SlateLeaf
+        <Leaf
           {...lProps}
           block={block}
           portableTextFeatures={portableTextFeatures}
           renderChild={props.renderChild}
-        ></SlateLeaf>
+        ></Leaf>
       )
     },
     [props.value, props.selection]
@@ -223,9 +225,9 @@ export const SlateEditor = (props: Props) => {
       onChange={handleChange}
       editor={editor}
       selection={selection}
-      value={getValue(stateValue, createPlaceHolderBlock())}
+      value={getValue(stateValue, [createPlaceHolderBlock()])}
     >
-      <Editable
+      <SlateEditable
         // decorate={decorate}
         onCopy={handleCopy}
         onFocus={() => change$.next({type: 'focus'})}
