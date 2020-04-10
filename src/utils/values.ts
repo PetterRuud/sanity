@@ -39,3 +39,19 @@ export function fromSlateValue(
   }
   return value
 }
+
+export function isEqualToEmptyEditor(children, portableTextFeatures) {
+  return (
+    children === undefined ||
+    children && Array.isArray(children) && children.length === 0 ||
+    children &&
+    Array.isArray(children) &&
+    (children.length === 1 &&
+      children[0]._type === portableTextFeatures.types.block.name &&
+      children[0].children &&
+      children[0].children.length === 1 &&
+      children[0].children[0]._type === 'span' &&
+      children[0].children[0].text === '')
+  )
+
+}

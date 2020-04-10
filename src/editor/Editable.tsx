@@ -1,3 +1,4 @@
+import {Text, Range} from 'slate'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
@@ -12,9 +13,15 @@ import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
 import {toPortableTextRange, normalizeSelection} from '../utils/selection'
 
+export interface EditableAPI {
+  focus: () => void
+  undo: () => void
+  redo: () => void
+}
+
 type Props = {
   change$: EditorChanges
-  editorRef: any
+  editable: (args0) => EditableAPI
   hotkeys?: {marks: {}}
   keyGenerator: () => string
   maxBlocks?: number
@@ -43,15 +50,13 @@ const SELECT_TOP_DOCUMENT = {anchor: {path: [0, 0], offset: 0}, focus: {path: [0
 export const Editable = (props: Props) => {
   const {
     change$,
-    editorRef,
+    editable,
     hotkeys,
     keyGenerator,
     maxBlocks,
     placeholderText,
     portableTextFeatures,
     readOnly,
-    searchAndReplace,
-    singleUserUndoRedo,
     spellCheck
   } = props
 
@@ -84,10 +89,7 @@ export const Editable = (props: Props) => {
             keyGenerator,
             change$,
             maxBlocks,
-            hotkeys,
-            searchAndReplace,
-            singleUserUndoRedo,
-            createPlaceHolderBlock
+            hotkeys
           })
         )
       ),
@@ -105,7 +107,12 @@ export const Editable = (props: Props) => {
   // Track selection
   const [selection, setSelection] = useState(editor.selection)
 
-  editorRef({editor, focus: () => ReactEditor.focus(editor)})
+  editable({
+    editor,
+    focus: () => ReactEditor.focus(editor),
+    undo: () => editor.undo(),
+    redo: () => editor.redo
+  })
 
   const renderElement = useCallback(
     eProps => {
@@ -156,32 +163,32 @@ export const Editable = (props: Props) => {
 
   // Test Slate decorations. Highlight the word 'banan'
   // TODO: remove this
-  // const banan = 'banan'
-  // const decorate = useCallback(
-  //   ([node, path]) => {
-  //     const ranges: Range[] = []
+  const banan = 'banan'
+  const decorate = useCallback(
+    ([node, path]) => {
+      const ranges: Range[] = []
 
-  //     if (banan && Text.isText(node)) {
-  //       const {text} = node
-  //       const parts = text.split(banan)
-  //       let offset = 0
+      if (banan && Text.isText(node)) {
+        const {text} = node
+        const parts = text.split(banan)
+        let offset = 0
 
-  //       parts.forEach((part, i) => {
-  //         if (i !== 0) {
-  //           ranges.push({
-  //             anchor: {path, offset: offset - banan.length},
-  //             focus: {path, offset},
-  //             highlight: true
-  //           })
-  //         }
+        parts.forEach((part, i) => {
+          if (i !== 0) {
+            ranges.push({
+              anchor: {path, offset: offset - banan.length},
+              focus: {path, offset},
+              highlight: true
+            })
+          }
 
-  //         offset = offset + part.length + banan.length
-  //       })
-  //     }
-  //     return ranges
-  //   },
-  //   [banan]
-  // )
+          offset = offset + part.length + banan.length
+        })
+      }
+      return ranges
+    },
+    [banan]
+  )
 
   // Restore value from props
   useEffect(() => {
@@ -228,7 +235,7 @@ export const Editable = (props: Props) => {
       value={getValue(stateValue, [createPlaceHolderBlock()])}
     >
       <SlateEditable
-        // decorate={decorate}
+        decorate={decorate}
         onCopy={handleCopy}
         onFocus={() => change$.next({type: 'focus'})}
         onBlur={() => change$.next({type: 'blur'})}

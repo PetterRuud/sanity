@@ -1,6 +1,6 @@
 import React from 'react'
 import {randomKey} from '../utils/randomKey'
-import {Editable} from './Editable'
+import {Editable, EditableAPI} from './Editable'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
@@ -11,7 +11,6 @@ import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
 import {compactPatches} from '../utils/patches'
 import {validateValue} from '../utils/validateValue'
-import {setIfMissing} from '../patch/PatchEvent'
 
 export const keyGenerator = () => randomKey(12)
 
@@ -34,7 +33,6 @@ export type Props = {
   ) => JSX.Element
   searchAndReplace?: boolean
   selection: EditorSelection
-  singleUserUndoRedo?: boolean
   spellCheck?: boolean
   type: Type
   value: PortableTextBlock[] | undefined
@@ -47,12 +45,11 @@ type State = {
 export class PortableTextEditor extends React.Component<Props, State> {
   type: Type
   private portableTextFeatures: PortableTextFeatures
-  private editor: any
+  private editable?: EditableAPI
   private change$: EditorChanges = new Subject()
   private changeSubscription: Subscription
   private isThrottling = false
   private pendingPatches: Patch[] = []
-  private placeholderValue: PortableTextBlock[] | undefined
 
   constructor(props: Props) {
     super(props)
@@ -120,41 +117,28 @@ export class PortableTextEditor extends React.Component<Props, State> {
           }
         }
         break
-      case 'unset':
-        this.placeholderValue = next.placeholderValue
-        break
       case 'undo':
       case 'redo':
         // Make sure to flush any pending mutations before emitting the undo
         flush()
-        // If the value was unset and we are trying to undo, restore the content
-        // TODO: this could propbably be better
-        if (
-          this.placeholderValue &&
-          ((this.props.value && this.props.value.length === 0) || !this.props.value)
-        ) {
-          next.patches = [setIfMissing(this.placeholderValue, []), ...next.patches]
-        }
         if (next.patches.length > 0) {
           onChange(next)
         }
         // Emit the new selection
         onChange({type: 'selection', selection: next.selection})
         break
+      case 'unset':
       default:
         onChange(next)
     }
   }
   focus() {
-    this.editor.focus()
+    this.editable && this.editable.focus()
   }
   getPortableTextFeatures() {
     return this.portableTextFeatures
   }
   render() {
-    if (this.state.invalidValue) {
-      return null
-    }
     const {
       hotkeys,
       maxBlocks,
@@ -164,27 +148,25 @@ export class PortableTextEditor extends React.Component<Props, State> {
       readOnly,
       searchAndReplace,
       selection,
-      singleUserUndoRedo,
       spellCheck,
       value
     } = this.props
     return (
       <Editable
         change$={this.change$}
-        editorRef={slateEditor => (this.editor = slateEditor)}
+        editable={editable => (this.editable = editable)}
         hotkeys={hotkeys}
         keyGenerator={this.props.keyGenerator || keyGenerator}
         maxBlocks={maxBlocks ? Number(maxBlocks) || undefined : undefined}
         onPaste={onPaste}
         onCopy={onCopy}
-        placeholderText={placeholderText}
+        placeholderText={value === undefined ? placeholderText : undefined}
         portableTextFeatures={this.portableTextFeatures}
         readOnly={readOnly}
         renderBlock={this.props.renderBlock}
         renderChild={this.props.renderChild}
         searchAndReplace={searchAndReplace}
         selection={selection}
-        singleUserUndoRedo={singleUserUndoRedo}
         spellCheck={spellCheck}
         value={value}
       />

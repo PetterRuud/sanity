@@ -77,7 +77,7 @@ export type FocusChange = {
 
 export type UnsetChange = {
   type: 'unset',
-  placeholderValue: PortableTextBlock[]
+  previousValue: PortableTextBlock[]
 }
 
 export type BlurChange = {

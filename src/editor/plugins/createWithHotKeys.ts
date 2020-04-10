@@ -16,11 +16,8 @@ const DEFAULT_HOTKEYS = {
  * This plugin takes care of all hotkeys in the editor
  *
  */
-export function createWithHotkeys(hotkeys, searchAndReplace) {
-  const reservedHotkeys = ['enter', 'tab', 'shift']
-  if (searchAndReplace) {
-    reservedHotkeys.push('mod+f')
-  }
+export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
+  const reservedHotkeys = ['enter', 'tab', 'shift', 'delete']
   const activeHotkeys = hotkeys || DEFAULT_HOTKEYS
   return function withHotKeys(editor: Editor) {
     let backspaceCount = 0
@@ -61,7 +58,6 @@ export function createWithHotkeys(hotkeys, searchAndReplace) {
       const isShiftEnter = isHotkey('shift+enter', event.nativeEvent)
       const isShiftTab = isHotkey('shift+tab', event.nativeEvent)
       const isBackspace = isHotkey('backspace', event.nativeEvent)
-      const isSearch = isHotkey('mod+f', event.nativeEvent)
 
       // Disallow deleting void blocks by backspace from another line
       if (isBackspace) {
@@ -98,11 +94,7 @@ export function createWithHotkeys(hotkeys, searchAndReplace) {
         editor.insertText('\n')
       }
 
-      // Deal with search/replace
-      if (searchAndReplace && isSearch) {
-        // TODO: implement search and replace
-        event.preventDefault()
-      }
+      // TODO: Deal with search/replace? Plugin perhaps?
 
       // Deal with undo/redo
       if (isHotkey('mod+z', event.nativeEvent)) {

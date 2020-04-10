@@ -5,8 +5,10 @@ import {EditorChange} from 'src/types/editor'
 import {toPortableTextRange} from '../../utils/selection'
 import {createWithObjectKeys} from '.'
 import {PortableTextFeatures} from '../../types/portableText'
-// import {setIfMissing} from '../../patch/PatchEvent'
-
+import {setIfMissing} from '../../patch/PatchEvent'
+import {isEqualToEmptyEditor, fromSlateValue} from '../../utils/values'
+import {isEqual} from 'lodash'
+import {compactPatches} from '../../utils/patches'
 export interface History {
   redos: {operations: Operation[]; value: Node[]}[]
   undos: {operations: Operation[]; value: Node[]}[]
@@ -38,12 +40,10 @@ export function createWithUndoRedo(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {
-  const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
-
   // A bogus editor that we can use to produce undo/redo patches without changing the user editor
-  const dummyEditor = withObjectKeys(createEditor())
+  const dummyEditor = createWithObjectKeys(portableTextFeatures, keyGenerator)(createEditor())
 
-  function toInversePatches(editor, operations, isRedo) {
+  function toPatches(editor, operations, isRedo) {
     let inversePatches: Patch[] = []
     let inverseOps
     if (isRedo) {
@@ -51,8 +51,11 @@ export function createWithUndoRedo(
     } else {
       inverseOps = operations.map(Operation.inverse).reverse()
     }
+
+    // Reset dummyeditor
     dummyEditor.operations = []
     dummyEditor.children = editor.children
+    dummyEditor.selection = null
     Editor.withoutNormalizing(dummyEditor, () => {
       if (editor.selection) {
         Transforms.select(dummyEditor, editor.selection)
@@ -171,7 +174,6 @@ export function createWithUndoRedo(
           history.redos = []
         }
       }
-
       apply(op)
     }
 
@@ -181,7 +183,12 @@ export function createWithUndoRedo(
       if (undos.length > 0) {
         const lastBatch = undos[undos.length - 1]
         if (lastBatch.operations.length > 0) {
-          const inversePatches = toInversePatches(editor, lastBatch.operations, false)
+          const inversePatches = toPatches(editor, lastBatch.operations, false)
+          // Add special setIfMissing patch for deletion of value (it's unset by withPatches plugin)
+          if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+            const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
+            inversePatches.unshift(setIfMissing(prevValue, []))
+          }
           change$.next({
             type: 'undo',
             patches: inversePatches,
@@ -200,7 +207,17 @@ export function createWithUndoRedo(
       if (redos.length > 0) {
         const lastBatch = redos[redos.length - 1]
         if (lastBatch.operations.length > 0) {
-          const patches = toInversePatches(editor, lastBatch.operations, true)
+          let patches = toPatches(editor, lastBatch.operations, true)
+          // If adjecent diffMatchPatches, use the last one.
+          if (
+            patches.every(
+              patch =>
+                (patch.type === 'diffMatchPatch' && isEqual(patch.path, patches[0].path)) ||
+                (patch.type === 'set' && isEqual(patch.path, patches[0].path))
+            )
+          ) {
+            patches = patches.slice(-1)
+          }
           change$.next({
             type: 'redo',
             patches,
@@ -235,7 +252,7 @@ const shouldMerge = (op: Operation, prev: Operation | undefined): boolean => {
     return true
   }
 
-    // Text deletion
+  // Text deletion
   if (
     prev &&
     op.type === 'remove_text' &&
