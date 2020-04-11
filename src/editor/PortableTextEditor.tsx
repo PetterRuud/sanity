@@ -64,6 +64,9 @@ export class PortableTextEditor extends React.Component<Props, State> {
     // Get the block types feature set
     this.portableTextFeatures = getPortableTextFeatures(this.type)
 
+    // Subscribe to (distinct) changes
+    this.changeSubscription = this.change$.pipe(distinctUntilChanged()).subscribe(this.onChange)
+
     // Validate the Portable Text value
     let invalidValue
     const validation = validateValue(
@@ -76,8 +79,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
       this.change$.next({type: 'loading', isLoading: false})
       this.change$.next({type: 'invalidValue', resolution: validation.resolution})
     }
-    // Subscribe to (distinct) changes
-    this.changeSubscription = this.change$.pipe(distinctUntilChanged()).subscribe(this.onChange)
     this.state = {invalidValue}
   }
 
@@ -124,8 +125,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
         if (next.patches.length > 0) {
           onChange(next)
         }
-        // Emit the new selection
-        onChange({type: 'selection', selection: next.selection})
         break
       case 'unset':
       default:
@@ -151,6 +150,9 @@ export class PortableTextEditor extends React.Component<Props, State> {
       spellCheck,
       value
     } = this.props
+    if (this.state.invalidValue) {
+      return null
+    }
     return (
       <Editable
         change$={this.change$}

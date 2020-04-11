@@ -93,6 +93,7 @@ export function validateValue(
                 description: `Child with _key '${child._key}' in block with key '${blk._key}' is missing required key '_type'.`,
                 action: 'Remove the child'
               }
+              return true
             }
             if (
               ![

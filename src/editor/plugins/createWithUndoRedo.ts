@@ -1,14 +1,13 @@
 import {Subject} from 'rxjs'
 import {Editor, Operation, Path, createEditor, Transforms} from 'slate'
 import {Patch} from '../../types/patch'
-import {EditorChange} from 'src/types/editor'
+import {EditorChange, EditorSelection} from 'src/types/editor'
 import {toPortableTextRange} from '../../utils/selection'
 import {createWithObjectKeys} from '.'
 import {PortableTextFeatures} from '../../types/portableText'
 import {setIfMissing} from '../../patch/PatchEvent'
 import {isEqualToEmptyEditor, fromSlateValue} from '../../utils/values'
-import {isEqual} from 'lodash'
-import {compactPatches} from '../../utils/patches'
+
 export interface History {
   redos: {operations: Operation[]; value: Node[]}[]
   undos: {operations: Operation[]; value: Node[]}[]
@@ -40,30 +39,28 @@ export function createWithUndoRedo(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {
-  // A bogus editor that we can use to produce undo/redo patches without changing the user editor
+  // A temporary editor to produce undo/redo patches without changing the user editor
   const dummyEditor = createWithObjectKeys(portableTextFeatures, keyGenerator)(createEditor())
 
   function toPatches(editor, operations, isRedo) {
-    let inversePatches: Patch[] = []
-    let inverseOps
-    if (isRedo) {
-      inverseOps = operations
-    } else {
-      inverseOps = operations.map(Operation.inverse).reverse()
-    }
+    let patches: Patch[] = []
+    const undoRedoOps = isRedo ? operations : operations.map(Operation.inverse).reverse()
 
     // Reset dummyeditor
     dummyEditor.operations = []
     dummyEditor.children = editor.children
     dummyEditor.selection = null
+    let redoSelection: EditorSelection = null
+
     Editor.withoutNormalizing(dummyEditor, () => {
       if (editor.selection) {
         Transforms.select(dummyEditor, editor.selection)
       }
-      for (const op of inverseOps) {
+      for (const op of undoRedoOps) {
+        const prevValue = dummyEditor.children
         // If the final operation is deselecting the editor, skip it.
         if (
-          op === inverseOps[inverseOps.length - 1] &&
+          op === undoRedoOps[undoRedoOps.length - 1] &&
           op.type === 'set_selection' &&
           op.newProperties == null
         ) {
@@ -71,45 +68,28 @@ export function createWithUndoRedo(
         } else {
           dummyEditor.apply(op)
         }
+        redoSelection = toPortableTextRange(dummyEditor)
         switch (op.type) {
           case 'insert_text':
-            inversePatches = [
-              ...inversePatches,
-              ...insertTextPatch(dummyEditor, op, editor.children)
-            ]
+            patches = [...patches, ...insertTextPatch(dummyEditor, op, prevValue)]
             break
           case 'remove_text':
-            inversePatches = [
-              ...inversePatches,
-              ...removeTextPatch(dummyEditor, op, editor.children)
-            ]
+            patches = [...patches, ...removeTextPatch(dummyEditor, op, prevValue)]
             break
           case 'remove_node':
-            inversePatches = [
-              ...inversePatches,
-              ...removeNodePatch(dummyEditor, op, editor.children)
-            ]
+            patches = [...patches, ...removeNodePatch(dummyEditor, op, prevValue)]
             break
           case 'split_node':
-            inversePatches = [
-              ...inversePatches,
-              ...splitNodePatch(dummyEditor, op, editor.children)
-            ]
+            patches = [...patches, ...splitNodePatch(dummyEditor, op, prevValue)]
             break
           case 'insert_node':
-            inversePatches = [
-              ...inversePatches,
-              ...insertNodePatch(dummyEditor, op, editor.children)
-            ]
+            patches = [...patches, ...insertNodePatch(dummyEditor, op, prevValue)]
             break
           case 'set_node':
-            inversePatches = [...inversePatches, ...setNodePatch(dummyEditor, op, editor.children)]
+            patches = [...patches, ...setNodePatch(dummyEditor, op, prevValue)]
             break
           case 'merge_node':
-            inversePatches = [
-              ...inversePatches,
-              ...mergeNodePatch(dummyEditor, op, editor.children)
-            ]
+            patches = [...patches, ...mergeNodePatch(dummyEditor, op, prevValue)]
             break
           case 'move_node':
             // Doesn't seem to be implemented in Slate at the moment (april 2020)
@@ -118,15 +98,16 @@ export function createWithUndoRedo(
             break
           case 'set_selection':
           default:
-            inversePatches = []
+          // Do nothing
         }
       }
     })
-    return inversePatches
+    return {patches, selection: isRedo? redoSelection : toPortableTextRange(dummyEditor)}
   }
   return (editor: Editor) => {
     editor.history = {undos: [], redos: []}
     const {apply} = editor
+    // Apply function for merging and saving local history inspired from 'slate-history' by Ian Storm Taylor
     editor.apply = (op: Operation) => {
       const {operations, history} = editor
       const {undos} = history
@@ -161,8 +142,7 @@ export function createWithUndoRedo(
           const operations = [op]
           undos.push({
             operations,
-            timestamp: new Date(),
-            selection: toPortableTextRange(editor)
+            timestamp: new Date()
           })
         }
 
@@ -175,6 +155,9 @@ export function createWithUndoRedo(
         }
       }
       apply(op)
+      if (lastBatch) {
+        lastBatch.redoSelection = toPortableTextRange(editor)
+      }
     }
 
     editor.undo = () => {
@@ -183,18 +166,18 @@ export function createWithUndoRedo(
       if (undos.length > 0) {
         const lastBatch = undos[undos.length - 1]
         if (lastBatch.operations.length > 0) {
-          const inversePatches = toPatches(editor, lastBatch.operations, false)
-          // Add special setIfMissing patch for deletion of value (it's unset by withPatches plugin)
+          const {patches, selection} = toPatches(editor, lastBatch.operations, false)
+          // setIfMissing patch when the value is unset by withPatches plugin
           if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
             const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
-            inversePatches.unshift(setIfMissing(prevValue, []))
+            patches.unshift(setIfMissing(prevValue, []))
           }
           change$.next({
             type: 'undo',
-            patches: inversePatches,
-            selection: lastBatch.selection,
+            patches: patches,
             timestamp: lastBatch.timestamp
           })
+          change$.next({type: 'selection',  selection})
         }
         editor.history.redos.push(lastBatch)
         editor.history.undos.pop()
@@ -207,23 +190,13 @@ export function createWithUndoRedo(
       if (redos.length > 0) {
         const lastBatch = redos[redos.length - 1]
         if (lastBatch.operations.length > 0) {
-          let patches = toPatches(editor, lastBatch.operations, true)
-          // If adjecent diffMatchPatches, use the last one.
-          if (
-            patches.every(
-              patch =>
-                (patch.type === 'diffMatchPatch' && isEqual(patch.path, patches[0].path)) ||
-                (patch.type === 'set' && isEqual(patch.path, patches[0].path))
-            )
-          ) {
-            patches = patches.slice(-1)
-          }
+          const {patches, selection} = toPatches(editor, lastBatch.operations, true)
           change$.next({
             type: 'redo',
             patches,
-            selection: lastBatch.selection,
             timestamp: lastBatch.timestamp
           })
+          change$.next({type: 'selection', selection})
         }
         editor.history.undos.push(lastBatch)
         editor.history.redos.pop()
@@ -234,6 +207,8 @@ export function createWithUndoRedo(
     return editor
   }
 }
+
+// Helper functions for editor.apply above
 
 const shouldMerge = (op: Operation, prev: Operation | undefined): boolean => {
   if (op.type === 'set_selection') {

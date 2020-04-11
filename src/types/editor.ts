@@ -100,14 +100,12 @@ export type UndoChange = {
   type: 'undo'
   patches: Patch[]
   timestamp: Date
-  selection: EditorSelection | null
 }
 
 export type RedoChange = {
   type: 'redo'
   patches: Patch[]
   timestamp: Date
-  selection: EditorSelection | null
 }
 
 export type EditorChange =
