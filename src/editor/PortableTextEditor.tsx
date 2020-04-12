@@ -120,11 +120,8 @@ export class PortableTextEditor extends React.Component<Props, State> {
         break
       case 'undo':
       case 'redo':
-        // Make sure to flush any pending mutations before emitting the undo
         flush()
-        if (next.patches.length > 0) {
-          onChange(next)
-        }
+        onChange(next)
         break
       case 'unset':
       default:

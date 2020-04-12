@@ -5,7 +5,7 @@ import {EditorChange, EditorSelection} from 'src/types/editor'
 import {toPortableTextRange} from '../../utils/selection'
 import {createWithObjectKeys} from '.'
 import {PortableTextFeatures} from '../../types/portableText'
-import {setIfMissing} from '../../patch/PatchEvent'
+import {setIfMissing, unset} from '../../patch/PatchEvent'
 import {isEqualToEmptyEditor, fromSlateValue} from '../../utils/values'
 
 export interface History {
@@ -42,7 +42,7 @@ export function createWithUndoRedo(
   // A temporary editor to produce undo/redo patches without changing the user editor
   const dummyEditor = createWithObjectKeys(portableTextFeatures, keyGenerator)(createEditor())
 
-  function toPatches(editor, operations, isRedo) {
+  function toPatches(editor, operations, isRedo): {patches: Patch[], selection: EditorSelection} {
     let patches: Patch[] = []
     const undoRedoOps = isRedo ? operations : operations.map(Operation.inverse).reverse()
 
@@ -111,7 +111,7 @@ export function createWithUndoRedo(
     editor.apply = (op: Operation) => {
       const {operations, history} = editor
       const {undos} = history
-      const lastBatch = undos[undos.length - 1]
+      let lastBatch = undos[undos.length - 1]
       const lastOp =
         lastBatch && lastBatch.operations && lastBatch.operations[lastBatch.operations.length - 1]
       const overwrite = shouldOverwrite(op, lastOp)
@@ -142,7 +142,9 @@ export function createWithUndoRedo(
           const operations = [op]
           undos.push({
             operations,
-            timestamp: new Date()
+            timestamp: new Date(),
+            patches: {undo: [], redo: []},
+            selection: {undo: [], redo: []}
           })
         }
 
@@ -154,9 +156,19 @@ export function createWithUndoRedo(
           history.redos = []
         }
       }
+      const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
       apply(op)
+      lastBatch = undos[undos.length - 1]
       if (lastBatch) {
         lastBatch.redoSelection = toPortableTextRange(editor)
+        const {patches, selection} = toPatches(editor, lastBatch.operations, false)
+        lastBatch.patches.undo = patches
+        lastBatch.selection.undo = selection
+        // setIfMissing patch when the value is unset by withPatches plugin
+        if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+          lastBatch.patches.undo = [setIfMissing(prevValue, [])]
+          lastBatch.patches.redo.unshift(unset([]))
+        }
       }
     }
 
@@ -165,19 +177,13 @@ export function createWithUndoRedo(
       const {undos} = editor.history
       if (undos.length > 0) {
         const lastBatch = undos[undos.length - 1]
-        if (lastBatch.operations.length > 0) {
-          const {patches, selection} = toPatches(editor, lastBatch.operations, false)
-          // setIfMissing patch when the value is unset by withPatches plugin
-          if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
-            const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
-            patches.unshift(setIfMissing(prevValue, []))
-          }
+        if (lastBatch.patches.undo.length > 0) {
           change$.next({
             type: 'undo',
-            patches: patches,
+            patches: lastBatch.patches.undo,
             timestamp: lastBatch.timestamp
           })
-          change$.next({type: 'selection',  selection})
+          change$.next({type: 'selection',  selection: lastBatch.selection.undo})
         }
         editor.history.redos.push(lastBatch)
         editor.history.undos.pop()
