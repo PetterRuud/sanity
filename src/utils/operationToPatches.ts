@@ -226,20 +226,24 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       const block = beforeValue[operation.path[0]]
       const targetKey = block && block._key
       if (targetKey) {
-        patches.push(unset([{_key: targetKey}]))
         patches.push(
           set(editor.children[operation.path[0] - 1], [
             {_key: editor.children[operation.path[0] - 1]._key}
           ])
         )
+        patches.push(unset([{_key: targetKey}]))
       } else {
         throw new Error('Targetkey not found!')
       }
     } else if (operation.path.length === 2) {
-      // TODO: maybe make this more atomic instead of setting the whole block
+      const block = beforeValue[operation.path[0]]
+      const mergedSpan = block.children[operation.path[1]]
+      const targetSpan = editor.children[operation.path[0]].children[operation.path[1] - 1]
+      // Set the merged span with it's new value
       patches.push(
-        set(editor.children[operation.path[0]], [{_key: editor.children[operation.path[0]]._key}])
+        set(targetSpan.text, [{_key: block._key}, 'children', {_key: targetSpan._key}, 'text'])
       )
+      patches.push(unset([{_key: block._key}, 'children', {_key: mergedSpan._key}]))
     } else {
       throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
     }

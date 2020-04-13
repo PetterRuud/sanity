@@ -1,10 +1,11 @@
-import {debounce} from 'lodash'
+import {debounce, isEqual} from 'lodash'
 import {Subject} from 'rxjs'
 import {setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation} from 'slate'
 import {Patch} from '../../types/patch'
+import {applyAll} from '../../patch/applyPatch'
 import {unset} from './../../patch/PatchEvent'
-import {fromSlateValue, isEqualToEmptyEditor} from '../../utils/values'
+import {fromSlateValue, isEqualToEmptyEditor, toSlateValue} from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange} from '../../types/editor'
 
@@ -83,36 +84,36 @@ export function createWithPatches(
         })
       }
 
-      // // TODO: Do optional (this is heavy, and should only be done when developing on the editor)
-      // const debug = true
-      // if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
-      //   const appliedValue = applyAll(
-      //     fromSlateValue(previousValue, portableTextFeatures.types.block.name),
-      //     patches
-      //   )
+      // TODO: Do optional (this is heavy, and should only be done when developing on the editor)
+      const debug = true
+      if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+        const appliedValue = applyAll(
+          fromSlateValue(previousValue, portableTextFeatures.types.block.name),
+          patches
+        )
 
-      //   if (
-      //     !isEqual(
-      //       appliedValue,
-      //       fromSlateValue(editor.children, portableTextFeatures.types.block.name)
-      //     )
-      //   ) {
-      //     console.log(
-      //       'toSlateValue',
-      //       JSON.stringify(
-      //         toSlateValue(appliedValue, portableTextFeatures.types.block.name),
-      //         null,
-      //         2
-      //       )
-      //     )
-      //     console.log('operation', JSON.stringify(operation, null, 2))
-      //     console.log('beforeValue', JSON.stringify(previousValue, null, 2))
-      //     console.log('afterValue', JSON.stringify(editor.children, null, 2))
-      //     console.log('appliedValue', JSON.stringify(appliedValue, null, 2))
-      //     console.log('patches', JSON.stringify(patches, null, 2))
-      //     debugger
-      //   }
-      // }
+        if (
+          !isEqual(
+            appliedValue,
+            fromSlateValue(editor.children, portableTextFeatures.types.block.name)
+          )
+        ) {
+          console.log(
+            'toSlateValue',
+            JSON.stringify(
+              toSlateValue(appliedValue, portableTextFeatures.types.block.name),
+              null,
+              2
+            )
+          )
+          console.log('operation', JSON.stringify(operation, null, 2))
+          console.log('beforeValue', JSON.stringify(previousValue, null, 2))
+          console.log('afterValue', JSON.stringify(editor.children, null, 2))
+          console.log('appliedValue', JSON.stringify(appliedValue, null, 2))
+          console.log('patches', JSON.stringify(patches, null, 2))
+          debugger
+        }
+      }
 
       if (patches.length > 0) {
         // Emit all patches immediately
