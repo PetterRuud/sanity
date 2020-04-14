@@ -14,8 +14,9 @@ import {validateValue} from '../utils/validateValue'
 
 export const keyGenerator = () => randomKey(12)
 
-export type Props = {
+type Props = {
   hotkeys?: {marks: {}}
+  incomingPatche$?: Subject<Patch>
   keyGenerator?: () => string
   maxBlocks?: number | string
   onChange: (change: EditorChange) => void
@@ -138,6 +139,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     const {
       hotkeys,
       maxBlocks,
+      incomingPatche$,
       onCopy,
       onPaste,
       placeholderText,
@@ -155,6 +157,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
         change$={this.change$}
         editable={editable => (this.editable = editable)}
         hotkeys={hotkeys}
+        incomingPatche$={incomingPatche$}
         keyGenerator={this.props.keyGenerator || keyGenerator}
         maxBlocks={maxBlocks ? Number(maxBlocks) || undefined : undefined}
         onPaste={onPaste}

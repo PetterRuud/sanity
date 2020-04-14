@@ -1,13 +1,16 @@
 import {Subject} from 'rxjs'
+import {isEqual} from 'lodash'
 import {Editor, Operation, Path, createEditor, Transforms} from 'slate'
 import {Patch} from '../../types/patch'
 import {EditorChange, EditorSelection} from 'src/types/editor'
 import {toPortableTextRange} from '../../utils/selection'
 import {createWithObjectKeys} from '.'
 import {PortableTextFeatures} from '../../types/portableText'
-import {setIfMissing, unset} from '../../patch/PatchEvent'
+import {setIfMissing} from '../../patch/PatchEvent'
 import {isEqualToEmptyEditor, fromSlateValue} from '../../utils/values'
+import * as DMP from 'diff-match-patch'
 
+const dmp = new DMP.diff_match_patch()
 export interface History {
   redos: {operations: Operation[]; value: Node[]}[]
   undos: {operations: Operation[]; value: Node[]}[]
@@ -37,12 +40,21 @@ export function createWithUndoRedo(
   },
   change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures,
-  keyGenerator: () => string
+  keyGenerator: () => string,
+  incomingPatche$?: Subject<Patch>
 ) {
-  // A temporary editor to produce undo/redo patches without changing the user editor
+  // A temporary editor to produce undo/redo patches on without interfering with the user editor
   const dummyEditor = createWithObjectKeys(portableTextFeatures, keyGenerator)(createEditor())
 
-  function toPatches(editor, operations, isRedo): {patches: Patch[], selection: EditorSelection} {
+  // Subscribe to incoming patches
+  const incomingPatches: {patch: Patch; time: Date}[] = []
+  if (incomingPatche$) {
+    incomingPatche$.subscribe(patch => {
+      incomingPatches.push({patch: patch, time: new Date()})
+    })
+  }
+
+  function toPatches(editor, operations, isRedo) {
     let patches: Patch[] = []
     const undoRedoOps = isRedo ? operations : operations.map(Operation.inverse).reverse()
 
@@ -102,7 +114,7 @@ export function createWithUndoRedo(
         }
       }
     })
-    return {patches, selection: isRedo? redoSelection : toPortableTextRange(dummyEditor)}
+    return {patches, selection: isRedo ? redoSelection : toPortableTextRange(dummyEditor)}
   }
   return (editor: Editor) => {
     editor.history = {undos: [], redos: []}
@@ -111,7 +123,7 @@ export function createWithUndoRedo(
     editor.apply = (op: Operation) => {
       const {operations, history} = editor
       const {undos} = history
-      let lastBatch = undos[undos.length - 1]
+      const lastBatch = undos[undos.length - 1]
       const lastOp =
         lastBatch && lastBatch.operations && lastBatch.operations[lastBatch.operations.length - 1]
       const overwrite = shouldOverwrite(op, lastOp)
@@ -142,9 +154,7 @@ export function createWithUndoRedo(
           const operations = [op]
           undos.push({
             operations,
-            timestamp: new Date(),
-            patches: {undo: [], redo: []},
-            selection: {undo: [], redo: []}
+            timestamp: new Date()
           })
         }
 
@@ -156,19 +166,9 @@ export function createWithUndoRedo(
           history.redos = []
         }
       }
-      const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
       apply(op)
-      lastBatch = undos[undos.length - 1]
       if (lastBatch) {
         lastBatch.redoSelection = toPortableTextRange(editor)
-        const {patches, selection} = toPatches(editor, lastBatch.operations, false)
-        lastBatch.patches.undo = patches
-        lastBatch.selection.undo = selection
-        // setIfMissing patch when the value is unset by withPatches plugin
-        if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
-          lastBatch.patches.undo = [setIfMissing(prevValue, [])]
-          lastBatch.patches.redo.unshift(unset([]))
-        }
       }
     }
 
@@ -177,13 +177,28 @@ export function createWithUndoRedo(
       const {undos} = editor.history
       if (undos.length > 0) {
         const lastBatch = undos[undos.length - 1]
-        if (lastBatch.patches.undo.length > 0) {
+        if (lastBatch.operations.length > 0) {
+          const otherPatches = incomingPatches.filter(item => item.time > lastBatch.timestamp)
+          let newOperations = lastBatch.operations
+          otherPatches.forEach(item => {
+            newOperations = newOperations.map(op => transformOperation(editor, item.patch, op))
+          })
+          const {patches, selection} = toPatches(editor, newOperations, false)
+          // let newSelection = selection
+          // patchesToConsider.forEach(item => {
+          //   newSelection = transformSelection(editor, item.patch, newSelection)
+          // })
+          // setIfMissing patch when the value is unset by withPatches plugin
+          if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+            const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
+            patches.unshift(setIfMissing(prevValue, []))
+          }
           change$.next({
             type: 'undo',
-            patches: lastBatch.patches.undo,
+            patches,
             timestamp: lastBatch.timestamp
           })
-          change$.next({type: 'selection',  selection: lastBatch.selection.undo})
+          change$.next({type: 'selection', selection})
         }
         editor.history.redos.push(lastBatch)
         editor.history.undos.pop()
@@ -196,7 +211,12 @@ export function createWithUndoRedo(
       if (redos.length > 0) {
         const lastBatch = redos[redos.length - 1]
         if (lastBatch.operations.length > 0) {
-          const {patches, selection} = toPatches(editor, lastBatch.operations, true)
+          const patchesToConsider = incomingPatches.filter(item => item.time > lastBatch.timestamp)
+          let newOperations = lastBatch.operations
+          patchesToConsider.forEach(item => {
+            newOperations = newOperations.map(op => transformOperation(editor, item.patch, op))
+          })
+          const {patches, selection} = toPatches(editor, newOperations, true)
           change$.next({
             type: 'redo',
             patches,
@@ -212,6 +232,93 @@ export function createWithUndoRedo(
     // Plugin return
     return editor
   }
+}
+
+// function transformSelection(editor, patch, selection) {
+//   if (selection === null) {
+//     return selection
+//   }
+//   let transformSelection = {...selection}
+//   if (transformSelection.focus && transformSelection.anchor) {
+//     let myIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+//     if (patch.position === 'after') {
+//       myIndex = myIndex + patch.items.length
+//     }
+//     console.log('selection myIndex', myIndex)
+//     if (patch.type === 'insert' && patch.path.length === 1) {
+//       if (transformSelection.focus.path[0] > myIndex) {
+//         console.log('adjusting focus')
+//         transformSelection.focus = {...transformSelection.focus}
+//         transformSelection.focus.path = [
+//           transformSelection.focus.path[0] + patch.items.length,
+//           ...transformSelection.focus.path.slice(1)
+//         ]
+//       }
+//       if (transformSelection.anchor.path[0] > myIndex) {
+//         console.log('adjusting anchor')
+//         transformSelection.anchor = {...transformSelection.anchor}
+//         transformSelection.anchor.path = [
+//           transformSelection.anchor.path[0] + patch.items.length,
+//           ...transformSelection.anchor.path.slice(1)
+//         ]
+//       }
+//     }
+//     // // If op1 removed blocks before op2's line, increase op2's line offset accordingly.
+//     // if (patch.type === 'unset' && patch.path.length === 1) {
+//     //   transformSelection = adjustBlockPath(editor, patch, operation, -1)
+//     // }
+//   }
+//   return transformSelection
+// }
+
+function transformOperation(editor: Editor, patch: Patch, operation: Operation): Operation {
+  let transformedOperation = {...operation}
+  if (patch.type === 'insert' && patch.path.length === 1) {
+    transformedOperation = adjustBlockPath(editor, patch, operation, patch.items.length)
+  }
+  if (patch.type === 'unset' && patch.path.length === 1) {
+    transformedOperation = adjustBlockPath(editor, patch, operation, -1)
+  }
+
+  if (patch.type === 'diffMatchPatch') {
+    const blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+    const block = editor.children[blockIndex]
+    if (block) {
+      const childIndex = block.children.findIndex(child =>
+        isEqual({_key: child._key}, patch.path[2])
+      )
+      if (
+        operation.path &&
+        operation.path[0] !== undefined &&
+        operation.path[0] === blockIndex &&
+        operation.path[1] === childIndex
+      ) {
+        // TODO: complete this
+        // console.log('SAME LINE EDIT', JSON.stringify(operation), JSON.stringify(patch))
+        const parsed = dmp.patch_fromText(patch.value)[0]
+        // console.log(parsed)
+        if (operation.type === 'insert_text') {
+          const distance = parsed.length2 - parsed.length1
+          transformedOperation.offset = transformedOperation.offset + distance
+        }
+        // if (operation.type === 'remove_text') {
+        //   transformedOperation.offset = transformedOperation.offset - (parsed.start1 + parsed.length1 - 1)
+        // }
+      }
+    }
+  }
+  return transformedOperation
+}
+
+function adjustBlockPath(editor, patch, operation, level): Operation {
+  const transformedOperation = {...operation}
+  const myIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+  // console.log('old operation', JSON.stringify(operation))
+  if (operation.path && operation.path[0] !== undefined && operation.path[0] >= myIndex + level) {
+    transformedOperation.path = [operation.path[0] + level, ...operation.path.slice(1)]
+  }
+  // console.log('New operation', JSON.stringify(transformedOperation))
+  return transformedOperation
 }
 
 // Helper functions for editor.apply above

@@ -3,5 +3,5 @@ export * from './types/editor'
 export * from './types/portableText'
 export * from './types/schema'
 export {compactPatches} from './utils/patches'
-
+export {Patch} from './types/patch'
 
