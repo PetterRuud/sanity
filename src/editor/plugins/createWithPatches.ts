@@ -51,7 +51,7 @@ export function createWithPatches(
           isEqual({_key: child._key}, patch.path[2])
         )
         if (
-          childIndex !== undefined &&
+          childIndex !== -1 &&
           editor.selection.focus.path[0] === blockIndex &&
           editor.selection.focus.path[1] === childIndex
         ) {
