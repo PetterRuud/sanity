@@ -95,14 +95,32 @@ export function createWithPatches(
         }
       }
 
+      // TODO: complete this
       // Unset patches
-      if (patch.type === 'unset' && patch.path.length === 1) {
-        // TODO: take care of line splitting
+      if (patch.type === 'unset' && patch.path.length === 3) {
+        const blockIndex = previousValue.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+        const block = previousValue[blockIndex]
+        const childIndex = block.children.findIndex(child =>
+          isEqual({_key: child._key}, patch.path[2])
+        )
+        if (childIndex > -1) {
+          // TODO: take care of line splitting
+          console.log(patch)
+        }
       }
 
       // Insert  patches
-      if (patch.type === 'insert' && patch.path.length === 1) {
+      if (patch.type === 'insert' && patch.path.length === 3) {
+        const blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+        const block = editor.children[blockIndex]
+        const childIndex = block.children.findIndex(child =>
+          isEqual({_key: child._key}, patch.path[2])
+        )
+        if (childIndex > -1) {
+          console.log(patch)
+        }
         // TODO: take care of line splitting
+        console.log(patch)
       }
     }
 
