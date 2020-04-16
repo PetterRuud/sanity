@@ -50,6 +50,8 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
       newPath.push('children')
       newPath.push({_key: child._key})
       newOffset = child.text && child.text.length >= point.offset ? point.offset : child.text.length
+    } else {
+      return null
     }
   }
   return {path: newPath, offset: newOffset}
