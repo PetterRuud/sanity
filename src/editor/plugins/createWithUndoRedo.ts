@@ -1,5 +1,5 @@
 import {Subject} from 'rxjs'
-import {isEqual} from 'lodash'
+import {isEqual, flatten} from 'lodash'
 import {Editor, Operation, Path, createEditor, Transforms} from 'slate'
 import {Patch} from '../../types/patch'
 import {EditorChange, EditorSelection} from 'src/types/editor'
@@ -78,7 +78,12 @@ export function createWithUndoRedo(
         ) {
           continue
         } else {
-          dummyEditor.apply(op)
+          try {
+            dummyEditor.apply(op)
+          } catch (err) {
+            console.log(err)
+            continue
+          }
         }
         redoSelection = toPortableTextRange(dummyEditor)
         switch (op.type) {
@@ -178,17 +183,14 @@ export function createWithUndoRedo(
       if (undos.length > 0) {
         const lastBatch = undos[undos.length - 1]
         if (lastBatch.operations.length > 0) {
-          const otherPatches = incomingPatches.filter(item => item.time > lastBatch.timestamp)
-          let newOperations = lastBatch.operations
+          const otherPatches = [...incomingPatches.filter(item => item.time > lastBatch.timestamp)]
+          let transformedOperations = lastBatch.operations.filter(op => op.type !== 'set_selection')
           otherPatches.forEach(item => {
-            newOperations = newOperations.map(op => transformOperation(editor, item.patch, op))
+            transformedOperations = flatten(
+              transformedOperations.map(op => transformOperation(editor, item.patch, op))
+            )
           })
-          const {patches, selection} = toPatches(editor, newOperations, false)
-          // let newSelection = selection
-          // patchesToConsider.forEach(item => {
-          //   newSelection = transformSelection(editor, item.patch, newSelection)
-          // })
-          // setIfMissing patch when the value is unset by withPatches plugin
+          const {patches, selection} = toPatches(editor, transformedOperations, false)
           if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
             const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
             patches.unshift(setIfMissing(prevValue, []))
@@ -198,7 +200,9 @@ export function createWithUndoRedo(
             patches,
             timestamp: lastBatch.timestamp
           })
-          change$.next({type: 'selection', selection})
+          if (otherPatches.length === 0) {
+            change$.next({type: 'selection', selection})
+          }
         }
         editor.history.redos.push(lastBatch)
         editor.history.undos.pop()
@@ -211,18 +215,22 @@ export function createWithUndoRedo(
       if (redos.length > 0) {
         const lastBatch = redos[redos.length - 1]
         if (lastBatch.operations.length > 0) {
-          const patchesToConsider = incomingPatches.filter(item => item.time > lastBatch.timestamp)
-          let newOperations = lastBatch.operations
-          patchesToConsider.forEach(item => {
-            newOperations = newOperations.map(op => transformOperation(editor, item.patch, op))
+          const otherPatches = incomingPatches.filter(item => item.time > lastBatch.timestamp)
+          let transformedOperations = lastBatch.operations
+          otherPatches.forEach(item => {
+            transformedOperations = flatten(
+              transformedOperations.map(op => transformOperation(editor, item.patch, op))
+            )
           })
-          const {patches, selection} = toPatches(editor, newOperations, true)
+          const {patches, selection} = toPatches(editor, transformedOperations, true)
           change$.next({
             type: 'redo',
             patches,
             timestamp: lastBatch.timestamp
           })
-          change$.next({type: 'selection', selection})
+          if (otherPatches.length === 0) {
+            change$.next({type: 'selection', selection})
+          }
         }
         editor.history.undos.push(lastBatch)
         editor.history.redos.pop()
@@ -234,50 +242,13 @@ export function createWithUndoRedo(
   }
 }
 
-// function transformSelection(editor, patch, selection) {
-//   if (selection === null) {
-//     return selection
-//   }
-//   let transformSelection = {...selection}
-//   if (transformSelection.focus && transformSelection.anchor) {
-//     let myIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
-//     if (patch.position === 'after') {
-//       myIndex = myIndex + patch.items.length
-//     }
-//     console.log('selection myIndex', myIndex)
-//     if (patch.type === 'insert' && patch.path.length === 1) {
-//       if (transformSelection.focus.path[0] > myIndex) {
-//         console.log('adjusting focus')
-//         transformSelection.focus = {...transformSelection.focus}
-//         transformSelection.focus.path = [
-//           transformSelection.focus.path[0] + patch.items.length,
-//           ...transformSelection.focus.path.slice(1)
-//         ]
-//       }
-//       if (transformSelection.anchor.path[0] > myIndex) {
-//         console.log('adjusting anchor')
-//         transformSelection.anchor = {...transformSelection.anchor}
-//         transformSelection.anchor.path = [
-//           transformSelection.anchor.path[0] + patch.items.length,
-//           ...transformSelection.anchor.path.slice(1)
-//         ]
-//       }
-//     }
-//     // // If op1 removed blocks before op2's line, increase op2's line offset accordingly.
-//     // if (patch.type === 'unset' && patch.path.length === 1) {
-//     //   transformSelection = adjustBlockPath(editor, patch, operation, -1)
-//     // }
-//   }
-//   return transformSelection
-// }
-
-function transformOperation(editor: Editor, patch: Patch, operation: Operation): Operation {
+function transformOperation(editor: Editor, patch: Patch, operation: Operation): Operation[] {
   let transformedOperation = {...operation}
   if (patch.type === 'insert' && patch.path.length === 1) {
-    transformedOperation = adjustBlockPath(editor, patch, operation, patch.items.length)
+    return [adjustBlockPath(editor, patch, operation, patch.items.length)]
   }
   if (patch.type === 'unset' && patch.path.length === 1) {
-    transformedOperation = adjustBlockPath(editor, patch, operation, -1)
+    return [adjustBlockPath(editor, patch, operation, -1)]
   }
 
   if (patch.type === 'diffMatchPatch') {
@@ -287,27 +258,61 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
       const childIndex = block.children.findIndex(child =>
         isEqual({_key: child._key}, patch.path[2])
       )
+      const parsed = dmp.patch_fromText(patch.value)[0]
       if (
         operation.path &&
         operation.path[0] !== undefined &&
         operation.path[0] === blockIndex &&
         operation.path[1] === childIndex
       ) {
-        // TODO: complete this
-        // console.log('SAME LINE EDIT', JSON.stringify(operation), JSON.stringify(patch))
-        const parsed = dmp.patch_fromText(patch.value)[0]
-        // console.log(parsed)
+        const distance = parsed.length2 - parsed.length1
+        const patchIsRemovingText = parsed.diffs.some(diff => diff[0] === -1)
         if (operation.type === 'insert_text') {
-          const distance = parsed.length2 - parsed.length1
-          transformedOperation.offset = transformedOperation.offset + distance
+          let insertOffset = 0
+          for (const diff of parsed.diffs) {
+            if (diff[0] === 0) {
+              insertOffset = diff[1].length
+            }
+            if (diff[0] === 1) {
+              break
+            }
+          }
+          // console.log(`adjusting for patch inserting text '${insertedText}' at offset: ${insertOffset}`, Operation.inverse(operation))
+          if (insertOffset + parsed.start1 <= operation.offset) {
+            transformedOperation.offset = transformedOperation.offset + distance
+          }
+
+          return [transformedOperation]
+
+          // console.log('neiter insert after or insert before, returning adjusted')
+          // transformedOperation.offset = transformedOperation.offset + distance
+          // return [transformedOperation]
+          // // Insert an extra operation that will be reversed to insert the text the other patch inserted
+          // const extraDeleteOperation: Operation = {
+          //   type: 'remove_text',
+          //   text: insertedText,
+          //   path: transformedOperation.path,
+          //   offset: insertOffset
+          // }
+          // returnedOps.push(extraDeleteOperation)
+          // returnedOps.push(transformedOperation)
+          // console.log('originalOperation', operation)
+          // console.log('transformedOperation', transformedOperation)
+          // console.log('extraDeleteOperation', extraDeleteOperation)
         }
-        // if (operation.type === 'remove_text') {
-        //   transformedOperation.offset = transformedOperation.offset - (parsed.start1 + parsed.length1 - 1)
-        // }
+        if (operation.type === 'remove_text') {
+          if (patchIsRemovingText) {
+            console.log('adjust for patch removing text')
+            // transformedOperation.offset = transformedOperation.offset - distance
+          }
+        }
+      }
+      // TODO: transform this?
+      if (operation.type === 'set_selection') {
       }
     }
   }
-  return transformedOperation
+  return [operation]
 }
 
 function adjustBlockPath(editor, patch, operation, level): Operation {
