@@ -62,7 +62,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     // Indicate that we are loading
     this.change$.next({type: 'loading', isLoading: true})
 
-    // Get the block types feature set
+    // Get the block types feature set (lookup table)
     this.portableTextFeatures = getPortableTextFeatures(this.type)
 
     // Subscribe to (distinct) changes
@@ -78,7 +78,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     if (props.value && !validation.valid) {
       invalidValue = props.value
       this.change$.next({type: 'loading', isLoading: false})
-      this.change$.next({type: 'invalidValue', resolution: validation.resolution})
+      this.change$.next({type: 'invalidValue', resolution: validation.resolution, value: props.value})
     }
     this.state = {invalidValue}
   }

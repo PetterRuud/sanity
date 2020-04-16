@@ -93,7 +93,8 @@ export type InvalidValueResolution = null | {patches: Patch[]; description: stri
 
 export type InvalidValue = {
   type: 'invalidValue'
-  resolution: InvalidValueResolution
+  resolution: InvalidValueResolution,
+  value: PortableTextBlock[]
 }
 
 export type UndoChange = {
