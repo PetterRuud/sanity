@@ -3,12 +3,10 @@ import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
-import {EditorSelection, EditorChanges, OnPasteFn, OnCopyFn} from '../types/editor'
-import {Patch} from '../types/patch'
+import {EditorSelection, EditorChanges, OnPasteFn, OnCopyFn, PatchObservable} from '../types/editor'
 import {toSlateValue, fromSlateValue} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
 import {createWithInsertData} from './plugins'
-import {Subject} from 'rxjs'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
@@ -24,7 +22,8 @@ type Props = {
   change$: EditorChanges
   editable: (args0) => EditableAPI
   hotkeys?: {marks: {}}
-  incomingPatche$?: Subject<Patch>
+  incomingPatche$?: PatchObservable
+  isThrottling: boolean
   keyGenerator: () => string
   maxBlocks?: number
   onPaste?: OnPasteFn
@@ -197,13 +196,15 @@ export const Editable = (props: Props) => {
   // Restore value from props
   useEffect(() => {
     const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
-    setStateValue(slateValueFromProps)
+    if (!props.isThrottling) {
+      setStateValue(slateValueFromProps)
+    }
   }, [props.value])
 
   // Restore selection from props
   useEffect(() => {
     const pSelection = props.selection
-    if (props.selection) {
+    if (props.selection && !props.isThrottling) {
       const normalizedSelection = normalizeSelection(pSelection, props.value)
       if (normalizedSelection) {
         const slateRange = toSlateRange(normalizedSelection, props.value)
