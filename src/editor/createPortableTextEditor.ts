@@ -12,8 +12,7 @@ import {
 import {PortableTextFeatures} from '../types/portableText'
 import {createOperationToPatches} from '../utils/operationToPatches'
 import {Subject} from 'rxjs'
-import {EditorChange} from 'src/types/editor'
-import {Patch} from 'src/types/patch'
+import {EditorChange, PatchObservable} from 'src/types/editor'
 
 type Options = {
   portableTextFeatures: PortableTextFeatures
@@ -21,7 +20,7 @@ type Options = {
   change$: Subject<EditorChange>
   maxBlocks?: number
   hotkeys?: {marks: {}}
-  incomingPatche$?: Subject<Patch>
+  incomingPatche$?: PatchObservable
 }
 
 const NOOPPlugin = (editor: Editor) => {

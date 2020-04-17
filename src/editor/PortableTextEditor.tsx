@@ -6,7 +6,7 @@ import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
 import {Patch} from '../types/patch'
-import {EditorSelection, EditorChange, OnPasteFn, OnCopyFn, EditorChanges} from '../types/editor'
+import {EditorSelection, EditorChange, OnPasteFn, OnCopyFn, EditorChanges, PatchObservable} from '../types/editor'
 import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
 import {compactPatches} from '../utils/patches'
@@ -16,7 +16,7 @@ export const keyGenerator = () => randomKey(12)
 
 type Props = {
   hotkeys?: {marks: {}}
-  incomingPatche$?: Subject<Patch>
+  incomingPatche$?: PatchObservable
   keyGenerator?: () => string
   maxBlocks?: number | string
   onChange: (change: EditorChange) => void
@@ -78,7 +78,11 @@ export class PortableTextEditor extends React.Component<Props, State> {
     if (props.value && !validation.valid) {
       invalidValue = props.value
       this.change$.next({type: 'loading', isLoading: false})
-      this.change$.next({type: 'invalidValue', resolution: validation.resolution, value: props.value})
+      this.change$.next({
+        type: 'invalidValue',
+        resolution: validation.resolution,
+        value: props.value
+      })
     }
     this.state = {invalidValue}
   }
@@ -158,6 +162,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
         editable={editable => (this.editable = editable)}
         hotkeys={hotkeys}
         incomingPatche$={incomingPatche$}
+        isThrottling={this.isThrottling}
         keyGenerator={this.props.keyGenerator || keyGenerator}
         maxBlocks={maxBlocks ? Number(maxBlocks) || undefined : undefined}
         onPaste={onPaste}

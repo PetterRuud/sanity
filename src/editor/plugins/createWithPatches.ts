@@ -3,12 +3,12 @@ import {debounce, isEqual} from 'lodash'
 import {Subject} from 'rxjs'
 import {setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation, Transforms} from 'slate'
-import {Patch, DiffMatchPatch, InsertPatch, UnsetPatch} from '../../types/patch'
+import {Patch} from '../../types/patch'
 import {applyAll} from '../../patch/applyPatch'
 import {unset} from './../../patch/PatchEvent'
 import {fromSlateValue, isEqualToEmptyEditor, toSlateValue} from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
-import {EditorChange} from '../../types/editor'
+import {EditorChange, PatchObservable} from '../../types/editor'
 
 const dmp = new DMP.diff_match_patch()
 
@@ -24,7 +24,7 @@ export function createWithPatches(
   },
   change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures,
-  incomingPatche$?: Subject<Patch>
+  incomingPatche$?: PatchObservable
 ) {
   const cancelThrottle = debounce(() => {
     change$.next({type: 'throttle', throttle: false})
@@ -126,10 +126,8 @@ export function createWithPatches(
 
     // Investigate incoming patches and adjust editor accordingly.
     if (incomingPatche$) {
-      incomingPatche$.subscribe(patch => {
-        if (patch.type === 'diffMatchPatch' || patch.type === 'insert' || patch.type === 'unset') {
-          adjustSelection(editor, patch)
-        }
+      incomingPatche$.subscribe((patch: Patch) => {
+        adjustSelection(editor, patch)
       })
     }
 

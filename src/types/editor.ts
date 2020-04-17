@@ -3,7 +3,7 @@ import {Path} from '../types/path'
 import {Patch} from '../types/patch'
 import {Type} from '../types/schema'
 import {PortableTextBlock} from '../types/portableText'
-import {Subject} from 'rxjs'
+import {Subject, Observable} from 'rxjs'
 
 export type EditorNode = SlateNode & {
   _key: string
@@ -144,3 +144,5 @@ export type OnPasteFn = (arg0: {
 }) => OnPasteResultOrPromise
 
 export type OnCopyFn = (event: React.ClipboardEvent<HTMLDivElement>) => undefined | any
+
+export type PatchObservable = Observable<Patch>
