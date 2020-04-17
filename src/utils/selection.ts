@@ -1,6 +1,7 @@
-import {Editor, Point, Path as SlatePath} from 'slate'
+import {Editor, Point, Path as SlatePath, Range} from 'slate'
 import {EditorSelection, EditorSelectionPoint} from '../types/editor'
 import {PortableTextBlock} from 'src/types/portableText'
+import {isEqual} from 'lodash'
 
 function createKeyedPath(point: Point, editor: Editor) {
   const first = {_key: editor.children[point.path[0]]._key}
@@ -67,10 +68,10 @@ export function normalizeSelection(
   let newAnchor: EditorSelectionPoint | null = null
   let newFocus: EditorSelectionPoint | null = null
   const {anchor, focus} = selection
-  if (anchor) {
+  if (anchor && value.find(blk => isEqual({_key: blk._key}, anchor.path[0]))) {
     newAnchor = normalizePoint(anchor, value)
   }
-  if (focus) {
+  if (focus && value.find(blk => isEqual({_key: blk._key}, focus.path[0]))) {
     newFocus = normalizePoint(focus, value)
   }
   if (newAnchor && newFocus) {
@@ -98,7 +99,7 @@ export function toPortableTextRange(editor: Editor) {
 export function toSlateRange(
   selection: EditorSelection,
   value: PortableTextBlock[] | undefined
-): any | null {
+): Range | null {
   if (!selection || !value) {
     return null
   }
@@ -109,9 +110,6 @@ export function toSlateRange(
   const focus = {
     path: createArrayedPath(selection.focus, value),
     offset: selection.focus.offset
-  }
-  if (focus.path[0] === -1) {
-    return null
   }
   const range = anchor && focus ? {anchor, focus} : null
   return range
