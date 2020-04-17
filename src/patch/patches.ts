@@ -6,8 +6,6 @@ import {
   InsertPosition,
   SetPatch,
   UnsetPatch,
-  IncPatch,
-  DecPatch,
   DiffMatchPatch
 } from '../types/patch'
 import {Path, PathSegment} from '../types/path'
@@ -45,14 +43,6 @@ export function set(value: any, path: Path = []): SetPatch {
 
 export function unset(path: Path = []): UnsetPatch {
   return {type: 'unset', path}
-}
-
-export function inc(amount = 1, path: Path = []): IncPatch {
-  return {type: 'inc', path, value: amount}
-}
-
-export function dec(amount = 1, path: Path = []): DecPatch {
-  return {type: 'dec', path, value: amount}
 }
 
 export function prefixPath<T extends {path: Path}>(patch: T, segment: PathSegment): T {

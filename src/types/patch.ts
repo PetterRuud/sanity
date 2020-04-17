@@ -13,19 +13,6 @@ export type SetPatch = {
   value: JSONValue
 }
 
-export type IncPatch = {
-  path: Path
-  type: 'inc'
-  origin?: Origin
-  value: JSONValue
-}
-export type DecPatch = {
-  path: Path
-  type: 'dec'
-  origin?: Origin
-  value: JSONValue
-}
-
 export type SetIfMissingPatch = {
   path: Path
   origin?: Origin
@@ -56,5 +43,3 @@ export type DiffMatchPatch = {
 }
 
 export type Patch = SetPatch | SetIfMissingPatch | UnsetPatch | InsertPatch | DiffMatchPatch
-
-export type GradientPatch = Record<string, any>
