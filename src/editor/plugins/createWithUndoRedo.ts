@@ -2,7 +2,7 @@ import {Subject} from 'rxjs'
 import {isEqual, flatten} from 'lodash'
 import {Editor, Operation, Path, createEditor, Transforms} from 'slate'
 import {Patch} from '../../types/patch'
-import {EditorChange, EditorSelection} from 'src/types/editor'
+import {EditorChange, EditorSelection, PatchObservable} from 'src/types/editor'
 import {toPortableTextRange} from '../../utils/selection'
 import {createWithObjectKeys} from '.'
 import {PortableTextFeatures} from '../../types/portableText'
@@ -41,7 +41,7 @@ export function createWithUndoRedo(
   change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string,
-  incomingPatche$?: Subject<Patch>
+  incomingPatche$?: PatchObservable
 ) {
   // A temporary editor to produce undo/redo patches on without interfering with the user editor
   const dummyEditor = createWithObjectKeys(portableTextFeatures, keyGenerator)(createEditor())
@@ -78,12 +78,7 @@ export function createWithUndoRedo(
         ) {
           continue
         } else {
-          try {
-            dummyEditor.apply(op)
-          } catch (err) {
-            console.log(err)
-            continue
-          }
+          dummyEditor.apply(op)
         }
         redoSelection = toPortableTextRange(dummyEditor)
         switch (op.type) {
@@ -178,13 +173,12 @@ export function createWithUndoRedo(
     }
 
     editor.undo = () => {
-      // TODO: if it goes backwards/forwards (deleting lines upwards) select last/first block focus
       const {undos} = editor.history
       if (undos.length > 0) {
         const lastBatch = undos[undos.length - 1]
         if (lastBatch.operations.length > 0) {
           const otherPatches = [...incomingPatches.filter(item => item.time > lastBatch.timestamp)]
-          let transformedOperations = lastBatch.operations.filter(op => op.type !== 'set_selection')
+          let transformedOperations = lastBatch.operations
           otherPatches.forEach(item => {
             transformedOperations = flatten(
               transformedOperations.map(op => transformOperation(editor, item.patch, op))
@@ -200,7 +194,7 @@ export function createWithUndoRedo(
             patches,
             timestamp: lastBatch.timestamp
           })
-          if (otherPatches.length === 0) {
+          if (!isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
             change$.next({type: 'selection', selection})
           }
         }
@@ -210,7 +204,6 @@ export function createWithUndoRedo(
     }
 
     editor.redo = () => {
-      // TODO: if it goes backwards/forwards (deleting lines upwards) select last/first block focus
       const {redos} = editor.history
       if (redos.length > 0) {
         const lastBatch = redos[redos.length - 1]
@@ -228,9 +221,7 @@ export function createWithUndoRedo(
             patches,
             timestamp: lastBatch.timestamp
           })
-          if (otherPatches.length === 0) {
-            change$.next({type: 'selection', selection})
-          }
+          change$.next({type: 'selection', selection})
         }
         editor.history.undos.push(lastBatch)
         editor.history.redos.pop()
@@ -259,14 +250,17 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
         isEqual({_key: child._key}, patch.path[2])
       )
       const parsed = dmp.patch_fromText(patch.value)[0]
+      if (!parsed) {
+        return [operation]
+      }
+      const distance = parsed.length2 - parsed.length1
+      const patchIsRemovingText = parsed.diffs.some(diff => diff[0] === -1)
       if (
         operation.path &&
         operation.path[0] !== undefined &&
         operation.path[0] === blockIndex &&
         operation.path[1] === childIndex
       ) {
-        const distance = parsed.length2 - parsed.length1
-        const patchIsRemovingText = parsed.diffs.some(diff => diff[0] === -1)
         if (operation.type === 'insert_text') {
           let insertOffset = 0
           for (const diff of parsed.diffs) {
@@ -277,39 +271,43 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
               break
             }
           }
-          // console.log(`adjusting for patch inserting text '${insertedText}' at offset: ${insertOffset}`, Operation.inverse(operation))
           if (insertOffset + parsed.start1 <= operation.offset) {
             transformedOperation.offset = transformedOperation.offset + distance
           }
-
           return [transformedOperation]
-
-          // console.log('neiter insert after or insert before, returning adjusted')
-          // transformedOperation.offset = transformedOperation.offset + distance
-          // return [transformedOperation]
-          // // Insert an extra operation that will be reversed to insert the text the other patch inserted
-          // const extraDeleteOperation: Operation = {
-          //   type: 'remove_text',
-          //   text: insertedText,
-          //   path: transformedOperation.path,
-          //   offset: insertOffset
-          // }
-          // returnedOps.push(extraDeleteOperation)
-          // returnedOps.push(transformedOperation)
-          // console.log('originalOperation', operation)
-          // console.log('transformedOperation', transformedOperation)
-          // console.log('extraDeleteOperation', extraDeleteOperation)
         }
+
         if (operation.type === 'remove_text') {
-          if (patchIsRemovingText) {
-            console.log('adjust for patch removing text')
-            // transformedOperation.offset = transformedOperation.offset - distance
+          let insertOffset = 0
+          for (const diff of parsed.diffs) {
+            if (diff[0] === 0) {
+              insertOffset = diff[1].length
+            }
+            if (diff[0] === -1) {
+              break
+            }
           }
+          if (insertOffset + parsed.start1 <= operation.offset) {
+            transformedOperation.offset = transformedOperation.offset - distance
+          }
+          return [transformedOperation]
         }
       }
       // TODO: transform this?
       if (operation.type === 'set_selection') {
+        const newProperties = transformedOperation.newProperties
+        if (newProperties && patchIsRemovingText) {
+          newProperties.offset = newProperties.offset - distance
+        } else if (newProperties) {
+          newProperties.offset = newProperties.offset + distance
+        }
+        console.log('set_selection diffmatchpatch', JSON.stringify(operation))
+        return [newProperties ? {...transformedOperation, newProperties} : transformedOperation]
       }
+    }
+    // TODO: transform this?
+    if (operation.type === 'set_selection') {
+      console.log('set_selection other', JSON.stringify(operation))
     }
   }
   return [operation]
