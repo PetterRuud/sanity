@@ -33,7 +33,7 @@ export function createWithPatches(
   let previousValue
 
   return function withPatches(editor: Editor) {
-    function adjustSelection(editor: Editor, patch: DiffMatchPatch | InsertPatch | UnsetPatch) {
+    function adjustSelection(editor: Editor, patch: Patch) {
       if (editor.selection === null) {
         return
       }
@@ -98,20 +98,30 @@ export function createWithPatches(
       // TODO: complete this
       // Unset patches
       if (patch.type === 'unset' && patch.path.length === 3) {
-        const blockIndex = previousValue.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+        const blockIndex =
+          previousValue && previousValue.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+        if (blockIndex === undefined || blockIndex < 0) {
+          console.log(previousValue)
+          throw new Error(`No block found in previous value`)
+        }
         const block = previousValue[blockIndex]
-        const childIndex = block.children.findIndex(child =>
-          isEqual({_key: child._key}, patch.path[2])
-        )
-        if (childIndex > -1) {
+        const childIndex =
+          block && block.children.findIndex(child => isEqual({_key: child._key}, patch.path[2]))
+        if (childIndex && childIndex > -1) {
           // TODO: take care of line splitting
-          console.log(patch)
+          console.log('take care of line splitting here', patch)
         }
       }
 
       // Insert  patches
       if (patch.type === 'insert' && patch.path.length === 3) {
-        const blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+        const blockIndex =
+          editor.children &&
+          editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+        if (blockIndex === undefined || blockIndex < 0) {
+          console.log(previousValue)
+          throw new Error(`No block found in current editor value`)
+        }
         const block = editor.children[blockIndex]
         const childIndex = block.children.findIndex(child =>
           isEqual({_key: child._key}, patch.path[2])
