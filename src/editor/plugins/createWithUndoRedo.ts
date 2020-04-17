@@ -242,6 +242,11 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
     return [adjustBlockPath(editor, patch, operation, -1)]
   }
 
+  // Someone reset the whole value
+  if (patch.type === 'unset' && patch.path.length === 0) {
+    return []
+  }
+
   if (patch.type === 'diffMatchPatch') {
     const blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
     const block = editor.children[blockIndex]
@@ -293,7 +298,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
           return [transformedOperation]
         }
       }
-      // TODO: transform this?
+      // Selection operations with diffPatchMatch
       if (operation.type === 'set_selection') {
         const newProperties = transformedOperation.newProperties
         if (newProperties && patchIsRemovingText) {
@@ -301,14 +306,13 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
         } else if (newProperties) {
           newProperties.offset = newProperties.offset + distance
         }
-        console.log('set_selection diffmatchpatch', JSON.stringify(operation))
         return [newProperties ? {...transformedOperation, newProperties} : transformedOperation]
       }
     }
     // TODO: transform this?
-    if (operation.type === 'set_selection') {
-      console.log('set_selection other', JSON.stringify(operation))
-    }
+    // if (operation.type === 'set_selection' && patch.type !== 'diffMatchPatch') {
+    //   console.log('set_selection other', JSON.stringify(patch))
+    // }
   }
   return [operation]
 }
@@ -317,7 +321,12 @@ function adjustBlockPath(editor, patch, operation, level): Operation {
   const transformedOperation = {...operation}
   const myIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
   // console.log('old operation', JSON.stringify(operation))
-  if (operation.path && operation.path[0] !== undefined && operation.path[0] >= myIndex + level) {
+  if (
+    myIndex >= 0 &&
+    operation.path &&
+    operation.path[0] !== undefined &&
+    operation.path[0] >= myIndex + level
+  ) {
     transformedOperation.path = [operation.path[0] + level, ...operation.path.slice(1)]
   }
   // console.log('New operation', JSON.stringify(transformedOperation))
