@@ -1,6 +1,6 @@
 import {Text, Range} from 'slate'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
-import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
+import {Editable as SlateEditable, Slate, withReact, ReactEditor, findDOMNode} from 'slate-react'
 import {toSlateRange, toPortableTextRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {
@@ -35,7 +35,9 @@ type Props = {
   readOnly?: boolean
   renderBlock?: (
     block: PortableTextBlock,
-    attributes: {focused: boolean; selected: boolean}
+    type: any,
+    attributes: {focused: boolean; selected: boolean},
+    defaultRender: () => any
   ) => JSX.Element
   renderChild?: (
     child: PortableTextChild,
@@ -131,11 +133,14 @@ export const Editable = (props: Props) => {
     eProps => {
       const block = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
       if (block) {
+        const domNode = findDOMNode()
+        const type = portableTextFeatures.types.blockContent.of.find(type => type.name === block._type)
         const child = block.children && block.children.find(child => child._key === eProps._key)
         return (
           <Element
             {...eProps}
             block={block}
+            type={type}
             child={child}
             portableTextFeatures={portableTextFeatures}
             renderBlock={props.renderBlock}

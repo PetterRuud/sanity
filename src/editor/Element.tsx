@@ -5,17 +5,21 @@ import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../typ
 import Block from './nodes/TextBlock'
 import {InlineObject} from './nodes/InlineObject'
 import {BlockObject} from './nodes/BlockObject'
+import { Type as SchemaType } from 'src/types/schema'
 
 type ElementProps = {
   attributes: string
   children: ReactElement
   element: SlateElement
   block: PortableTextBlock
+  type: SchemaType
   child?: PortableTextChild
   portableTextFeatures: PortableTextFeatures
   renderBlock?: (
     block: PortableTextBlock,
-    attributes: {focused: boolean; selected: boolean}
+    type: SchemaType,
+    attributes: {focused: boolean; selected: boolean},
+    defaultRender: () => string
   ) => JSX.Element
   renderChild?: (
     child: PortableTextChild,
@@ -33,6 +37,7 @@ export const Element = (props: ElementProps) => {
     element,
     portableTextFeatures,
     block,
+    type,
     child,
     renderBlock,
     renderChild
@@ -67,10 +72,9 @@ export const Element = (props: ElementProps) => {
         <div {...attributes}>
           <BlockObject
             block={block}
-            element={element}
+            type={type}
             selected={selected}
             focused={focused}
-            editor={editor}
             renderBlock={renderBlock}
           />
           {children}
