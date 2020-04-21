@@ -5,7 +5,7 @@ import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../typ
 import Block from './nodes/TextBlock'
 import {InlineObject} from './nodes/InlineObject'
 import {BlockObject} from './nodes/BlockObject'
-import { Type as SchemaType } from 'src/types/schema'
+import {Type as SchemaType} from 'src/types/schema'
 
 type ElementProps = {
   attributes: string
@@ -18,7 +18,8 @@ type ElementProps = {
   renderBlock?: (
     block: PortableTextBlock,
     type: SchemaType,
-    attributes: {focused: boolean; selected: boolean},
+    ref: React.RefObject<HTMLDivElement>,
+    attributes: {focused: boolean, selected: boolean},
     defaultRender: () => string
   ) => JSX.Element
   renderChild?: (

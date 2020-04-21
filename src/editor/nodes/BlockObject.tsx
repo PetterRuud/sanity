@@ -1,4 +1,4 @@
-import React, { FunctionComponent } from 'react'
+import React from 'react'
 import {BlockObject as BlockObjectContainer} from './index'
 import { PortableTextBlock } from 'src/types/portableText'
 import { Type as SchemaType } from 'src/types/schema'
@@ -11,6 +11,7 @@ type BlockObjectProps = {
   renderBlock?: (
     block: PortableTextBlock,
     type: SchemaType,
+    ref: React.RefObject<HTMLDivElement>,
     attributes: {focused: boolean, selected: boolean},
     defaultRender: () => string
   ) => JSX.Element
@@ -18,11 +19,12 @@ type BlockObjectProps = {
 
 export const BlockObject = (props: BlockObjectProps) => {
   const {block, type, focused, selected, renderBlock} = props
-  console.log(block)
+  const blockObjectRef = React.useRef(null)
+
   return (
-    <div contentEditable={false}>
+    <div contentEditable={false} ref={blockObjectRef}>
       <BlockObjectContainer selected={selected}>
-        {renderBlock && renderBlock(block, type, { focused, selected }, () => JSON.stringify(block))}
+        {renderBlock && renderBlock(block, type, blockObjectRef, { focused, selected }, () => JSON.stringify(block))}
       </BlockObjectContainer>
     </div>
   )

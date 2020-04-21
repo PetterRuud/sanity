@@ -19,6 +19,7 @@ import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
 import {compactPatches} from '../utils/patches'
 import {validateValue} from '../utils/validateValue'
+import {Type as SchemaType} from 'src/types/schema'
 
 export const keyGenerator = () => randomKey(12)
 
@@ -34,7 +35,10 @@ type Props = {
   readOnly?: boolean
   renderBlock?: (
     block: PortableTextBlock,
-    attributes: {focused: boolean; selected: boolean}
+    type: SchemaType,
+    ref: React.RefObject<HTMLDivElement>,
+    attributes: {focused: boolean, selected: boolean},
+    defaultRender: any
   ) => JSX.Element
   renderChild?: (
     child: PortableTextChild,

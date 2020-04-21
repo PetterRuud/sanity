@@ -1,7 +1,7 @@
 import {Text, Range} from 'slate'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor, findDOMNode} from 'slate-react'
-import {toSlateRange, toPortableTextRange} from '../utils/selection'
+import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {
   EditorSelection,
@@ -17,8 +17,15 @@ import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
-import {normalizeSelection} from '../utils/selection'
+import {toPortableTextRange, normalizeSelection} from '../utils/selection'
+import {Type as SchemaType} from 'src/types/schema'
 import debug from '../utils/debug'
+
+export interface EditableAPI {
+  focus: () => void
+  undo: () => void
+  redo: () => void
+}
 
 type Props = {
   change$: EditorChanges
@@ -35,8 +42,9 @@ type Props = {
   readOnly?: boolean
   renderBlock?: (
     block: PortableTextBlock,
-    type: any,
-    attributes: {focused: boolean; selected: boolean},
+    type: SchemaType,
+    ref: React.RefObject<HTMLDivElement>,
+    attributes: {focused: boolean, selected: boolean},
     defaultRender: () => any
   ) => JSX.Element
   renderChild?: (
@@ -133,7 +141,6 @@ export const Editable = (props: Props) => {
     eProps => {
       const block = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
       if (block) {
-        const domNode = findDOMNode()
         const type = portableTextFeatures.types.blockContent.of.find(type => type.name === block._type)
         const child = block.children && block.children.find(child => child._key === eProps._key)
         return (
