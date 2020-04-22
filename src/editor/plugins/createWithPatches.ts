@@ -2,13 +2,20 @@ import * as DMP from 'diff-match-patch'
 import {debounce, isEqual} from 'lodash'
 import {Subject} from 'rxjs'
 import {setIfMissing} from '../../patch/PatchEvent'
-import {Editor, Operation, Transforms} from 'slate'
+import {Editor, Operation, Transforms, Path} from 'slate'
 import {Patch} from '../../types/patch'
 import {applyAll} from '../../patch/applyPatch'
 import {unset} from './../../patch/PatchEvent'
-import {fromSlateValue, isEqualToEmptyEditor, toSlateValue} from '../../utils/values'
+import {
+  fromSlateValue,
+  isEqualToEmptyEditor,
+  toSlateValue,
+  findBlockAndIndexFromPath,
+  findChildAndIndexFromPath
+} from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PatchObservable} from '../../types/editor'
+import debug from '../../utils/debug'
 
 const dmp = new DMP.diff_match_patch()
 
@@ -26,70 +33,63 @@ export function createWithPatches(
   portableTextFeatures: PortableTextFeatures,
   incomingPatche$?: PatchObservable
 ) {
-  const cancelThrottle = debounce(() => {
-    change$.next({type: 'throttle', throttle: false})
-  }, 1000)
+  let isThrottling = false
+  let pendingIncoming: Patch[] = []
 
   let previousValue
 
   return function withPatches(editor: Editor) {
+    const cancelThrottle = debounce(() => {
+      change$.next({type: 'throttle', throttle: false})
+    }, 500)
+
     function adjustSelection(editor: Editor, patch: Patch) {
       if (editor.selection === null) {
         return
       }
-
       // Text patches on same line
       if (patch.type === 'diffMatchPatch') {
-        const blockIndex = editor.children.findIndex(blk =>
-          isEqual({_key: blk._key}, patch.path[0])
-        )
-        const block = editor.children[blockIndex]
+        const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
         if (!block) {
           return
         }
-        const childIndex = block.children.findIndex(child =>
-          isEqual({_key: child._key}, patch.path[2])
-        )
+        const [child, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
+        if (!child) {
+          return
+        }
         if (
-          childIndex !== -1 &&
           editor.selection.focus.path[0] === blockIndex &&
           editor.selection.focus.path[1] === childIndex
         ) {
           const parsed = dmp.patch_fromText(patch.value)[0]
           if (parsed) {
             let testString = ''
-            const [node] = Editor.node(editor, editor.selection)
-            const nodeText = node.text
             for (const diff of parsed.diffs) {
               if (diff[0] === 0) {
                 testString += diff[1]
+              } else {
+                break
               }
             }
             const isBefore =
-              (!nodeText
-                .substring(parsed.start1, parsed.length2)
-                .startsWith(testString.substring) &&
-                parsed.start1 < editor.selection.focus.offset &&
-                parsed.start1 < editor.selection.anchor.offset) ||
-              parsed.diffs[0][0] === 1
+              parsed.start1 + testString.length <= editor.selection.focus.offset &&
+              parsed.start1 + testString.length <= editor.selection.anchor.offset
 
-            // const isRemove = parsed.diffs.some(diff => diff[0] === -1)
-            // console.log(JSON.stringify(parsed, null, 2))
-            // console.log('isbefore', isBefore)
-            // console.log('isRemove', isRemove)
-            // console.log('nodeTextSubtring', JSON.stringify(nodeText.substring(parsed.start1)))
-            // console.log('testString', JSON.stringify(testString))
-
+            const distance = parsed.length2 - parsed.length1
+            const isRemove = parsed.diffs.some(diff => diff[0] === -1)
+            debug('diffmatchPatch', JSON.stringify(parsed, null, 2))
+            debug('editor.selection', JSON.stringify(editor.selection, null, 2))
+            debug('isbefore', isBefore)
+            debug('isRemove', isRemove)
+            debug('distance', distance)
+            debug('testString', JSON.stringify(testString))
             if (isBefore) {
-              const distance = parsed.length2 - parsed.length1
               const newSelection = {...editor.selection}
               newSelection.focus = {...editor.selection.focus}
               newSelection.anchor = {...editor.selection.anchor}
-              Transforms.deselect(editor)
               newSelection.anchor.offset = newSelection.anchor.offset + distance
               newSelection.focus.offset = newSelection.focus.offset + distance
               Transforms.select(editor, newSelection)
-              editor.onChange()
             }
           }
         }
@@ -98,50 +98,159 @@ export function createWithPatches(
       // TODO: complete this
       // Unset patches
       if (patch.type === 'unset' && patch.path.length === 3) {
-        const blockIndex =
-          previousValue && previousValue.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
-        if (blockIndex === undefined || blockIndex < 0) {
-          console.log(previousValue)
-          throw new Error(`No block found in previous value`)
+        debug('adjust for merge node')
+        const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], previousValue)
+        if (!block) {
+          return
         }
-        const block = previousValue[blockIndex]
-        const childIndex =
-          block && block.children.findIndex(child => isEqual({_key: child._key}, patch.path[2]))
-        if (childIndex && childIndex > -1) {
-          // TODO: take care of line splitting
-          console.log('take care of line splitting here', patch)
+        const prevText = block.children.slice(-1)[0].text
+        const newSelection = {...editor.selection}
+        if (Path.isAfter(editor.selection.anchor.path, [blockIndex])) {
+          newSelection.anchor = {...editor.selection.anchor}
+          newSelection.anchor.path = newSelection.anchor.path = [
+            newSelection.anchor.path[0] - 1,
+            block.children.length - 1
+          ]
+          newSelection.anchor.offset = editor.selection.anchor.offset + prevText.length
         }
+        if (Path.isAfter(editor.selection.focus.path, [blockIndex])) {
+          newSelection.focus = {...editor.selection.focus}
+          newSelection.focus.path = newSelection.focus.path = [
+            newSelection.focus.path[0] - 1,
+            block.children.length - 1
+          ]
+          newSelection.focus.offset = editor.selection.focus.offset + prevText.length
+        }
+        Transforms.select(editor, newSelection)
+        editor.onChange()
       }
 
-      // Insert  patches
+      // Unset patches on block level
+      if (patch.type === 'unset' && patch.path.length === 1) {
+        const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], previousValue)
+        if (!block) {
+          return
+        }
+        const newSelection = {...editor.selection}
+        if (Path.isAfter(editor.selection.anchor.path, [blockIndex])) {
+          newSelection.anchor = {...editor.selection.anchor}
+          newSelection.anchor.path = newSelection.anchor.path = [
+            newSelection.anchor.path[0] - 1,
+            ...newSelection.anchor.path.slice(1)
+          ]
+        }
+        if (Path.isAfter(editor.selection.focus.path, [blockIndex])) {
+          newSelection.focus = {...editor.selection.focus}
+          newSelection.focus.path = newSelection.focus.path = [
+            newSelection.focus.path[0] - 1,
+            ...newSelection.focus.path.slice(1)
+          ]
+        }
+        Transforms.select(editor, newSelection)
+        editor.onChange()
+      }
+
+      // Insert patches on block level
+      if (patch.type === 'insert' && patch.path.length === 1) {
+        const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
+        if (!block) {
+          return
+        }
+        const newSelection = {...editor.selection}
+        if (Path.isAfter(editor.selection.anchor.path, [blockIndex])) {
+          newSelection.anchor = {...editor.selection.anchor}
+          newSelection.anchor.path = newSelection.anchor.path = [
+            newSelection.anchor.path[0] + patch.items.length,
+            ...newSelection.anchor.path.slice(1)
+          ]
+        }
+        if (Path.isAfter(editor.selection.focus.path, [blockIndex])) {
+          newSelection.focus = {...editor.selection.focus}
+          newSelection.focus.path = newSelection.focus.path = [
+            newSelection.focus.path[0] + patch.items.length,
+            ...newSelection.focus.path.slice(1)
+          ]
+        }
+        Transforms.select(editor, newSelection)
+        editor.onChange()
+      }
+
       if (patch.type === 'insert' && patch.path.length === 3) {
-        const blockIndex =
-          editor.children &&
-          editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
-        if (blockIndex === undefined || blockIndex < 0) {
-          console.log(previousValue)
-          throw new Error(`No block found in current editor value`)
+        const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
+        if (!block) {
+          return
         }
-        const block = editor.children[blockIndex]
-        const childIndex = block.children.findIndex(child =>
-          isEqual({_key: child._key}, patch.path[2])
-        )
-        if (childIndex > -1) {
-          console.log(patch)
+        const [child, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
+        if (!child) {
+          return
         }
-        // TODO: take care of line splitting
-        console.log(patch)
+        if (
+          editor.selection.focus.path[0] === blockIndex &&
+          editor.selection.focus.path[1] === childIndex
+        ) {
+          const nextIndex = childIndex + patch.items.length
+          const isSplitOperation =
+            !editor.children[blockIndex].children[nextIndex] &&
+            editor.children[blockIndex + 1] &&
+            editor.children[blockIndex + 1].children &&
+            editor.children[blockIndex + 1].children[0] &&
+            isEqual(editor.children[blockIndex + 1].children[0]._key, patch.items[0]['_key'])
+          const [node] = Editor.node(editor, editor.selection)
+          const nodeText = node.text
+          if (!isSplitOperation) {
+            const newSelection = {...editor.selection}
+            newSelection.focus = {...editor.selection.focus}
+            newSelection.anchor = {...editor.selection.anchor}
+            newSelection.anchor.path = Path.next(newSelection.anchor.path)
+            newSelection.anchor.offset = nodeText.length - newSelection.anchor.offset
+            newSelection.focus.path = Path.next(newSelection.focus.path)
+            newSelection.focus.offset = nodeText.length - newSelection.focus.offset
+            Transforms.select(editor, newSelection)
+          } else {
+            if (editor.selection.focus.offset >= nodeText.length) {
+              debug('adjusting split node')
+              const newSelection = {...editor.selection}
+              newSelection.focus = {...editor.selection.focus}
+              newSelection.anchor = {...editor.selection.anchor}
+              newSelection.anchor.path = [blockIndex + 1, 0]
+              newSelection.anchor.offset = editor.selection.anchor.offset - nodeText.length || 0
+              newSelection.focus.path = [blockIndex + 1, 0]
+              newSelection.focus.offset = editor.selection.focus.offset - nodeText.length || 0
+              Transforms.select(editor, newSelection)
+              editor.onChange()
+            }
+          }
+        }
+        // TODO: take care of line merging?
       }
     }
 
     // Investigate incoming patches and adjust editor accordingly.
     if (incomingPatche$) {
       incomingPatche$.subscribe((patch: Patch) => {
-        adjustSelection(editor, patch)
+        if (!isThrottling) {
+          adjustSelection(editor, patch)
+        } else {
+          pendingIncoming.push(patch)
+        }
       })
     }
 
+    change$.subscribe((change: EditorChange) => {
+      if (change.type === 'throttle') {
+        isThrottling = change.throttle
+        if (!isThrottling) {
+          const incomingNow = [...pendingIncoming]
+          incomingNow.forEach(patch => {
+            adjustSelection(editor, patch)
+            pendingIncoming.shift()
+          })
+        }
+      }
+    })
+
     const {apply} = editor
+
     editor.apply = (operation: Operation) => {
       let patches: Patch[] = []
 
@@ -150,6 +259,7 @@ export function createWithPatches(
       previousValue = editor.children
 
       const editorWasEmpty = isEqualToEmptyEditor(previousValue, portableTextFeatures)
+
       // Apply the operation
       apply(operation)
 
@@ -186,7 +296,7 @@ export function createWithPatches(
           break
         case 'set_selection':
         default:
-          patches = []
+        // Do nothing
       }
 
       // Unset the value if editor has become empty
@@ -198,9 +308,7 @@ export function createWithPatches(
         })
       }
 
-      // TODO: Do optional (this is heavy, and should only be done when developing on the editor)
-      const debug = true
-      if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+      if (debug.enabled && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
         const appliedValue = applyAll(
           fromSlateValue(previousValue, portableTextFeatures.types.block.name),
           patches
@@ -212,7 +320,7 @@ export function createWithPatches(
             fromSlateValue(editor.children, portableTextFeatures.types.block.name)
           )
         ) {
-          console.log(
+          debug(
             'toSlateValue',
             JSON.stringify(
               toSlateValue(appliedValue, portableTextFeatures.types.block.name),
@@ -220,16 +328,18 @@ export function createWithPatches(
               2
             )
           )
-          console.log('operation', JSON.stringify(operation, null, 2))
-          console.log('beforeValue', JSON.stringify(previousValue, null, 2))
-          console.log('afterValue', JSON.stringify(editor.children, null, 2))
-          console.log('appliedValue', JSON.stringify(appliedValue, null, 2))
-          console.log('patches', JSON.stringify(patches, null, 2))
+          debug('operation', JSON.stringify(operation, null, 2))
+          debug('beforeValue', JSON.stringify(previousValue, null, 2))
+          debug('afterValue', JSON.stringify(editor.children, null, 2))
+          debug('appliedValue', JSON.stringify(appliedValue, null, 2))
+          debug('patches', JSON.stringify(patches, null, 2))
           debugger
         }
       }
 
       if (patches.length > 0) {
+        // Signal throttling
+        change$.next({type: 'throttle', throttle: true})
         // Emit all patches immediately
         patches.map(patch => {
           change$.next({
@@ -238,8 +348,6 @@ export function createWithPatches(
           })
         })
 
-        // Signal throttling
-        change$.next({type: 'throttle', throttle: true})
         // Emit mutation after user is done typing (we show only local state as that happens)
         change$.next({
           type: 'mutation',
