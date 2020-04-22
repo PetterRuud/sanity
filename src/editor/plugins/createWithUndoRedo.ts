@@ -1,13 +1,7 @@
-import {Subject} from 'rxjs'
 import {isEqual, flatten} from 'lodash'
-import {Editor, Operation, Path, createEditor, Transforms} from 'slate'
+import {Editor, Operation, Path} from 'slate'
 import {Patch} from '../../types/patch'
-import {EditorChange, EditorSelection, PatchObservable} from 'src/types/editor'
-import {toPortableTextRange} from '../../utils/selection'
-import {createWithObjectKeys} from '.'
-import {PortableTextFeatures} from '../../types/portableText'
-import {setIfMissing} from '../../patch/PatchEvent'
-import {isEqualToEmptyEditor, fromSlateValue} from '../../utils/values'
+import {PatchObservable} from 'src/types/editor'
 import * as DMP from 'diff-match-patch'
 
 const dmp = new DMP.diff_match_patch()
@@ -28,24 +22,7 @@ const isSaving = (editor: Editor): boolean | undefined => {
   return SAVING.get(editor)
 }
 
-export function createWithUndoRedo(
-  {
-    insertNodePatch,
-    insertTextPatch,
-    mergeNodePatch,
-    removeNodePatch,
-    removeTextPatch,
-    setNodePatch,
-    splitNodePatch
-  },
-  change$: Subject<EditorChange>,
-  portableTextFeatures: PortableTextFeatures,
-  keyGenerator: () => string,
-  incomingPatche$?: PatchObservable
-) {
-  // A temporary editor to produce undo/redo patches on without interfering with the user editor
-  const dummyEditor = createWithObjectKeys(portableTextFeatures, keyGenerator)(createEditor())
-
+export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
   // Subscribe to incoming patches
   const incomingPatches: {patch: Patch; time: Date}[] = []
   if (incomingPatche$) {
@@ -54,68 +31,6 @@ export function createWithUndoRedo(
     })
   }
 
-  function toPatches(editor, operations, isRedo) {
-    let patches: Patch[] = []
-    const undoRedoOps = isRedo ? operations : operations.map(Operation.inverse).reverse()
-
-    // Reset dummyeditor
-    dummyEditor.operations = []
-    dummyEditor.children = editor.children
-    dummyEditor.selection = null
-    let redoSelection: EditorSelection = null
-
-    Editor.withoutNormalizing(dummyEditor, () => {
-      if (editor.selection) {
-        Transforms.select(dummyEditor, editor.selection)
-      }
-      for (const op of undoRedoOps) {
-        const prevValue = dummyEditor.children
-        // If the final operation is deselecting the editor, skip it.
-        if (
-          op === undoRedoOps[undoRedoOps.length - 1] &&
-          op.type === 'set_selection' &&
-          op.newProperties == null
-        ) {
-          continue
-        } else {
-          dummyEditor.apply(op)
-        }
-        redoSelection = toPortableTextRange(dummyEditor)
-        switch (op.type) {
-          case 'insert_text':
-            patches = [...patches, ...insertTextPatch(dummyEditor, op, prevValue)]
-            break
-          case 'remove_text':
-            patches = [...patches, ...removeTextPatch(dummyEditor, op, prevValue)]
-            break
-          case 'remove_node':
-            patches = [...patches, ...removeNodePatch(dummyEditor, op, prevValue)]
-            break
-          case 'split_node':
-            patches = [...patches, ...splitNodePatch(dummyEditor, op, prevValue)]
-            break
-          case 'insert_node':
-            patches = [...patches, ...insertNodePatch(dummyEditor, op, prevValue)]
-            break
-          case 'set_node':
-            patches = [...patches, ...setNodePatch(dummyEditor, op, prevValue)]
-            break
-          case 'merge_node':
-            patches = [...patches, ...mergeNodePatch(dummyEditor, op, prevValue)]
-            break
-          case 'move_node':
-            // Doesn't seem to be implemented in Slate at the moment (april 2020)
-            // TODO: confirm this
-            debugger
-            break
-          case 'set_selection':
-          default:
-          // Do nothing
-        }
-      }
-    })
-    return {patches, selection: isRedo ? redoSelection : toPortableTextRange(dummyEditor)}
-  }
   return (editor: Editor) => {
     editor.history = {undos: [], redos: []}
     const {apply} = editor
@@ -167,9 +82,6 @@ export function createWithUndoRedo(
         }
       }
       apply(op)
-      if (lastBatch) {
-        lastBatch.redoSelection = toPortableTextRange(editor)
-      }
     }
 
     editor.undo = () => {
@@ -184,22 +96,20 @@ export function createWithUndoRedo(
               transformedOperations.map(op => transformOperation(editor, item.patch, op))
             )
           })
-          const {patches, selection} = toPatches(editor, transformedOperations, false)
-          if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
-            const prevValue = fromSlateValue(editor.children, portableTextFeatures.types.block.name)
-            patches.unshift(setIfMissing(prevValue, []))
-          }
-          change$.next({
-            type: 'undo',
-            patches,
-            timestamp: lastBatch.timestamp
+          withoutSaving(editor, () => {
+            Editor.withoutNormalizing(editor, () => {
+              transformedOperations
+                .map(Operation.inverse)
+                .reverse()
+                .forEach(op => {
+                  editor.apply(op)
+                })
+            })
           })
-          if (!isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
-            change$.next({type: 'selection', selection})
-          }
         }
         editor.history.redos.push(lastBatch)
         editor.history.undos.pop()
+        editor.onChange()
       }
     }
 
@@ -215,16 +125,17 @@ export function createWithUndoRedo(
               transformedOperations.map(op => transformOperation(editor, item.patch, op))
             )
           })
-          const {patches, selection} = toPatches(editor, transformedOperations, true)
-          change$.next({
-            type: 'redo',
-            patches,
-            timestamp: lastBatch.timestamp
+          withoutSaving(editor, () => {
+            Editor.withoutNormalizing(editor, () => {
+              transformedOperations.forEach(op => {
+                editor.apply(op)
+              })
+            })
           })
-          change$.next({type: 'selection', selection})
         }
         editor.history.undos.push(lastBatch)
         editor.history.redos.pop()
+        editor.onChange()
       }
     }
 
@@ -235,6 +146,7 @@ export function createWithUndoRedo(
 
 function transformOperation(editor: Editor, patch: Patch, operation: Operation): Operation[] {
   let transformedOperation = {...operation}
+
   if (patch.type === 'insert' && patch.path.length === 1) {
     return [adjustBlockPath(editor, patch, operation, patch.items.length)]
   }
@@ -248,7 +160,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
   }
 
   if (patch.type === 'diffMatchPatch') {
-    const blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+    let blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
     const block = editor.children[blockIndex]
     if (block) {
       const childIndex = block.children.findIndex(child =>
@@ -260,6 +172,16 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
       }
       const distance = parsed.length2 - parsed.length1
       const patchIsRemovingText = parsed.diffs.some(diff => diff[0] === -1)
+
+      if (operation.type === 'split_node' && operation.path.length > 1) {
+        if (patchIsRemovingText) {
+          transformedOperation.position = transformedOperation.position - distance
+        } else {
+          transformedOperation.position = transformedOperation.position + distance
+        }
+        return [transformedOperation]
+      }
+
       if (
         operation.path &&
         operation.path[0] !== undefined &&
@@ -279,6 +201,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
           if (insertOffset + parsed.start1 <= operation.offset) {
             transformedOperation.offset = transformedOperation.offset + distance
           }
+          // TODO: deal with overlapping ranges
           return [transformedOperation]
         }
 
@@ -298,16 +221,16 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
           return [transformedOperation]
         }
       }
-      // Selection operations with diffPatchMatch
-      if (operation.type === 'set_selection') {
-        const newProperties = transformedOperation.newProperties
-        if (newProperties && patchIsRemovingText) {
-          newProperties.offset = newProperties.offset - distance
-        } else if (newProperties) {
-          newProperties.offset = newProperties.offset + distance
-        }
-        return [newProperties ? {...transformedOperation, newProperties} : transformedOperation]
-      }
+      // // Selection operations with diffPatchMatch
+      // if (operation.type === 'set_selection') {
+      //   const newProperties = transformedOperation.newProperties
+      //   if (newProperties && patchIsRemovingText) {
+      //     newProperties.offset = newProperties.offset - distance
+      //   } else if (newProperties) {
+      //     newProperties.offset = newProperties.offset + distance
+      //   }
+      //   return [newProperties ? {...transformedOperation, newProperties} : transformedOperation]
+      // }
     }
     // TODO: transform this?
     // if (operation.type === 'set_selection' && patch.type !== 'diffMatchPatch') {
@@ -320,7 +243,6 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
 function adjustBlockPath(editor, patch, operation, level): Operation {
   const transformedOperation = {...operation}
   const myIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
-  // console.log('old operation', JSON.stringify(operation))
   if (
     myIndex >= 0 &&
     operation.path &&
@@ -329,7 +251,6 @@ function adjustBlockPath(editor, patch, operation, level): Operation {
   ) {
     transformedOperation.path = [operation.path[0] + level, ...operation.path.slice(1)]
   }
-  // console.log('New operation', JSON.stringify(transformedOperation))
   return transformedOperation
 }
 
@@ -389,4 +310,11 @@ const shouldClear = (op: Operation): boolean => {
   }
 
   return true
+}
+
+function withoutSaving(editor: Editor, fn: () => void): void {
+  const prev = isSaving(editor)
+  SAVING.set(editor, false)
+  fn()
+  SAVING.set(editor, prev)
 }
