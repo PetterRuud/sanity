@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@sanity/schema": "^0.147.6",
+    "debug": "^4.1.1",
     "get-random-values": "^1.2.0",
     "is-hotkey": "^0.1.6",
     "lodash": "^4.17.15",
