@@ -109,12 +109,9 @@ export const BlockObject = styled.div`
 export const InlineObject = styled.span`
   background: #999;
   border: ${props => {
-    if (props.focused) {
-      return '1px solid red'
-    }
     if (props.selected) {
-      return '1px solid red'
+      return '1px solid blue'
     }
-    return 'none'
+    return '1px solid transparent'
   }};
 `
