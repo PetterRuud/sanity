@@ -4,7 +4,7 @@ import {Transforms, Node} from 'slate'
 import {ReactEditor} from 'slate-react'
 import {fromSlateValue} from '../../utils/values'
 import {validateValue} from '../../utils/validateValue'
-
+import debug from '../../utils/debug'
 /**
  * This plugin handles pasting and drag/drop to the editor
  *
@@ -25,18 +25,18 @@ export function createWithInsertData(
       // if (portableText) {
       //   const parsed = JSON.parse(portableText)
       //   if (Array.isArray(parsed) && parsed.length > 0) {
-      //     console.log('inserting portable text', parsed)
+      //     debug('inserting portable text', parsed)
       //     return true
       //   }
       // }
       if (slateFragment) {
-        console.log('inserting fragment', slateFragment)
+        debug('inserting fragment', slateFragment)
         const decoded = decodeURIComponent(window.atob(slateFragment))
         const parsed = JSON.parse(decoded) as Node[]
         const pText = fromSlateValue(parsed, portableTextFeatures.types.block.name)
         const validation = validateValue(pText, portableTextFeatures, keyGenerator)
         if (validation.valid) {
-          console.log('foo', editor.selection)
+          debug('foo', editor.selection)
           Transforms.insertFragment(editor, parsed)
           editor.onChange()
           change$.next({type: 'loading', isLoading: false})
@@ -45,7 +45,7 @@ export function createWithInsertData(
       }
 
       if (html) {
-        console.log('inserting html', html)
+        debug('inserting html', html)
         change$.next({type: 'loading', isLoading: false})
         return
       }
