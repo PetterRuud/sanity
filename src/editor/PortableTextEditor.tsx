@@ -38,7 +38,7 @@ type Props = {
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
     attributes: {focused: boolean, selected: boolean},
-    defaultRender: any
+    defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
     child: PortableTextChild,

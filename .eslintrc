@@ -10,8 +10,7 @@
     "./node_modules/eslint-config-sanity/import.js",
     "prettier",
     "prettier/react",
-    "prettier/@typescript-eslint",
-
+    "prettier/@typescript-eslint"
   ],
   "rules": {
     "newline-per-chained-call": 0,

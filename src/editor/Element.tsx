@@ -20,7 +20,7 @@ type ElementProps = {
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
     attributes: {focused: boolean, selected: boolean},
-    defaultRender: () => string
+    defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
     child: PortableTextChild,

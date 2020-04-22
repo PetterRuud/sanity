@@ -10,12 +10,10 @@ export type Type = {
 }
 
 export type PortableTextType = Type & {
-  type: string
   options?: {
     editModal: 'fold' | 'modal'
     sortable: boolean
     layout?: 'grid'
   }
   styles?: {title: string, value: string}[]
-  of?: Type[]
 }
