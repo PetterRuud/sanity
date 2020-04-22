@@ -10,8 +10,8 @@ import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
-import {toPortableTextRange, normalizeSelection} from '../utils/selection'
-
+import {normalizeSelection} from '../utils/selection'
+import debug from '../utils/debug'
 export interface EditableAPI {
   focus: () => void
   undo: () => void
@@ -101,6 +101,7 @@ export const Editable = (props: Props) => {
 
   // Track editor value
   const [stateValue, setStateValue] = useState(
+    // Default value
     toSlateValue(
       getValue(props.value, [createPlaceHolderBlock()]),
       portableTextFeatures.types.block.name
@@ -161,7 +162,6 @@ export const Editable = (props: Props) => {
   const handleChange = val => {
     setStateValue(val)
     setSelection(editor.selection)
-    change$.next({type: 'selection', selection: toPortableTextRange(editor)})
   }
 
   // Test Slate decorations. Highlight the word 'banan'
@@ -199,21 +199,23 @@ export const Editable = (props: Props) => {
     if (!props.isThrottling) {
       setStateValue(slateValueFromProps)
     }
-  }, [props.value])
+  }, [props.value, props.isThrottling])
 
   // Restore selection from props
   useEffect(() => {
     const pSelection = props.selection
     if (props.selection && !props.isThrottling) {
+      debug('selection from props', pSelection)
       const normalizedSelection = normalizeSelection(pSelection, props.value)
       if (normalizedSelection) {
+        debug('normalized selection from props', normalizedSelection)
         const slateRange = toSlateRange(normalizedSelection, props.value)
         setSelection(slateRange)
       } else if (stateValue) {
         setSelection(SELECT_TOP_DOCUMENT)
       }
     }
-  }, [props.value])
+  }, [props.selection])
 
   // Handle copy in the editor
   const handleCopy = (event: React.ClipboardEvent<HTMLDivElement>): void | ReactEditor => {
