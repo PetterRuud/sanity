@@ -176,14 +176,14 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         operation.path[1] + 2
       )
       patches.push(
-        set(splitSpan.text, [{_key: splitBlock._key}, 'children', {_key: splitSpan._key}, 'text'])
-      )
-      patches.push(
         insert(targetSpans, 'after', [
           {_key: splitBlock._key},
           'children',
           {_key: editor.children[operation.path[0]].children[operation.path[1]]._key}
         ])
+      )
+      patches.push(
+        set(splitSpan.text, [{_key: splitBlock._key}, 'children', {_key: splitSpan._key}, 'text'])
       )
       return patches
     }
