@@ -15,9 +15,9 @@ import {
 } from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PatchObservable} from '../../types/editor'
-import {debugWithPrefix} from '../../utils/debug'
+import {debugWithName} from '../../utils/debug'
 
-const debug = debugWithPrefix('plugin:withPatches')
+const debug = debugWithName('plugin:withPatches')
 
 const dmp = new DMP.diff_match_patch()
 
@@ -310,7 +310,7 @@ export function createWithPatches(
         })
       }
 
-      if (debug.enabled && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+      if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
         const appliedValue = applyAll(
           fromSlateValue(previousValue, portableTextFeatures.types.block.name),
           patches
