@@ -37,10 +37,11 @@ export function fromSlateValue(
   textBlockType: string
 ): PortableTextBlock[] {
   if (value && Array.isArray(value)) {
-    return value.map(blk => {
-      const isPortableText = blk && blk._type === textBlockType
+    return value.map(block => {
+      const isPortableText = block && block._type === textBlockType
       if (isPortableText) {
-        const children = blk.children.map(child => {
+        const children = block.children.map(child => {
+          const {_type} = child
           if (_type !== 'span') {
             const {value, ...rest} = child
             return {...rest, ...value}
@@ -48,10 +49,10 @@ export function fromSlateValue(
             return child
           }
         })
-        return {...blk, children}
+        return {...block, children}
       }
-      const {_key, _type} = blk
-      return {_key, _type, ...blk.value}
+      const {_key, _type} = block
+      return {_key, _type, ...block.value}
     })
   }
   return value
