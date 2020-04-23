@@ -3,7 +3,9 @@ import {Editor, Operation, Path} from 'slate'
 import {Patch} from '../../types/patch'
 import {PatchObservable} from 'src/types/editor'
 import * as DMP from 'diff-match-patch'
+import {debugWithPrefix} from '../../utils/debug'
 
+const debug = debugWithPrefix('plugin:withUndoRedo')
 const dmp = new DMP.diff_match_patch()
 export interface History {
   redos: {operations: Operation[]; value: Node[]}[]
@@ -71,6 +73,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
             operations,
             timestamp: new Date()
           })
+          debug('Created new undo step')
         }
 
         while (undos.length > UNDO_STEP_LIMIT) {
@@ -87,6 +90,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
     editor.undo = () => {
       const {undos} = editor.history
       if (undos.length > 0) {
+        debug('Undoing')
         const lastBatch = undos[undos.length - 1]
         if (lastBatch.operations.length > 0) {
           const otherPatches = [...incomingPatches.filter(item => item.time > lastBatch.timestamp)]
@@ -116,6 +120,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
     editor.redo = () => {
       const {redos} = editor.history
       if (redos.length > 0) {
+        debug('Redoing')
         const lastBatch = redos[redos.length - 1]
         if (lastBatch.operations.length > 0) {
           const otherPatches = incomingPatches.filter(item => item.time > lastBatch.timestamp)
@@ -145,6 +150,8 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
 }
 
 function transformOperation(editor: Editor, patch: Patch, operation: Operation): Operation[] {
+  // debug(`Condidering ${patch.type} patch against ${operation.type}`)
+
   let transformedOperation = {...operation}
 
   if (patch.type === 'insert' && patch.path.length === 1) {
@@ -156,6 +163,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
 
   // Someone reset the whole value
   if (patch.type === 'unset' && patch.path.length === 0) {
+    debug('Adjusting selection for unset everything')
     return []
   }
 
@@ -168,6 +176,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
       )
       const parsed = dmp.patch_fromText(patch.value)[0]
       if (!parsed) {
+        debug('Could not parse diffMatchPatch')
         return [operation]
       }
       const distance = parsed.length2 - parsed.length1
@@ -249,7 +258,9 @@ function adjustBlockPath(editor, patch, operation, level): Operation {
     operation.path[0] !== undefined &&
     operation.path[0] >= myIndex + level
   ) {
-    transformedOperation.path = [operation.path[0] + level, ...operation.path.slice(1)]
+    const newPath = [operation.path[0] + level, ...operation.path.slice(1)]
+    debug(`Adjusting ${operation.type} for block ${patch.type}`, operation.path, newPath)
+    transformedOperation.path = newPath
   }
   return transformedOperation
 }

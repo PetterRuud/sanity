@@ -15,7 +15,9 @@ import {
 } from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PatchObservable} from '../../types/editor'
-import debug from '../../utils/debug'
+import {debugWithPrefix} from '../../utils/debug'
+
+const debug = debugWithPrefix('plugin:withPatches')
 
 const dmp = new DMP.diff_match_patch()
 
@@ -41,7 +43,7 @@ export function createWithPatches(
   return function withPatches(editor: Editor) {
     const cancelThrottle = debounce(() => {
       change$.next({type: 'throttle', throttle: false})
-    }, 500)
+    }, 600)
 
     function adjustSelection(editor: Editor, patch: Patch) {
       if (editor.selection === null) {
