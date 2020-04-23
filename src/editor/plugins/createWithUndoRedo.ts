@@ -3,9 +3,9 @@ import {Editor, Operation, Path} from 'slate'
 import {Patch} from '../../types/patch'
 import {PatchObservable} from 'src/types/editor'
 import * as DMP from 'diff-match-patch'
-import {debugWithPrefix} from '../../utils/debug'
+import {debugWithName} from '../../utils/debug'
 
-const debug = debugWithPrefix('plugin:withUndoRedo')
+const debug = debugWithName('plugin:withUndoRedo')
 const dmp = new DMP.diff_match_patch()
 export interface History {
   redos: {operations: Operation[]; value: Node[]}[]
@@ -40,9 +40,9 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
     editor.apply = (op: Operation) => {
       const {operations, history} = editor
       const {undos} = history
-      const lastBatch = undos[undos.length - 1]
+      const step = undos[undos.length - 1]
       const lastOp =
-        lastBatch && lastBatch.operations && lastBatch.operations[lastBatch.operations.length - 1]
+        step && step.operations && step.operations[step.operations.length - 1]
       const overwrite = shouldOverwrite(op, lastOp)
       let save = isSaving(editor)
       let merge = isMerging(editor)
@@ -53,7 +53,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
 
       if (save) {
         if (merge == null) {
-          if (lastBatch == null) {
+          if (step == null) {
             merge = false
           } else if (operations.length !== 0) {
             merge = true
@@ -62,18 +62,19 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
           }
         }
 
-        if (lastBatch && merge) {
+        if (step && merge) {
           if (overwrite) {
-            lastBatch.operations.pop()
+            step.operations.pop()
           }
-          lastBatch.operations.push(op)
+          step.operations.push(op)
         } else {
           const operations = [op]
-          undos.push({
+          const step = {
             operations,
             timestamp: new Date()
-          })
-          debug('Created new undo step')
+          }
+          undos.push(step)
+          debug('Created new undo step', step)
         }
 
         while (undos.length > UNDO_STEP_LIMIT) {
@@ -90,11 +91,11 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
     editor.undo = () => {
       const {undos} = editor.history
       if (undos.length > 0) {
-        debug('Undoing')
-        const lastBatch = undos[undos.length - 1]
-        if (lastBatch.operations.length > 0) {
-          const otherPatches = [...incomingPatches.filter(item => item.time > lastBatch.timestamp)]
-          let transformedOperations = lastBatch.operations
+        const step = undos[undos.length - 1]
+        debug('Undoing', step)
+        if (step.operations.length > 0) {
+          const otherPatches = [...incomingPatches.filter(item => item.time > step.timestamp)]
+          let transformedOperations = step.operations
           otherPatches.forEach(item => {
             transformedOperations = flatten(
               transformedOperations.map(op => transformOperation(editor, item.patch, op))
@@ -110,7 +111,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                     editor.apply(op)
                   } catch(err) {
                     console.warn('Could not perform undo step', err)
-                    editor.history.redos.push(lastBatch)
+                    editor.history.redos.push(step)
                     editor.history.undos.pop()
                     return
                   }
@@ -118,7 +119,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
             })
           })
         }
-        editor.history.redos.push(lastBatch)
+        editor.history.redos.push(step)
         editor.history.undos.pop()
         editor.onChange()
       }
@@ -127,11 +128,11 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
     editor.redo = () => {
       const {redos} = editor.history
       if (redos.length > 0) {
-        debug('Redoing')
-        const lastBatch = redos[redos.length - 1]
-        if (lastBatch.operations.length > 0) {
-          const otherPatches = incomingPatches.filter(item => item.time > lastBatch.timestamp)
-          let transformedOperations = lastBatch.operations
+        const step = redos[redos.length - 1]
+        debug('Redoing', step)
+        if (step.operations.length > 0) {
+          const otherPatches = incomingPatches.filter(item => item.time > step.timestamp)
+          let transformedOperations = step.operations
           otherPatches.forEach(item => {
             transformedOperations = flatten(
               transformedOperations.map(op => transformOperation(editor, item.patch, op))
@@ -144,7 +145,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                   editor.apply(op)
                 } catch(err) {
                   console.warn('Could not perform redo step', err)
-                  editor.history.undos.push(lastBatch)
+                  editor.history.undos.push(step)
                   editor.history.redos.pop()
                   return
                 }
@@ -152,7 +153,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
             })
           })
         }
-        editor.history.undos.push(lastBatch)
+        editor.history.undos.push(step)
         editor.history.redos.pop()
         editor.onChange()
       }
@@ -190,7 +191,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
       )
       const parsed = dmp.patch_fromText(patch.value)[0]
       if (!parsed) {
-        debug('Could not parse diffMatchPatch')
+        debug('Could not parse diffMatchPatch', patch)
         return [operation]
       }
       const distance = parsed.length2 - parsed.length1
