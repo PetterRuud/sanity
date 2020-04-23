@@ -1,18 +1,19 @@
 export type Type = {
-  type: string
+  type: Type
   name: string
-  title?: string
+  title: string
   description?: string
   readOnly?: boolean
   of?: Type[]
-  options?: {}
+  options: Record<string, any> | null
   fields?: Type[]
+  [prop: string]: any
 }
 
 export type PortableTextType = Type & {
   options?: {
-    editModal: 'fold' | 'modal'
-    sortable: boolean
+    editModal?: 'modal' | 'fullscreen'
+    sortable?: boolean
     layout?: 'grid'
   }
   styles?: {title: string, value: string}[]
