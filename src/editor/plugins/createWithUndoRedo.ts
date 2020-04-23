@@ -106,7 +106,14 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                 .map(Operation.inverse)
                 .reverse()
                 .forEach(op => {
-                  editor.apply(op)
+                  try {
+                    editor.apply(op)
+                  } catch(err) {
+                    console.warn('Could not perform undo step', err)
+                    editor.history.redos.push(lastBatch)
+                    editor.history.undos.pop()
+                    return
+                  }
                 })
             })
           })
@@ -133,7 +140,14 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
           withoutSaving(editor, () => {
             Editor.withoutNormalizing(editor, () => {
               transformedOperations.forEach(op => {
-                editor.apply(op)
+                try {
+                  editor.apply(op)
+                } catch(err) {
+                  console.warn('Could not perform redo step', err)
+                  editor.history.undos.push(lastBatch)
+                  editor.history.redos.pop()
+                  return
+                }
               })
             })
           })
@@ -163,7 +177,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
 
   // Someone reset the whole value
   if (patch.type === 'unset' && patch.path.length === 0) {
-    debug('Adjusting selection for unset everything')
+    debug(`Adjusting selection for unset everything patch and ${operation.type} operation`)
     return []
   }
 
