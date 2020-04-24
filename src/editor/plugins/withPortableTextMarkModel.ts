@@ -1,6 +1,10 @@
 import {Editor, Range, Transforms, Text, Path} from 'slate'
 import {isEqual, flatten} from 'lodash'
 
+import {debugWithName} from '../../utils/debug'
+
+const debug = debugWithName('plugin:withPortableTextMarkModel')
+
 /**
  *
  * This plugin will replace Slate's default marks model with the Portable Text one.
@@ -82,12 +86,22 @@ export function withPortableTextMarkModel(editor: Editor) {
     }
   }
 
+  editor.pteIsMarkActive = (mark: string) => {
+    const existingMarks =
+      {
+        ...(Editor.marks(editor) || {})
+      }.marks || []
+    return existingMarks ? existingMarks.includes(mark) : false
+  }
+
   // Custom editor function to toggle a mark
-  editor.pteToggleMark = (editor: Editor, mark: string) => {
-    const isActive = isMarkActive(editor, mark)
+  editor.pteToggleMark = (mark: string) => {
+    const isActive = editor.pteIsMarkActive(mark)
     if (isActive) {
+      debug(`Remove mark '${mark}'`)
       Editor.removeMark(editor, mark)
     } else {
+      debug(`Add mark '${mark}'`)
       Editor.addMark(editor, mark, true)
     }
   }
@@ -119,20 +133,4 @@ function mergeSpans(editor: Editor) {
   }
 }
 
-
-
-/**
- * Test if a mark is active
- *
- * @param {Editor} editor
- * @param {string} mark
- * @returns
- */
-function isMarkActive(editor: Editor, mark: string) {
-  const existingMarks =
-    {
-      ...(Editor.marks(editor) || {})
-    }.marks || []
-  return existingMarks ? existingMarks.includes(mark) : false
-}
 

@@ -1,6 +1,9 @@
 import {Editor} from 'slate'
 import isHotkey from 'is-hotkey'
 import {PortableTextSlateEditor} from '../../types/editor'
+import {debugWithName} from '../../utils/debug'
+
+const debug = debugWithName('plugin:withHotKeys')
 
 const DEFAULT_HOTKEYS = {
   marks: {
@@ -35,7 +38,8 @@ export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
             if (isHotkey(hotkey, event.nativeEvent)) {
               event.preventDefault()
               const mark = hotkeys[cat][hotkey]
-              editor.pteToggleMark(editor, mark)
+              debug(`HotKey ${hotkey} to toggle ${mark}`)
+              editor.pteToggleMark(mark)
             }
           }
         }
@@ -80,12 +84,12 @@ export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
 
       // Deal with tab for lists
       if (isTab || isShiftTab) {
-        editor.pteIncrementBlockLevels(editor, isShiftTab) && event.preventDefault()
+        editor.pteIncrementBlockLevels(isShiftTab) && event.preventDefault()
       }
 
       // Deal with list item enter key
       if (isEnter && !isShiftEnter) {
-        editor.pteEndList(editor) && event.preventDefault()
+        editor.pteEndList() && event.preventDefault()
       }
 
       // Deal with soft line breaks

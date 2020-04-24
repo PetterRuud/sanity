@@ -3,7 +3,7 @@ import {PortableTextFeatures} from '../../types/portableText'
 
 export function createWithPortableTextLists(portableTextFeatures: PortableTextFeatures) {
   return function withPortableTextLists(editor: Editor) {
-    editor.pteToggleListItem = (editor: Editor, listItemStyle: string) => {
+    editor.pteToggleListItem = (listItemStyle: string) => {
       if (!editor.selection) {
         return
       }
@@ -34,7 +34,7 @@ export function createWithPortableTextLists(portableTextFeatures: PortableTextFe
       })
     }
 
-    editor.pteEndList = (editor: Editor): boolean => {
+    editor.pteEndList = (): boolean => {
       if (!editor.selection) {
         return false
       }
@@ -58,7 +58,7 @@ export function createWithPortableTextLists(portableTextFeatures: PortableTextFe
       return true
     }
 
-    editor.pteIncrementBlockLevels = (editor: Editor, reverse: boolean): boolean => {
+    editor.pteIncrementBlockLevels = (reverse: boolean): boolean => {
       if (!editor.selection) {
         return false
       }
