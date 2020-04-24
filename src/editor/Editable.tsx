@@ -1,6 +1,6 @@
 import {Text, Range} from 'slate'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
-import {Editable as SlateEditable, Slate, withReact, ReactEditor, findDOMNode} from 'slate-react'
+import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {
@@ -17,15 +17,9 @@ import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
-import {normalizeSelection} from '../utils/selection'
+import {normalizeSelection, toPortableTextRange} from '../utils/selection'
 import {Type as SchemaType} from 'src/types/schema'
 import debug from '../utils/debug'
-
-export interface EditableAPI {
-  focus: () => void
-  undo: () => void
-  redo: () => void
-}
 
 type Props = {
   change$: EditorChanges
