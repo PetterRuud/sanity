@@ -1,12 +1,20 @@
 import React from 'react'
 import {randomKey} from '../utils/randomKey'
-import {Editable, EditableAPI} from './Editable'
+import {Editable} from './Editable'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
 import {Patch} from '../types/patch'
-import {EditorSelection, EditorChange, OnPasteFn, OnCopyFn, EditorChanges, PatchObservable} from '../types/editor'
+import {
+  EditorSelection,
+  EditorChange,
+  OnPasteFn,
+  OnCopyFn,
+  EditorChanges,
+  PatchObservable,
+  EditableAPI
+} from '../types/editor'
 import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
 import {compactPatches} from '../utils/patches'
@@ -32,8 +40,9 @@ type Props = {
     child: PortableTextChild,
     attributes: {focused: boolean; selected: boolean}
   ) => JSX.Element
+  renderEditor?: (editor: JSX.Element) => JSX.Element
   searchAndReplace?: boolean
-  selection: EditorSelection
+  selection?: EditorSelection
   spellCheck?: boolean
   type: Type
   value: PortableTextBlock[] | undefined
@@ -43,14 +52,34 @@ type State = {
   invalidValue: PortableTextBlock[] | undefined
 }
 
+export interface PortableTextEditor {
+  focus: (editor: PortableTextEditor) => void
+}
+
 export class PortableTextEditor extends React.Component<Props, State> {
-  type: Type
+  static focus = (editor: PortableTextEditor) => {
+    editor.editable?.focus()
+  }
+  static blur = (editor: PortableTextEditor) => {
+    editor.editable?.blur()
+  }
+  static toggleMark = (editor: PortableTextEditor, mark: string) => {
+    editor.editable?.toggleMark(mark)
+  }
+  static isMarkActive = (editor: PortableTextEditor, mark: string) =>
+    editor.editable?.isMarkActive(mark)
+
+  static getPortableTextFeatures = (editor: PortableTextEditor) => {
+    return editor.portableTextFeatures
+  }
+
   private portableTextFeatures: PortableTextFeatures
   private editable?: EditableAPI
   private change$: EditorChanges = new Subject()
   private changeSubscription: Subscription
   private isThrottling = false
   private pendingPatches: Patch[] = []
+  private type: Type
 
   constructor(props: Props) {
     super(props)
@@ -133,12 +162,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
         onChange(next)
     }
   }
-  focus() {
-    this.editable && this.editable.focus()
-  }
-  getPortableTextFeatures() {
-    return this.portableTextFeatures
-  }
+
   render() {
     const {
       hotkeys,
@@ -148,6 +172,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
       onPaste,
       placeholderText,
       readOnly,
+      renderEditor,
       searchAndReplace,
       selection,
       spellCheck,
@@ -156,7 +181,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     if (this.state.invalidValue) {
       return null
     }
-    return (
+    const editable = (
       <Editable
         change$={this.change$}
         editable={editable => (this.editable = editable)}
@@ -177,6 +202,11 @@ export class PortableTextEditor extends React.Component<Props, State> {
         spellCheck={spellCheck}
         value={value}
       />
+    )
+    return (
+      <>
+        {renderEditor ? renderEditor(editable) : editable}
+      </>
     )
   }
 }

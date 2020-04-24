@@ -1,9 +1,16 @@
 import {Text, Range} from 'slate'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
-import {toSlateRange} from '../utils/selection'
+import {toSlateRange, toPortableTextRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
-import {EditorSelection, EditorChanges, OnPasteFn, OnCopyFn, PatchObservable} from '../types/editor'
+import {
+  EditorSelection,
+  EditorChanges,
+  OnPasteFn,
+  OnCopyFn,
+  PatchObservable,
+  EditableAPI
+} from '../types/editor'
 import {toSlateValue, fromSlateValue} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
 import {createWithInsertData} from './plugins'
@@ -12,11 +19,6 @@ import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
 import {normalizeSelection} from '../utils/selection'
 import debug from '../utils/debug'
-export interface EditableAPI {
-  focus: () => void
-  undo: () => void
-  redo: () => void
-}
 
 type Props = {
   change$: EditorChanges
@@ -40,7 +42,7 @@ type Props = {
     attributes: {focused: boolean; selected: boolean}
   ) => JSX.Element
   searchAndReplace?: boolean
-  selection: EditorSelection
+  selection?: EditorSelection
   singleUserUndoRedo?: boolean
   spellCheck?: boolean
   value?: PortableTextBlock[] | undefined
@@ -112,8 +114,15 @@ export const Editable = (props: Props) => {
   const [selection, setSelection] = useState(editor.selection)
 
   editable({
-    editor,
-    focus: () => ReactEditor.focus(editor),
+    focus: () => {
+      setSelection(editor.selection || SELECT_TOP_DOCUMENT)
+      ReactEditor.focus(editor)
+    },
+    toggleMark: (mark: string, selection?: EditorSelection) => {
+      editor.pteToggleMark(mark)
+      ReactEditor.focus(editor)
+    },
+    isMarkActive: (mark: string) => editor.pteIsMarkActive(mark),
     undo: () => editor.undo(),
     redo: () => editor.redo
   })
@@ -204,7 +213,7 @@ export const Editable = (props: Props) => {
   // Restore selection from props
   useEffect(() => {
     const pSelection = props.selection
-    if (props.selection && !props.isThrottling) {
+    if (pSelection && !props.isThrottling) {
       debug('selection from props', pSelection)
       const normalizedSelection = normalizeSelection(pSelection, props.value)
       if (normalizedSelection) {
@@ -216,6 +225,11 @@ export const Editable = (props: Props) => {
       }
     }
   }, [props.selection])
+
+  // When the state selection changes, push that to change$
+  useEffect(() => {
+    change$.next({type: 'selection', selection: toPortableTextRange(editor)})
+  }, [selection])
 
   // Handle copy in the editor
   const handleCopy = (event: React.ClipboardEvent<HTMLDivElement>): void | ReactEditor => {
@@ -242,6 +256,7 @@ export const Editable = (props: Props) => {
       value={getValue(stateValue, [createPlaceHolderBlock()])}
     >
       <SlateEditable
+        autoFocus={false}
         decorate={decorate}
         onCopy={handleCopy}
         onFocus={() => change$.next({type: 'focus'})}
