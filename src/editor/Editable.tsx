@@ -17,7 +17,7 @@ import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
-import {toPortableTextRange, normalizeSelection} from '../utils/selection'
+import {normalizeSelection} from '../utils/selection'
 import {Type as SchemaType} from 'src/types/schema'
 import debug from '../utils/debug'
 
