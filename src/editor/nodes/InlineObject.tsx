@@ -1,10 +1,8 @@
 import React from 'react'
-import {Element} from 'slate'
 import {InlineObject as InlineObjectContainer} from './index'
 import {PortableTextChild} from '../../types/portableText'
 
 type Props = {
-  element: Element
   focused: boolean
   selected: boolean
   attributes: {}

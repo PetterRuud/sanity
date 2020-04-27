@@ -13,7 +13,7 @@ type ElementProps = {
   element: SlateElement
   block: PortableTextBlock
   type: SchemaType
-  child?: PortableTextChild
+  value: PortableTextBlock
   portableTextFeatures: PortableTextFeatures
   renderBlock?: (
     block: PortableTextBlock,
@@ -33,6 +33,7 @@ export const Element = (props: ElementProps) => {
   const selected = useSelected()
   const focused = useFocused()
   const {
+    value,
     attributes,
     children,
     element,
@@ -47,7 +48,6 @@ export const Element = (props: ElementProps) => {
       <InlineObject
         attributes={attributes}
         value={element.value}
-        element={element}
         focused={focused}
         renderChild={renderChild}
         selected={selected}
@@ -70,7 +70,7 @@ export const Element = (props: ElementProps) => {
       return (
         <div {...attributes}>
           <BlockObject
-            value={element.value}
+            value={value}
             type={type}
             selected={selected}
             focused={focused}

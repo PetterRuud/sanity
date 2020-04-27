@@ -133,15 +133,14 @@ export const Editable = (props: Props) => {
 
   const renderElement = useCallback(
     eProps => {
-      const block = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
-      if (block && portableTextFeatures.types.blockContent.of) {
-        const type = portableTextFeatures.types.blockContent.of.find(type => type.name === block._type)
+      const value = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
+      if (value && portableTextFeatures.types.blockContent.of) {
+        const type = portableTextFeatures.types.blockContent.of.find(type => type.name === value._type)
         return (
           <Element
             {...eProps}
-            block={block}
+            value={value}
             type={type}
-            child={eProps.element}
             portableTextFeatures={portableTextFeatures}
             renderBlock={props.renderBlock}
           />
