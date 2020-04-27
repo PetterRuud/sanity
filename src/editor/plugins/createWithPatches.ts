@@ -4,12 +4,12 @@ import {Subject} from 'rxjs'
 import {setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation, Transforms, Path} from 'slate'
 import {Patch} from '../../types/patch'
-import {applyAll} from '../../patch/applyPatch'
+// import {applyAll} from '../../patch/applyPatch'
 import {unset} from './../../patch/PatchEvent'
 import {
   fromSlateValue,
   isEqualToEmptyEditor,
-  toSlateValue,
+  // toSlateValue,
   findBlockAndIndexFromPath,
   findChildAndIndexFromPath
 } from '../../utils/values'
@@ -310,34 +310,34 @@ export function createWithPatches(
         })
       }
 
-      if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
-        const appliedValue = applyAll(
-          fromSlateValue(previousValue, portableTextFeatures.types.block.name),
-          patches
-        )
+      // if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+      //   const appliedValue = applyAll(
+      //     fromSlateValue(previousValue, portableTextFeatures.types.block.name),
+      //     patches
+      //   )
 
-        if (
-          !isEqual(
-            appliedValue,
-            fromSlateValue(editor.children, portableTextFeatures.types.block.name)
-          )
-        ) {
-          debug(
-            'toSlateValue',
-            JSON.stringify(
-              toSlateValue(appliedValue, portableTextFeatures.types.block.name),
-              null,
-              2
-            )
-          )
-          debug('operation', JSON.stringify(operation, null, 2))
-          debug('beforeValue', JSON.stringify(previousValue, null, 2))
-          debug('afterValue', JSON.stringify(editor.children, null, 2))
-          debug('appliedValue', JSON.stringify(appliedValue, null, 2))
-          debug('patches', JSON.stringify(patches, null, 2))
-          debugger
-        }
-      }
+      //   if (
+      //     !isEqual(
+      //       appliedValue,
+      //       fromSlateValue(editor.children, portableTextFeatures.types.block.name)
+      //     )
+      //   ) {
+      //     debug(
+      //       'toSlateValue',
+      //       JSON.stringify(
+      //         toSlateValue(appliedValue, portableTextFeatures.types.block.name),
+      //         null,
+      //         2
+      //       )
+      //     )
+      //     debug('operation', JSON.stringify(operation, null, 2))
+      //     debug('beforeValue', JSON.stringify(previousValue, null, 2))
+      //     debug('afterValue', JSON.stringify(editor.children, null, 2))
+      //     debug('appliedValue', JSON.stringify(appliedValue, null, 2))
+      //     debug('patches', JSON.stringify(patches, null, 2))
+      //     debugger
+      //   }
+      // }
 
       if (patches.length > 0) {
         // Signal throttling
