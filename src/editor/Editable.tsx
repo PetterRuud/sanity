@@ -148,18 +148,12 @@ export const Editable = (props: Props) => {
       }
       throw new Error('Could not resolve block')
     },
-    [props.value, props.selection]
+    [props.value]
   )
 
   const renderLeaf = useCallback(
     lProps => {
-      let block
-      const blockNode =
-        editor.children &&
-        editor.children.find(blk => blk.children.find(child => child._key === lProps.leaf._key))
-      if (blockNode) {
-        block = fromSlateValue([blockNode], portableTextFeatures.types.block.name)[0]
-      }
+      const block = lProps.children.props.parent
       return (
         <Leaf
           {...lProps}
@@ -169,7 +163,7 @@ export const Editable = (props: Props) => {
         ></Leaf>
       )
     },
-    [props.value, props.selection]
+    [props.value]
   )
 
   const handleChange = val => {
