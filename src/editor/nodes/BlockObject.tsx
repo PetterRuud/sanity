@@ -5,7 +5,7 @@ import {Type as SchemaType} from 'src/types/schema'
 import DefaultBlock from './DefaultBlock'
 
 type BlockObjectProps = {
-  block: PortableTextBlock,
+  value: PortableTextBlock,
   type: SchemaType,
   focused: boolean,
   selected: boolean,
@@ -23,13 +23,13 @@ const defaultRender = block => {
 }
 
 export const BlockObject = (props: BlockObjectProps) => {
-  const {block, type, focused, selected, renderBlock} = props
+  const {value, type, focused, selected, renderBlock} = props
   const blockObjectRef = React.useRef(null)
 
   return (
     <div contentEditable={false} ref={blockObjectRef}>
       <BlockObjectContainer selected={selected}>
-        {renderBlock && renderBlock(block, type, blockObjectRef, { focused, selected }, defaultRender)}
+        {renderBlock && renderBlock(value, type, blockObjectRef, { focused, selected }, defaultRender)}
       </BlockObjectContainer>
     </div>
   )

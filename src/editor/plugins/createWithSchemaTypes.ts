@@ -14,11 +14,9 @@ export function createWithSchemaTypes(portableTextFeatures: PortableTextFeatures
       )
     }
     editor.isInline = (element: Element): boolean => {
-      const isBlock = editor.children.some(child => child._key === element._key)
       const inlineSchemaTypes = portableTextFeatures.types.inlineObjects.map(obj => obj.name)
       return (
-        inlineSchemaTypes.includes(element._type) &&
-        !isBlock
+        inlineSchemaTypes.includes(element._type) && element.__inline === true
       )
     }
     return editor

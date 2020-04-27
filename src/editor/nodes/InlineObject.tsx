@@ -8,7 +8,7 @@ type Props = {
   focused: boolean
   selected: boolean
   attributes: {}
-  child: PortableTextChild,
+  value: PortableTextChild,
   renderChild?: (
     child: PortableTextChild,
     attributes: {focused: boolean; selected: boolean}
@@ -17,12 +17,12 @@ type Props = {
 
 export class InlineObject extends React.Component<Props, {}> {
   render() {
-    const {attributes, focused, selected, child, renderChild} = this.props
+    const {attributes, focused, selected, value, renderChild} = this.props
     return (
       <span {...attributes} contentEditable={false}>
         <InlineObjectContainer focused={focused} selected={selected}>
-          {renderChild && renderChild(child, {focused, selected})}
-          {!renderChild && JSON.stringify(child)}
+          {renderChild && renderChild(value, {focused, selected})}
+          {!renderChild && JSON.stringify(value)}
         </InlineObjectContainer>
       </span>
     )

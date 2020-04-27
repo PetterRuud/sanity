@@ -3,14 +3,13 @@ import {Element} from 'slate'
 import {uniq} from 'lodash'
 import Decorator from './nodes/Decorator'
 import Annotation from './nodes/Annotation'
-import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
+import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
 
 type LeafProps = {
+  block: PortableTextBlock
   attributes: string
   children: ReactElement
   leaf: Element
-  block: PortableTextBlock
-  child: PortableTextChild
   portableTextFeatures: PortableTextFeatures
 }
 

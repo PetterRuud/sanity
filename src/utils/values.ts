@@ -19,7 +19,7 @@ export function toSlateValue(
         const children = block.children.map(child => {
           const {_type, _key, ...rest} = child
           if (_type !== 'span') {
-            return {_type, _key, children: [{text: ''}], value: rest}
+            return {_type, _key, children: [{text: ''}], value: rest, __inline: true}
           } else {
             return child
           }
@@ -43,7 +43,7 @@ export function fromSlateValue(
         const children = block.children.map(child => {
           const {_type} = child
           if (_type !== 'span') {
-            const {value, ...rest} = child
+            const {value, __inline, ...rest} = child
             return {...rest, ...value}
           } else {
             return child

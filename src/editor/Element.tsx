@@ -1,11 +1,11 @@
 import React, {ReactElement} from 'react'
 import {Element as SlateElement} from 'slate'
-import {useSlate, useFocused, useSelected} from 'slate-react'
+import {useFocused, useSelected, useEditor} from 'slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import Block from './nodes/TextBlock'
 import {InlineObject} from './nodes/InlineObject'
 import {BlockObject} from './nodes/BlockObject'
-import {Type as SchemaType} from 'src/types/schema'
+import {Type as SchemaType} from '../types/schema'
 
 type ElementProps = {
   attributes: string
@@ -29,7 +29,7 @@ type ElementProps = {
 }
 
 export const Element = (props: ElementProps) => {
-  const editor = useSlate()
+  const editor = useEditor()
   const selected = useSelected()
   const focused = useFocused()
   const {
@@ -37,22 +37,20 @@ export const Element = (props: ElementProps) => {
     children,
     element,
     portableTextFeatures,
-    block,
     type,
-    child,
     renderBlock,
     renderChild
   } = props
   // Test for inline objects first
-  if (editor.isInline(element) && child) {
+  if (editor.isInline(element)) {
     return (
       <InlineObject
-        child={child}
         attributes={attributes}
+        value={element.value}
         element={element}
         focused={focused}
-        selected={selected}
         renderChild={renderChild}
+        selected={selected}
       />
     )
   }
@@ -72,7 +70,7 @@ export const Element = (props: ElementProps) => {
       return (
         <div {...attributes}>
           <BlockObject
-            block={block}
+            value={element.value}
             type={type}
             selected={selected}
             focused={focused}

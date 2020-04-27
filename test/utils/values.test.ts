@@ -76,6 +76,7 @@ describe('toSlateValue', () => {
       }, {
         _key: '1232',
         _type: 'image',
+        __inline: true,
         children: [{
           text: ""
         }],
