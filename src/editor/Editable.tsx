@@ -19,7 +19,9 @@ import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
 import {normalizeSelection, toPortableTextRange} from '../utils/selection'
 import {Type as SchemaType} from 'src/types/schema'
-import debug from '../utils/debug'
+import {debugWithName} from '../utils/debug'
+
+const debug = debugWithName('component:Editable')
 
 type Props = {
   change$: EditorChanges
@@ -114,7 +116,7 @@ export const Editable = (props: Props) => {
     )
   )
 
-  // Track selection
+  // Track selection state
   const [selection, setSelection] = useState(editor.selection)
 
   editable({
@@ -172,33 +174,33 @@ export const Editable = (props: Props) => {
     setSelection(editor.selection)
   }
 
-  // Test Slate decorations. Highlight the word 'banan'
-  // TODO: remove this
-  const banan = 'banan'
+  // Test Slate decorations. Highlight the word 'w00t'
+  // TODO: remove this and make something useful.
+  const woot = 'w00t'
   const decorate = useCallback(
     ([node, path]) => {
       const ranges: Range[] = []
 
-      if (banan && Text.isText(node)) {
+      if (woot && Text.isText(node)) {
         const {text} = node
-        const parts = text.split(banan)
+        const parts = text.split(woot)
         let offset = 0
 
         parts.forEach((part, i) => {
           if (i !== 0) {
             ranges.push({
-              anchor: {path, offset: offset - banan.length},
+              anchor: {path, offset: offset - woot.length},
               focus: {path, offset},
               highlight: true
             })
           }
 
-          offset = offset + part.length + banan.length
+          offset = offset + part.length + woot.length
         })
       }
       return ranges
     },
-    [banan]
+    [woot]
   )
 
   // Restore value from props
