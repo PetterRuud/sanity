@@ -81,7 +81,7 @@ export function findBlockAndIndexFromPath(
   const isNumber = Number.isInteger(Number(firstPathSegment))
   if (isNumber) {
     blockIndex = Number(firstPathSegment)
-  } else {
+  } else if (children) {
     blockIndex = children.findIndex(blk => isEqual({_key: blk._key}, firstPathSegment))
   }
   if (blockIndex > -1) {
