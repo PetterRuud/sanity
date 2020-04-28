@@ -19,7 +19,7 @@ type ElementProps = {
     block: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
-    attributes: {focused: boolean, selected: boolean},
+    attributes: {focused: boolean; selected: boolean},
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
@@ -45,12 +45,15 @@ export const Element = (props: ElementProps) => {
   // Test for inline objects first
   if (editor.isInline(element)) {
     return (
-      <InlineObject
-        value={value}
-        focused={focused}
-        renderChild={renderChild}
-        selected={selected}
-      />
+      <span {...attributes}>
+        <InlineObject
+          value={value}
+          renderChild={renderChild}
+          focused={focused}
+          selected={selected}
+        />
+        {children}
+      </span>
     )
   }
   // If not inline, it's either a block (text) or a block object (non-text)
