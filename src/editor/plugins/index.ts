@@ -1,5 +1,5 @@
 export {createWithObjectKeys} from './createWithObjectKeys'
-export {withPortableTextMarkModel} from './withPortableTextMarkModel'
+export {createWithPortableTextMarkModel} from './createWithPortableTextMarkModel'
 export {createWithSchemaTypes} from './createWithSchemaTypes'
 export {createWithPatches} from './createWithPatches'
 export {createWithMaxBlocks} from './createWithMaxBlocks'
