@@ -4,12 +4,19 @@ import {PortableTextBlock} from 'src/types/portableText'
 import {isEqual} from 'lodash'
 
 function createKeyedPath(point: Point, editor: Editor) {
-  const first = {_key: editor.children[point.path[0]]._key}
-  let second: any = point.path[1]
-  if (second !== undefined) {
-    second = {_key: editor.children[point.path[0]].children[second]._key}
+  let block: any = point.path[0]
+  if (block !== undefined) {
+    block = editor.children[point.path[0]] ? {_key: editor.children[point.path[0]]._key} : undefined
+  } else {
+    return null
   }
-  return second ? [first, 'children', second] : [first]
+  let child: any = point.path[1]
+  if (block && child !== undefined) {
+    child = editor.children[point.path[0]].children[child]
+      ? {_key: editor.children[point.path[0]].children[child]._key}
+      : undefined
+  }
+  return child ? [block, 'children', child] : [block]
 }
 
 function createArrayedPath(
@@ -80,19 +87,27 @@ export function normalizeSelection(
   return null
 }
 
-export function toPortableTextRange(editor: Editor) {
+export function toPortableTextRange(editor: Editor): EditorSelection | null {
   if (!editor.selection) {
     return editor.selection
   }
-  const anchor = {
-    path: createKeyedPath(editor.selection.anchor, editor),
-    offset: editor.selection.anchor.offset
+  let anchor
+  let focus
+  const anchorPath = createKeyedPath(editor.selection.anchor, editor)
+  if (anchorPath) {
+    anchor = {
+      path: createKeyedPath(editor.selection.anchor, editor),
+      offset: editor.selection.anchor.offset
+    }
   }
-  const focus = {
-    path: createKeyedPath(editor.selection.focus, editor),
-    offset: editor.selection.focus.offset
+  const focusPath = createKeyedPath(editor.selection.focus, editor)
+  if (focusPath) {
+    focus = {
+      path: createKeyedPath(editor.selection.focus, editor),
+      offset: editor.selection.focus.offset
+    }
   }
-  const range = {anchor, focus}
+  const range = anchor && focus ? {anchor, focus} : null
   return range
 }
 
