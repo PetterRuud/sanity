@@ -5,6 +5,11 @@ import {Editor} from 'slate'
 import {omitBy, isUndefined} from 'lodash'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
 import {fromSlateValue} from './values'
+import {debugWithName} from './debug'
+
+const debug = debugWithName('operationToPatches')
+
+// TODO: optimize how nodes are found and make sure everything here uses those finders.
 
 function findBlock(path, value: PortableTextBlock[] | undefined) {
   if (path[0] && path[0]._key) {
@@ -16,7 +21,6 @@ function findBlock(path, value: PortableTextBlock[] | undefined) {
   throw new Error('Invalid first path segment')
 }
 
-// TODO: these functions should be cleaned up when the editor is actually working (use helpers like findBlock above)
 
 export function createOperationToPatches(portableTextFeatures: PortableTextFeatures) {
   function insertTextPatch(
@@ -159,12 +163,13 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       if (oldBlock && oldBlock._key) {
         const targetValue = editor.children[operation.path[0] + 1]
         if (targetValue) {
-          const spansToMove = beforeValue[operation.path[0]].children.slice(operation.position)
-          spansToMove.forEach(span => {
+          patches.push(insert([targetValue], 'after', [{_key: splitBlock._key}]))
+          const spansToUnset = beforeValue[operation.path[0]].children.slice(operation.position)
+          spansToUnset.forEach(span => {
             const path = [{_key: oldBlock._key}, 'children', {_key: span._key}]
             patches.push(unset(path))
           })
-          patches.push(insert([targetValue], 'after', [{_key: splitBlock._key}]))
+
         }
       }
       return patches
@@ -207,9 +212,8 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       if (spanToRemove) {
         return [unset([{_key: block._key}, 'children', {_key: spanToRemove._key}])]
       }
-      // TODO: remove this console if confirmed ok
-      console.warn('Span not found, maybe ok?')
       // If it was not there before, do nothing
+      debug('Span not found in editor trying to remove node')
       return []
     } else {
       throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
