@@ -1,5 +1,5 @@
 import {Text, Range} from 'slate'
-import React, {useCallback, useMemo, useState, useEffect} from 'react'
+import React, {useCallback, useMemo, useState, useEffect, useLayoutEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
@@ -213,21 +213,26 @@ export const Editable = (props: Props) => {
   useEffect(() => {
     const pSelection = props.selection
     if (pSelection && !props.isThrottling) {
-      debug('selection from props', pSelection)
+      debug('Selection from props', pSelection)
       const normalizedSelection = normalizeSelection(pSelection, props.value)
-      if (normalizedSelection) {
-        debug('normalized selection from props', normalizedSelection)
+      if (normalizedSelection !== null) {
+        debug('Normalized selection from props', normalizedSelection)
         const slateRange = toSlateRange(normalizedSelection, props.value)
         setSelection(slateRange)
       } else if (stateValue) {
+        debug('Selecting top document')
         setSelection(SELECT_TOP_DOCUMENT)
       }
     }
   }, [props.selection])
 
-  // When the state selection changes, push that to change$
-  useEffect(() => {
-    change$.next({type: 'selection', selection: toPortableTextRange(editor)})
+  // When the selection state changes, emit that to change$
+  // Note: since the selection is coupled to DOM selections,
+  // we must useLayoutEffect for this, or the DOM selection will lag behind.
+  useLayoutEffect(() => {
+    const newSelection = toPortableTextRange(editor)
+    change$.next({type: 'selection', selection: newSelection})
+    debug('Set new selection state', JSON.stringify(newSelection))
   }, [selection])
 
   // Handle copy in the editor
