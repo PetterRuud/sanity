@@ -46,8 +46,7 @@ export const Element = (props: ElementProps) => {
   if (editor.isInline(element)) {
     return (
       <InlineObject
-        attributes={attributes}
-        value={element.value}
+        value={value}
         focused={focused}
         renderChild={renderChild}
         selected={selected}

@@ -143,6 +143,7 @@ export const Editable = (props: Props) => {
             type={type}
             portableTextFeatures={portableTextFeatures}
             renderBlock={props.renderBlock}
+            renderChild={props.renderChild}
           />
         )
       }

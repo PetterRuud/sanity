@@ -5,7 +5,6 @@ import {PortableTextChild} from '../../types/portableText'
 type Props = {
   focused: boolean
   selected: boolean
-  attributes: {}
   value: PortableTextChild,
   renderChild?: (
     child: PortableTextChild,
@@ -15,9 +14,9 @@ type Props = {
 
 export class InlineObject extends React.Component<Props, {}> {
   render() {
-    const {attributes, focused, selected, value, renderChild} = this.props
+    const {focused, selected, value, renderChild} = this.props
     return (
-      <span {...attributes} contentEditable={false}>
+      <span contentEditable={false}>
         <InlineObjectContainer focused={focused} selected={selected}>
           {renderChild && renderChild(value, {focused, selected})}
           {!renderChild && JSON.stringify(value)}
