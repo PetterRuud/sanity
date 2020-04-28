@@ -27,7 +27,7 @@ export const BlockObject = (props: BlockObjectProps) => {
   const blockObjectRef = React.useRef(null)
 
   return (
-    <div contentEditable={false} ref={blockObjectRef}>
+    <div ref={blockObjectRef}>
       <BlockObjectContainer selected={selected}>
         {renderBlock && renderBlock(value, type, blockObjectRef, { focused, selected }, defaultRender)}
       </BlockObjectContainer>
