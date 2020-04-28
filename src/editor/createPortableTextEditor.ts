@@ -1,7 +1,7 @@
 import {createEditor, Editor} from 'slate'
 import {
   createWithObjectKeys,
-  withPortableTextMarkModel,
+  createWithPortableTextMarkModel,
   createWithSchemaTypes,
   createWithPatches,
   createWithMaxBlocks,
@@ -23,7 +23,9 @@ type Options = {
   incomingPatche$?: PatchObservable
 }
 
+// This is the signature of a minimal Slate plugin
 const NOOPPlugin = (editor: Editor) => {
+  // Do some transformations here
   return editor
 }
 
@@ -31,16 +33,16 @@ const NOOPPlugin = (editor: Editor) => {
  * Creates a new Portable Text Editor (which can be used without React)
  */
 export function createPortableTextEditor(options: Options) {
-  // TODO: mot so many options, but read more from schema?
   const {portableTextFeatures, keyGenerator, change$, maxBlocks, incomingPatche$} = options
+  const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
-  const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withPatches = createWithPatches(operationToPatches, change$, portableTextFeatures, incomingPatche$)
   const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : NOOPPlugin
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures)
   const withHotkeys = createWithHotkeys(options.hotkeys, options.change$, portableTextFeatures)
   const withUndoRedo = createWithUndoRedo(incomingPatche$)
+  const withPortableTextMarkModel = createWithPortableTextMarkModel(change$)
 
   return withPatches(
     withUndoRedo(
