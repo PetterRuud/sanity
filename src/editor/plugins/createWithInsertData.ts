@@ -18,6 +18,18 @@ export function createWithInsertData(
   keyGenerator: () => string
 ) {
   return function withInsertData(editor: ReactEditor) {
+    const {setFragmentData} = editor
+    editor.setFragmentData = (data: DataTransfer) => {
+      debug('set fragment data')
+      setFragmentData(data)
+    }
+    editor.getFragment = () => {
+      debug('get fragment data')
+      if (editor.selection) {
+        return Node.fragment(editor, editor.selection)
+      }
+      return []
+    }
     // const {insertData} = editor
     editor.insertData = data => {
       change$.next({type: 'loading', isLoading: true})
