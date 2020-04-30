@@ -37,15 +37,18 @@ type Props = {
   portableTextFeatures: PortableTextFeatures
   readOnly?: boolean
   renderBlock?: (
-    block: PortableTextBlock,
+    value: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
-    attributes: {focused: boolean, selected: boolean},
+    attributes: {focused: boolean; selected: boolean},
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
-    child: PortableTextChild,
-    attributes: {focused: boolean; selected: boolean}
+    value: PortableTextChild,
+    type: SchemaType,
+    ref: React.RefObject<HTMLSpanElement>,
+    attributes: {focused: boolean, selected: boolean},
+    defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
   searchAndReplace?: boolean
   selection?: EditorSelection
@@ -137,7 +140,9 @@ export const Editable = (props: Props) => {
     eProps => {
       const value = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
       if (value && portableTextFeatures.types.blockContent.of) {
-        const type = portableTextFeatures.types.blockContent.of.find(type => type.name === value._type)
+        const type = portableTextFeatures.types.blockContent.of.find(
+          type => type.name === value._type
+        )
         return (
           <Element
             {...eProps}
@@ -234,7 +239,7 @@ export const Editable = (props: Props) => {
   useLayoutEffect(() => {
     const newSelection = toPortableTextRange(editor)
     change$.next({type: 'selection', selection: newSelection})
-    debug('Set new selection state', JSON.stringify(newSelection))
+    // debug('Set new selection state', JSON.stringify(newSelection))
   }, [selection])
 
   // Handle copy in the editor

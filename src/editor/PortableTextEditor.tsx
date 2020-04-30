@@ -34,15 +34,18 @@ type Props = {
   placeholderText?: string
   readOnly?: boolean
   renderBlock?: (
-    block: PortableTextBlock,
+    value: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
     attributes: {focused: boolean, selected: boolean},
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
-    child: PortableTextChild,
-    attributes: {focused: boolean; selected: boolean}
+    value: PortableTextChild,
+    type: SchemaType,
+    ref: React.RefObject<HTMLSpanElement>,
+    attributes: {focused: boolean, selected: boolean},
+    defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
   renderEditor?: (editor: JSX.Element) => JSX.Element
   searchAndReplace?: boolean

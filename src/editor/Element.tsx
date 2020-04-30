@@ -1,10 +1,10 @@
-import React, {ReactElement} from 'react'
+import React, {ReactElement, FunctionComponent} from 'react'
 import {Element as SlateElement} from 'slate'
 import {useFocused, useSelected, useEditor} from 'slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import Block from './nodes/TextBlock'
-import {InlineObject} from './nodes/InlineObject'
-import {BlockObject} from './nodes/BlockObject'
+import DefaultBlock from './nodes/DefaultBlock'
+import {InlineObject as InlineObjectContainer, BlockObject as BlockObjectContainer} from './nodes/index'
 import {Type as SchemaType} from '../types/schema'
 
 type ElementProps = {
@@ -16,42 +16,49 @@ type ElementProps = {
   value: PortableTextBlock
   portableTextFeatures: PortableTextFeatures
   renderBlock?: (
-    block: PortableTextBlock,
+    value: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
     attributes: {focused: boolean; selected: boolean},
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
-    child: PortableTextChild,
-    attributes: {focused: boolean; selected: boolean}
+    value: PortableTextChild,
+    type: SchemaType,
+    ref: React.RefObject<HTMLSpanElement>,
+    attributes: {focused: boolean, selected: boolean},
+    defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
 }
 
-export const Element = (props: ElementProps) => {
+const defaultRender = child => {
+  return <DefaultBlock block={child} />
+}
+
+export const Element: FunctionComponent<ElementProps> = ({
+  value,
+  attributes,
+  children,
+  element,
+  portableTextFeatures,
+  type,
+  renderBlock,
+  renderChild
+}) => {
   const editor = useEditor()
   const selected = useSelected()
   const focused = useFocused()
-  const {
-    value,
-    attributes,
-    children,
-    element,
-    portableTextFeatures,
-    type,
-    renderBlock,
-    renderChild
-  } = props
+  const blockObjectRef = React.useRef(null)
+  const inlineBlockObjectRef = React.useRef(null)
   // Test for inline objects first
   if (editor.isInline(element)) {
     return (
       <span {...attributes}>
-        <InlineObject
-          value={value}
-          renderChild={renderChild}
-          focused={focused}
-          selected={selected}
-        />
+        <span ref={inlineBlockObjectRef}>
+          <InlineObjectContainer selected={selected}>
+            {renderChild && renderChild(value, type, inlineBlockObjectRef, {focused, selected}, defaultRender)}
+          </InlineObjectContainer>
+        </span>
         {children}
       </span>
     )
@@ -71,13 +78,12 @@ export const Element = (props: ElementProps) => {
     default:
       return (
         <div {...attributes}>
-          <BlockObject
-            value={value}
-            type={type}
-            selected={selected}
-            focused={focused}
-            renderBlock={renderBlock}
-          />
+          <div ref={blockObjectRef}>
+            <BlockObjectContainer selected={selected}>
+              {renderBlock &&
+                renderBlock(value, type, blockObjectRef, {focused, selected}, defaultRender)}
+            </BlockObjectContainer>
+          </div>
           {children}
         </div>
       )

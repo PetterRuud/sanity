@@ -3,7 +3,8 @@ import {Element} from 'slate'
 import {uniq} from 'lodash'
 import Decorator from './nodes/Decorator'
 import Annotation from './nodes/Annotation'
-import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
+import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
+import {Type as SchemaType} from 'src/types/schema'
 
 type LeafProps = {
   block: PortableTextBlock
@@ -11,6 +12,13 @@ type LeafProps = {
   children: ReactElement
   leaf: Element
   portableTextFeatures: PortableTextFeatures
+  renderChild?: (
+    value: PortableTextChild,
+    type: SchemaType,
+    ref: React.RefObject<HTMLSpanElement>,
+    attributes: {focused: boolean, selected: boolean},
+    defaultRender: (child: PortableTextChild) => JSX.Element
+  ) => JSX.Element
 }
 
 export const Leaf = (props: LeafProps) => {
@@ -41,6 +49,8 @@ export const Leaf = (props: LeafProps) => {
       )
     })
   }
+
+
   // TODO: remove hightlight stuff as test for decorations
   return (
     <span {...attributes} style={{backgroundColor: leaf.highlight ? '#ff0' : '#fff'}}>
