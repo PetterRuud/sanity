@@ -40,14 +40,20 @@ type Props = {
     value: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
-    attributes: {focused: boolean; selected: boolean},
+    attributes: {
+      focused: boolean
+      selected: boolean
+    },
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
     value: PortableTextChild,
     type: SchemaType,
     ref: React.RefObject<HTMLSpanElement>,
-    attributes: {focused: boolean, selected: boolean},
+    attributes: {
+      focused: boolean
+      selected: boolean
+    },
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
   searchAndReplace?: boolean
