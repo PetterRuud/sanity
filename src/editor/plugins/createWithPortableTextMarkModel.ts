@@ -1,4 +1,9 @@
-import {Editor, Range, Transforms, Text, Path, NodeEntry} from 'slate'
+/**
+ *
+ * This plugin will change Slate's default marks model (every prop is a mark) with the Portable Text model (marks is an array of strings on prop .marks).
+ */
+
+ import {Editor, Range, Transforms, Text, Path, NodeEntry} from 'slate'
 import {isEqual, flatten} from 'lodash'
 import {Subject} from 'rxjs'
 
@@ -8,10 +13,6 @@ import {toPortableTextRange} from '../../utils/selection'
 
 const debug = debugWithName('plugin:withPortableTextMarkModel')
 
-/**
- *
- * This plugin will change Slate's default marks model (every prop is a mark) with the Portable Text model (marks is an array of strings on prop .marks).
- */
 export function createWithPortableTextMarkModel(change$: Subject<EditorChange>) {
   return function withPortableTextMarkModel(editor: Editor) {
 
