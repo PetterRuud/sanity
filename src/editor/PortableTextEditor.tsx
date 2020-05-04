@@ -40,7 +40,7 @@ type Props = {
     value: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
-    attributes: {focused: boolean, selected: boolean},
+    attributes: {focused: boolean; selected: boolean},
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
