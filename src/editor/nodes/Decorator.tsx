@@ -1,5 +1,5 @@
 import React from 'react'
-import {Strong, Em, Code} from './index'
+import {TextStrong, TextEmphasis, TextCode} from './index'
 
 type Props = {
   attributes: {}
@@ -10,19 +10,19 @@ export default function DecoratorComponent(props: Props) {
   switch(props.mark) {
     case 'strong':
       return (
-      <Strong {...props.attributes}>{props.children}</Strong>
+      <TextStrong {...props.attributes}>{props.children}</TextStrong>
       )
     case 'em':
       return (
-      <Em {...props.attributes}>{props.children}</Em>
+      <TextEmphasis {...props.attributes}>{props.children}</TextEmphasis>
       )
     case 'code':
       return (
-      <Code {...props.attributes}>{props.children}</Code>
+      <TextCode {...props.attributes}>{props.children}</TextCode>
       )
     default:
       return (
-        <span>{props.children}</span>
+        <span {...props.attributes}>{props.children}</span>
       )
   }
 }

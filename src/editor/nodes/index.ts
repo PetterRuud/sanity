@@ -1,24 +1,127 @@
 import styled from 'styled-components'
+import TextComponent from './Text'
 
-function getHeaderSize(type: string) {
-  switch (type) {
+// Text components
+export const Text = TextComponent
+
+export const TextBlock = styled.div`
+  font-size: 1em;
+  font-weight: 400;
+  width: 100%;
+  line-height: 1.5em;
+  padding-bottom: 0.5em;
+`
+
+export const TextNormal = styled.div`
+  font-size: inherit;
+`
+export const TextHeader = styled.div`
+  line-height: 1.2em;
+  padding-bottom: ${({headerStyle}) => getHeaderPaddingSize(headerStyle)};
+  padding-top: ${({headerStyle}) => getHeaderPaddingSize(headerStyle)};
+  font-size: ${({headerStyle}) => getHeaderSize(headerStyle)};
+`
+
+export const TextStrong = styled.span`
+  font-weight: 700;
+`
+export const TextEmphasis = styled.span`
+  font-style: italic;
+`
+
+export const TextCode = styled.code``
+
+export const BlockObject = styled.div`
+  user-select: none;
+  border: ${props => {
+    if (props.selected) {
+      return '1px solid blue'
+    }
+    return '1px solid transparent'
+  }};
+`
+
+export const InlineObject = styled.span`
+  background: #999;
+  border: ${props => {
+    if (props.selected) {
+      return '1px solid blue'
+    }
+    return '1px solid transparent'
+  }};
+`
+
+// List items
+
+const bullets = ['●', '○', '■']
+
+export const TextListItem = styled.div`
+  font-size: inherit;
+  word-break: inherit;
+`
+
+export const TextListItemInner = styled.div`
+  font-size: inherit;
+  position: relative;
+  left: ${props => getLeftPositionForListLevel(props.level)};
+  display: flex;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  line-height: 1.5rem;
+  &:before {
+    content: '${props => getContentForListLevelAndStyle(props.level, props.listStyle)}';
+    font-size: 0.4375rem;
+    line-height: 1.5rem;
+    position: relative;
+    top: 1px;
+    justify-content: flex-start;
+    vertical-align: top;
+    margin-right: 1em;
+    margin-left: 1em;
+  }
+`
+
+function getHeaderSize(style: string) {
+  switch (style) {
     case 'h1':
-      return '4em'
+      return '2.625rem'
+    case 'h2':
+      return '2rem'
+    case 'h3':
+      return '1.75rem'
+    case 'h4':
+      return '1.25rem'
+    case 'h5':
+      return '1rem'
+    case 'h6':
+      return '0.875rem'
     default:
-      return `1em`
+      return `1rem`
+  }
+}
+
+function getHeaderPaddingSize(style: string) {
+  switch (style) {
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'h4':
+      return '1rem'
+    default:
+      return `0.5rem`
   }
 }
 
 function getContentForListLevelAndStyle(level, style) {
-  const index = (level - 1) % 3
-  const bullets = ['●', '○', '■']
+  const normalizedLevel = (level - 1) % 3
   if (style === 'bullet') {
-    return bullets[index]
+    return bullets[normalizedLevel]
   }
   return '*'
 }
 
-function getLeftForListLevel(level: number) {
+function getLeftPositionForListLevel(level: number) {
   switch (Number(level)) {
     case 1:
       return '1.5em'
@@ -44,74 +147,3 @@ function getLeftForListLevel(level: number) {
       return '0em'
   }
 }
-
-export const TextBlock = styled.div`
-  font-size: 1em;
-  font-weight: 400;
-  width: 100%;
-  line-height: 1.5em;
-  padding-bottom: 0.5em;
-`
-
-export const ListItem = styled.div`
-  font-size: inherit;
-  word-break: break-word;
-`
-
-export const ListItemInner = styled.div`
-  font-size: inherit;
-  position: relative;
-  left: ${props => getLeftForListLevel(props.level)};
-  display: flex;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  line-height: 1.5rem;
-  &:before {
-    content: '${props => getContentForListLevelAndStyle(props.level, props.listStyle)}';
-    font-size: 0.4375rem;
-    line-height: 1.5rem;
-    position: relative;
-    top: 1px;
-    justify-content: flex-start;
-    vertical-align: top;
-    margin-right: 1em;
-    margin-left: 1em;
-  }
-`
-
-export const Normal = styled.div`
-  font-size: inherit;
-`
-export const Header = styled.div`
-  font-size: ${props => getHeaderSize(props.type)};
-`
-
-export const Strong = styled.span`
-  font-weight: 700;
-`
-export const Em = styled.span`
-  font-style: italic;
-`
-
-export const Code = styled.code``
-
-export const BlockObject = styled.div`
-  user-select: none;
-  border: ${props => {
-    if (props.selected) {
-      return '1px solid blue'
-    }
-    return '1px solid transparent'
-  }};
-`
-
-export const InlineObject = styled.span`
-  background: #999;
-  border: ${props => {
-    if (props.selected) {
-      return '1px solid blue'
-    }
-    return '1px solid transparent'
-  }};
-`

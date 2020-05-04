@@ -6,10 +6,10 @@ type Props = {
   children: React.ReactNode
   attributes?: {}
 }
-import {ListItem, ListItemInner} from './index'
+import {TextListItem, TextListItemInner} from './index'
 
 export default function ListItemComponent(props: Props) {
-  const attributes = props.attributes || {}
+  const attributes = props.attributes
   const {listStyle, level} = props
   if (!LIST_ITEM_TYPES.includes(listStyle)) {
     throw new Error(
@@ -18,8 +18,10 @@ export default function ListItemComponent(props: Props) {
     )
   }
   return (
-    <ListItem {...attributes}>
-      <ListItemInner level={level} listStyle={listStyle}>{props.children}</ListItemInner>
-    </ListItem>
+    <TextListItem {...attributes}>
+      <TextListItemInner level={level} listStyle={listStyle}>
+        {props.children}
+      </TextListItemInner>
+    </TextListItem>
   )
 }
