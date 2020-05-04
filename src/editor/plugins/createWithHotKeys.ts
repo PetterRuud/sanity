@@ -17,6 +17,7 @@ const DEFAULT_HOTKEYS = {
 
 /**
  * This plugin takes care of all hotkeys in the editor
+ * TODO: move a lot of these out the their respective plugins
  *
  */
 export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
@@ -85,6 +86,7 @@ export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
       // Deal with tab for lists
       if (isTab || isShiftTab) {
         editor.pteIncrementBlockLevels(isShiftTab) && event.preventDefault()
+        event.preventDefault()
       }
 
       // Deal with list item enter key
