@@ -5,14 +5,23 @@ import {Type} from '../types/schema'
 import {PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Subject, Observable} from 'rxjs'
 export interface EditableAPI {
-  focus: () => void
   blur: () => void
-  undo: () => void
-  redo: () => void
+  focus: () => void
+  focusBlock: () => PortableTextBlock | undefined
+  focusChild: () => PortableTextChild | undefined
+  hasBlockStyle: (style: string) => boolean
   insert: (items: PortableTextChild[] | PortableTextBlock[], selection?: EditorSelection) => void
-  remove: (selection?: EditorSelection) => void
-  toggleMark: (mark: string) => void
+  insertBlock: (type: Type, value?: {[prop: string]: any}) => void
+  insertChild: (type: Type, value?: {[prop: string]: any}) => void
   isMarkActive: (mark: string) => boolean
+  marks: () => string[]
+  redo: () => void
+  remove: (selection?: EditorSelection) => void
+  select: (selection: EditorSelection) => void
+  toggleMark: (mark: string) => void
+  toggleList: (listStyle: string) => void
+  toggleBlockStyle: (blockStyle: string) => void
+  undo: () => void
 }
 
 export type EditorNode = SlateNode & {
@@ -83,7 +92,7 @@ export type FocusChange = {
 }
 
 export type UnsetChange = {
-  type: 'unset',
+  type: 'unset'
   previousValue: PortableTextBlock[]
 }
 
@@ -96,11 +105,15 @@ export type LoadingChange = {
   isLoading: boolean
 }
 
+export type ReadyChange = {
+  type: 'ready'
+}
+
 export type InvalidValueResolution = null | {patches: Patch[]; description: string; action: string}
 
 export type InvalidValue = {
   type: 'invalidValue'
-  resolution: InvalidValueResolution,
+  resolution: InvalidValueResolution
   value: PortableTextBlock[]
 }
 
@@ -129,6 +142,7 @@ export type EditorChange =
   | UndoChange
   | RedoChange
   | UnsetChange
+  | ReadyChange
 
 export type EditorChanges = Subject<EditorChange>
 
