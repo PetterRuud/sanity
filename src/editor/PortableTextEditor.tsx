@@ -48,7 +48,6 @@ type Props = {
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
   renderEditor?: (editor: JSX.Element) => JSX.Element
-  searchAndReplace?: boolean
   selection?: EditorSelection
   spellCheck?: boolean
   type: Type
@@ -180,7 +179,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
       placeholderText,
       readOnly,
       renderEditor,
-      searchAndReplace,
       selection,
       spellCheck,
       value
@@ -204,7 +202,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
         readOnly={readOnly}
         renderBlock={this.props.renderBlock}
         renderChild={this.props.renderChild}
-        searchAndReplace={searchAndReplace}
         selection={selection}
         spellCheck={spellCheck}
         value={value}
