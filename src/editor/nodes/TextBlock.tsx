@@ -4,13 +4,15 @@ import ListItem from './ListItem'
 import Text from './Text'
 import {PortableTextFeatures} from '../../types/portableText'
 import {TextBlock as TextBlockWrapper} from './index'
+import {ReactEditor} from 'slate-react'
 
 type Props = {
   attributes?: {}
   element: Element
+  editor: ReactEditor
   portableTextFeatures: PortableTextFeatures
 }
-export default class TextBlock extends React.PureComponent<Props, {}> {
+export default class TextBlock extends React.Component<Props> {
   render() {
     const {attributes, portableTextFeatures, children, element} = this.props
     const listItem = element.listItem || undefined
@@ -23,7 +25,11 @@ export default class TextBlock extends React.PureComponent<Props, {}> {
         ? portableTextFeatures.styles.find(item => item.value === style)
         : undefined
     if (customStyle) {
-      styleComponent = customStyle.blockEditor && customStyle.blockEditor.render
+      // TODO: Look into this API.
+      // Added .portableText as .blockEditor as of May 2020, but kept backward comp.
+      styleComponent =
+        (customStyle.blockEditor && customStyle.blockEditor.render) ||
+        (customStyle.portableText && customStyle.portableText.render)
     }
     if (listItem) {
       return (
