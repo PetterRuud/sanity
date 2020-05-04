@@ -32,7 +32,12 @@ export type MarkDef = {_key: string; _type: string}
 export type PortableTextFeature = {
   title: string
   value: string
+  // Backward compatibility (blockEditor)
   blockEditor?: {
+    icon?: string | ComponentType<any>
+    render?: ComponentType<any>
+  }
+  portableText?: {
     icon?: string | ComponentType<any>
     render?: ComponentType<any>
   }
@@ -46,9 +51,9 @@ export type PortableTextFeatures = {
   lists: PortableTextFeature[]
   types: {
     block: SchemaType
-    span: SchemaType
-    blockContent: SchemaType
-    inlineObjects: SchemaType[]
     blockObjects: SchemaType[]
+    inlineObjects: SchemaType[]
+    portableText: SchemaType
+    span: SchemaType
   }
 }

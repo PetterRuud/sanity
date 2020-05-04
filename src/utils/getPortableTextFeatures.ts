@@ -1,17 +1,17 @@
 import {PortableTextFeatures} from '../types/portableText'
 
-export function getPortableTextFeatures(blockContentType): PortableTextFeatures {
-  if (!blockContentType) {
-    throw new Error("Parameter 'blockContentType' required")
+export function getPortableTextFeatures(portabletextType): PortableTextFeatures {
+  if (!portabletextType) {
+    throw new Error("Parameter 'portabletextType' required")
   }
-  const blockType = blockContentType.of.find(findBlockType)
+  const blockType = portabletextType.of.find(findBlockType)
   if (!blockType) {
     throw new Error("'block' type is not defined in this schema (required).")
   }
   const ofType = blockType.fields.find(field => field.name === 'children').type.of
   const spanType = ofType.find(memberType => memberType.name === 'span')
   const inlineObjectTypes = ofType.filter(memberType => memberType.name !== 'span')
-  const blockObjectTypes = blockContentType.of.filter(field => field.name !== 'block')
+  const blockObjectTypes = portabletextType.of.filter(field => field.name !== 'block')
   return {
     styles: resolveEnabledStyles(blockType),
     decorators: resolveEnabledDecorators(spanType),
@@ -20,7 +20,7 @@ export function getPortableTextFeatures(blockContentType): PortableTextFeatures 
     types: {
       block: blockType,
       span: spanType,
-      blockContent: blockContentType,
+      portableText: portabletextType,
       inlineObjects: inlineObjectTypes,
       blockObjects: blockObjectTypes
     }
