@@ -19,9 +19,12 @@ import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
 import {compactPatches} from '../utils/patches'
 import {validateValue} from '../utils/validateValue'
-import {Type as SchemaType} from 'src/types/schema'
+import {Type as SchemaType} from '../types/schema'
+import {debugWithName} from '../utils/debug'
 
 export const keyGenerator = () => randomKey(12)
+
+const debug = debugWithName('component:PortableTextEditor')
 
 type Props = {
   hotkeys?: {marks: {}}
