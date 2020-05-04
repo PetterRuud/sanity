@@ -4,12 +4,10 @@ import ListItem from './ListItem'
 import Text from './Text'
 import {PortableTextFeatures} from '../../types/portableText'
 import {TextBlock as TextBlockWrapper} from './index'
-import {ReactEditor} from 'slate-react'
 
 type Props = {
   attributes?: {}
   element: Element
-  editor: ReactEditor
   portableTextFeatures: PortableTextFeatures
 }
 export default class TextBlock extends React.Component<Props> {
