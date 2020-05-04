@@ -1,8 +1,10 @@
-import {Text, Range} from 'slate'
+import {Text, Range, Transforms, Editor} from 'slate'
+import {isEqual} from 'lodash'
 import React, {useCallback, useMemo, useState, useEffect, useLayoutEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
 import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
+import {Type} from '../types/schema'
 import {
   EditorSelection,
   EditorChanges,
@@ -129,24 +131,106 @@ export const Editable = (props: Props) => {
   const [selection, setSelection] = useState(editor.selection)
 
   editable({
-    focus: () => {
-      setSelection(editor.selection || SELECT_TOP_DOCUMENT)
+    focus: (): void => {
       ReactEditor.focus(editor)
     },
-    toggleMark: (mark: string, selection?: EditorSelection) => {
+    blur: (): void => {
+      ReactEditor.blur(editor)
+    },
+    toggleMark: (mark: string): void => {
       editor.pteToggleMark(mark)
       ReactEditor.focus(editor)
     },
-    isMarkActive: (mark: string) => editor.pteIsMarkActive(mark),
-    undo: () => editor.undo(),
-    redo: () => editor.redo
+    toggleList: (listStyle: string): void => {
+      editor.pteToggleListItem(listStyle)
+      ReactEditor.focus(editor)
+    },
+    toggleBlockStyle: (blockStyle: string): void => {
+      editor.pteToggleBlockStyle(blockStyle)
+      ReactEditor.focus(editor)
+    },
+    isMarkActive: (mark: string): boolean => editor.pteIsMarkActive(mark),
+    marks: (): string[] => {
+      return (
+        {
+          ...(Editor.marks(editor) || {})
+        }.marks || []
+      )
+    },
+    undo: (): void => editor.undo(),
+    redo: (): void => editor.redo(),
+    select: (selection: EditorSelection): void => {
+      const slateSelection = toSlateRange(selection, props.value)
+      if (slateSelection) {
+        Transforms.select(editor, slateSelection)
+        ReactEditor.focus(editor)
+        return
+      }
+      Transforms.deselect(editor)
+    },
+    focusBlock: (): PortableTextBlock | undefined => {
+      if (editor.selection) {
+        const [node] = Editor.node(editor, editor.selection.focus, {depth: 1})
+        if (node) {
+          return fromSlateValue([node], portableTextFeatures.types.block.name)[0]
+        }
+      }
+      return undefined
+    },
+    focusChild: (): PortableTextChild | undefined => {
+      if (editor.selection) {
+        const node = Editor.node(editor, editor.selection.focus, {depth: 2})
+        if (node) {
+          return fromSlateValue([node], portableTextFeatures.types.block.name)[0]
+        }
+      }
+      return undefined
+    },
+    insertChild: (type: Type, value?: {[prop: string]: any}): void => {
+      // TODO: test selection if inline is applicable
+      const block = toSlateValue(
+        [
+          {
+            _key: keyGenerator(),
+            _type: portableTextFeatures.types.block.name,
+            children: [
+              {
+                _key: keyGenerator(),
+                _type: type.name,
+                ...(value ? value : {})
+              }
+            ]
+          }
+        ],
+        portableTextFeatures.types.block.name
+      )[0]
+      Editor.insertNode(editor, block.children[0])
+      editor.onChange()
+    },
+    insertBlock: (type: Type, value?: {[prop: string]: any}): void => {
+      const block = toSlateValue(
+        [
+          {
+            _key: keyGenerator(),
+            _type: type.name,
+            ...(value ? value : {})
+          }
+        ],
+        portableTextFeatures.types.block.name
+      )[0]
+      Editor.insertNode(editor, block)
+      editor.onChange()
+    },
+    hasBlockStyle: (style: string): boolean => {
+      return editor.pteHasBlockStyle(style)
+    }
   })
 
   const renderElement = useCallback(
     eProps => {
       const value = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
-      if (value && portableTextFeatures.types.blockContent.of) {
-        const type = portableTextFeatures.types.blockContent.of.find(
+      if (value && portableTextFeatures.types.portableText.of) {
+        const type = portableTextFeatures.types.portableText.of.find(
           type => type.name === value._type
         )
         return (
@@ -225,7 +309,12 @@ export const Editable = (props: Props) => {
   // Restore selection from props
   useEffect(() => {
     const pSelection = props.selection
-    if (pSelection && !props.isThrottling) {
+    if (
+      pSelection &&
+      !props.isThrottling &&
+      ReactEditor.isFocused(editor) &&
+      !isEqual(pSelection, toPortableTextRange(editor))
+    ) {
       debug('Selection from props', pSelection)
       const normalizedSelection = normalizeSelection(pSelection, props.value)
       if (normalizedSelection !== null) {
@@ -273,7 +362,7 @@ export const Editable = (props: Props) => {
       value={getValue(stateValue, [createPlaceHolderBlock()])}
     >
       <SlateEditable
-        autoFocus={false}
+        autoFocus={true}
         decorate={decorate}
         onCopy={handleCopy}
         onFocus={() => change$.next({type: 'focus'})}
