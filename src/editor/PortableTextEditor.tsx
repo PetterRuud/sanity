@@ -61,25 +61,63 @@ type State = {
   invalidValue: PortableTextBlock[] | undefined
 }
 
-export interface PortableTextEditor {
-  focus: (editor: PortableTextEditor) => void
-}
-
 export class PortableTextEditor extends React.Component<Props, State> {
   static focus = (editor: PortableTextEditor) => {
+    debug('User focused from the outside')
     editor.editable?.focus()
   }
   static blur = (editor: PortableTextEditor) => {
+    debug('User blurred from the outside')
     editor.editable?.blur()
   }
   static toggleMark = (editor: PortableTextEditor, mark: string) => {
+    debug(`User toggling mark from the outside`, mark)
     editor.editable?.toggleMark(mark)
   }
   static isMarkActive = (editor: PortableTextEditor, mark: string) =>
     editor.editable?.isMarkActive(mark)
-
+  static select = (editor: PortableTextEditor, selection: EditorSelection | null) => {
+    debug(`User setting selection from the outside`, selection)
+    editor.editable?.select(selection)
+  }
   static getPortableTextFeatures = (editor: PortableTextEditor) => {
     return editor.portableTextFeatures
+  }
+  static isDragging = (editor: PortableTextEditor) => {
+    // debug('drag:todo', editor)
+    return false // TODO: - when drag is implemented
+  }
+  static focusBlock = (editor: PortableTextEditor) => {
+    return editor.editable?.focusBlock()
+  }
+  static focusChild = (editor: PortableTextEditor) => {
+    return editor.editable?.focusChild()
+  }
+  static marks = (editor: PortableTextEditor) => {
+    return editor.editable?.marks()
+  }
+  static insertChild = (
+    editor: PortableTextEditor,
+    type: Type,
+    value?: {[prop: string]: any}
+  ) => {
+    return editor.editable?.insertChild(type, value)
+  }
+  static insertBlock = (
+    editor: PortableTextEditor,
+    type: Type,
+    value?: {[prop: string]: any}
+  ) => {
+    return editor.editable?.insertBlock(type, value)
+  }
+  static toggleList = (editor: PortableTextEditor, listStyle: string): void => {
+    return editor.editable?.toggleList(listStyle)
+  }
+  static hasBlockStyle = (editor: PortableTextEditor, blockStyle: string) => {
+    return editor.editable?.hasBlockStyle(blockStyle)
+  }
+  static toggleBlockStyle = (editor: PortableTextEditor, blockStyle: string) => {
+    return editor.editable?.toggleBlockStyle(blockStyle)
   }
 
   private portableTextFeatures: PortableTextFeatures
