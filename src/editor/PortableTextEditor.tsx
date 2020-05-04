@@ -131,6 +131,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
 
   componentDidMount() {
     this.change$.next({type: 'loading', isLoading: false})
+    this.change$.next({type: 'ready'})
   }
 
   private onChange = (next: EditorChange): void => {
