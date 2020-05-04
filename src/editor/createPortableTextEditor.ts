@@ -7,7 +7,8 @@ import {
   createWithMaxBlocks,
   createWithPortableTextLists,
   createWithHotkeys,
-  createWithUndoRedo
+  createWithUndoRedo,
+  createWithPortableTextBlockStyle
 } from './plugins'
 import {PortableTextFeatures} from '../types/portableText'
 import {createOperationToPatches} from '../utils/operationToPatches'
@@ -37,18 +38,26 @@ export function createPortableTextEditor(options: Options) {
   const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
-  const withPatches = createWithPatches(operationToPatches, change$, portableTextFeatures, incomingPatche$)
+  const withPatches = createWithPatches(
+    operationToPatches,
+    change$,
+    portableTextFeatures,
+    incomingPatche$
+  )
   const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : NOOPPlugin
-  const withPortableTextLists = createWithPortableTextLists(portableTextFeatures)
+  const withPortableTextLists = createWithPortableTextLists(portableTextFeatures, change$)
   const withHotkeys = createWithHotkeys(options.hotkeys, options.change$, portableTextFeatures)
   const withUndoRedo = createWithUndoRedo(incomingPatche$)
   const withPortableTextMarkModel = createWithPortableTextMarkModel(change$)
+  const withPortableTextBlockStyle = createWithPortableTextBlockStyle(portableTextFeatures, change$)
 
   return withPatches(
     withUndoRedo(
       withHotkeys(
-        withPortableTextLists(
-          withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(createEditor()))))
+        withPortableTextBlockStyle(
+          withPortableTextLists(
+            withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(createEditor()))))
+          )
         )
       )
     )
