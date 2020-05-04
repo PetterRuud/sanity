@@ -1,8 +1,37 @@
 import {Editor, Transforms, Element} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
+import {EditorChange} from '../../types/editor'
+import {debugWithName} from '../../utils/debug'
+import {toPortableTextRange} from '../../utils/selection'
+import {Subject} from 'rxjs'
+import {throttle} from 'lodash'
 
-export function createWithPortableTextLists(portableTextFeatures: PortableTextFeatures) {
+const debug = debugWithName('plugin:withPortableTextLists')
+const MAX_LIST_LEVEL = 10
+
+export function createWithPortableTextLists(
+  portableTextFeatures: PortableTextFeatures,
+  change$: Subject<EditorChange>
+) {
   return function withPortableTextLists(editor: Editor) {
+    // // Extend Slate's default normalization to set / unset level on .listItem blocks.
+    // const {normalizeNode} = editor
+    // editor.normalizeNode = nodeEntry => {
+    //   normalizeNode(nodeEntry)
+    //   const operations = editor.operations.map(op => {
+    //     if (op.type === 'set_node' && op.newProperties && op.newProperties.listItem) {
+    //       // debug('Normalizing level for list item')
+    //       op.newProperties.level = op.newProperties.level || 1
+    //     } else if (op.newProperties && op.newProperties.level) {
+    //       // TODO: will level be used otherwise? Text indentation?
+    //       // debug('Deleting obsolete level prop from non list item')
+    //       delete op.newProperties.level
+    //     }
+    //     return op
+    //   })
+    //   editor.operations = operations
+    // }
+
     editor.pteToggleListItem = (listItemStyle: string) => {
       if (!editor.selection) {
         return
@@ -16,10 +45,12 @@ export function createWithPortableTextLists(portableTextFeatures: PortableTextFe
       ]
       selectedBlocks.forEach(([node, path]) => {
         const {listItem, level, ...rest} = node
-        if (node.listItem) {
-          Transforms.insertNodes(editor, rest, {at: path})
+        if (node.listItem === listItemStyle) {
+          debug(`Unsetting list '${listItemStyle}'`)
+          Transforms.setNodes(editor, {...rest, listItem: undefined, level: undefined}, {at: path})
         } else {
-          Transforms.insertNodes(
+          debug(`Setting list '${listItemStyle}'`)
+          Transforms.setNodes(
             editor,
             {
               ...rest,
@@ -32,11 +63,15 @@ export function createWithPortableTextLists(portableTextFeatures: PortableTextFe
           )
         }
       })
+      // Emit a new selection here (though it might be the same).
+      // This is for toolbars etc that listens to selection changes to update themselves.
+      change$.next({type: 'selection', selection: toPortableTextRange(editor)})
+      editor.onChange()
     }
 
-    editor.pteEndList = (): boolean => {
+    editor.pteEndList = () => {
       if (!editor.selection) {
-        return false
+        return
       }
       const selectedBlocks = [
         ...Editor.nodes(editor, {
@@ -50,17 +85,19 @@ export function createWithPortableTextLists(portableTextFeatures: PortableTextFe
         })
       ]
       if (selectedBlocks.length === 0) {
-        return false
+        return
       }
       selectedBlocks.forEach(([node, path]) => {
+        debug('Unset list')
         Transforms.setNodes(editor, {...node, level: undefined, listItem: undefined}, {at: path})
       })
-      return true
+      change$.next({type: 'selection', selection: toPortableTextRange(editor)})
+      return true // Note: we are exiting the plugin chain by not returning editor (or hotkey plugin 'enter' will fire)
     }
 
-    editor.pteIncrementBlockLevels = (reverse: boolean): boolean => {
+    editor.pteIncrementBlockLevels = throttle((reverse: boolean): void => {
       if (!editor.selection) {
-        return false
+        return
       }
       const selectedBlocks = [
         ...Editor.nodes(editor, {
@@ -69,19 +106,26 @@ export function createWithPortableTextLists(portableTextFeatures: PortableTextFe
         })
       ]
       if (selectedBlocks.length === 0) {
-        return false
+        return
       }
       selectedBlocks.forEach(([node, path]) => {
         let level = node.level || 1
         if (reverse) {
           level--
+          debug('Decrementing list level', Math.min(MAX_LIST_LEVEL, Math.max(1, level)))
         } else {
           level++
+          debug('Incrementing list level', Math.min(MAX_LIST_LEVEL, Math.max(1, level)))
         }
-        Transforms.setNodes(editor, {level: Math.min(10, Math.max(1, level))}, {at: path})
+        Transforms.setNodes(
+          editor,
+          {level: Math.min(MAX_LIST_LEVEL, Math.max(1, level))},
+          {at: path}
+        )
       })
-      return true
-    }
+      change$.next({type: 'selection', selection: toPortableTextRange(editor)})
+      editor.onChange()
+    }, 100)
     return editor
   }
 }
