@@ -1,3 +1,8 @@
+/**
+ * This plugin will make the editor support undo/redo on the local state only.
+ * The undo/redo steps are rebased against incoming patches since the step occured.
+ */
+
 import {isEqual, flatten} from 'lodash'
 import {Editor, Operation, Path} from 'slate'
 import {Patch} from '../../types/patch'
@@ -164,8 +169,11 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
   }
 }
 
+// This will adjust the user selection according to patcehes done by others.
+// TODO: complete all necessary steps of the algorithm and write tests.
+
 function transformOperation(editor: Editor, patch: Patch, operation: Operation): Operation[] {
-  // debug(`Condidering ${patch.type} patch against ${operation.type}`)
+  // debug(`Rebasing selection for patch ${patch.type} against operation ${operation.type}`)
 
   let transformedOperation = {...operation}
 
