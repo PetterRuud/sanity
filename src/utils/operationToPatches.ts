@@ -21,7 +21,6 @@ function findBlock(path, value: PortableTextBlock[] | undefined) {
   throw new Error('Invalid first path segment')
 }
 
-
 export function createOperationToPatches(portableTextFeatures: PortableTextFeatures) {
   function insertTextPatch(
     editor: Editor,
@@ -130,8 +129,18 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     } else if (operation.path.length === 2 && editor.children[operation.path[0]] && isTextBlock) {
       const position =
         block.children.length === 0 || !block.children[operation.path[1] - 1] ? 'before' : 'after'
+      const child = fromSlateValue(
+        [
+          {
+            _key: 'bogus',
+            _type: portableTextFeatures.types.block.name,
+            children: [operation.node]
+          }
+        ],
+        portableTextFeatures.types.block.name
+      )[0].children[0]
       return [
-        insert([operation.node], position, [
+        insert([child], position, [
           {_key: block._key},
           'children',
           block.children.length <= 1 || !block.children[operation.path[1] - 1]
@@ -169,7 +178,6 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
             const path = [{_key: oldBlock._key}, 'children', {_key: span._key}]
             patches.push(unset(path))
           })
-
         }
       }
       return patches
