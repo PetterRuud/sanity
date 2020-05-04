@@ -249,10 +249,9 @@ export class PortableTextEditor extends React.Component<Props, State> {
         value={value}
       />
     )
-    return (
-      <>
-        {renderEditor ? renderEditor(editable) : editable}
-      </>
-    )
+    if (renderEditor) {
+      return renderEditor(editable)
+    }
+    return editable
   }
 }
