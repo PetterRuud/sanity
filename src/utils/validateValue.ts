@@ -72,7 +72,7 @@ export function validateValue(
           resolution = {
             patches: [insert([newSpan], 'after', [{_key: blk._key}, 'children', 0])],
             description: `Children for text block with _key '${blk._key}' is empty.`,
-            action: 'Insert an empty span'
+            action: 'Insert an empty text'
           }
           return true
         }
@@ -82,16 +82,16 @@ export function validateValue(
               const newchild = {...child, _key: keyGenerator()}
               resolution = {
                 patches: [set(newchild, [{_key: blk._key}, 'children', cIndex])],
-                description: `Child at index ${cIndex} is missing required _key in block with _key ${blk._key}.`,
-                action: 'Set the child with a fresh _key'
+                description: `Object at index ${cIndex} is missing required _key in block with _key ${blk._key}.`,
+                action: 'Set a new random _key on the object'
               }
               return true
             }
             if (!child._type && blk._key) {
               resolution = {
                 patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
-                description: `Child with _key '${child._key}' in block with key '${blk._key}' is missing required key '_type'.`,
-                action: 'Remove the child'
+                description: `Object with _key '${child._key}' in block with key '${blk._key}' is missing required key '_type' property.`,
+                action: 'Remove the object'
               }
               return true
             }
@@ -103,8 +103,8 @@ export function validateValue(
             ) {
               resolution = {
                 patches: [unset([])],
-                description: `Found unknown child _type ('${child._type}') for block with _key ${blk._key}`,
-                action: 'Remove the child'
+                description: `Found unknown object _type ('${child._type}') for block with _key ${blk._key}`,
+                action: 'Remove the object'
               }
               return true
             }
