@@ -98,8 +98,6 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     beforeValue: PortableTextBlock[]
   ) {
     const block = beforeValue[operation.path[0]]
-    const isTextBlock =
-      editor.children[operation.path[0]]._type === portableTextFeatures.types.block.name
     if (operation.path.length === 1) {
       const position = operation.path[0] === 0 ? 'before' : 'after'
       const targetKey =
@@ -126,7 +124,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         ]
       }
       throw new Error('Target key not found!')
-    } else if (operation.path.length === 2 && editor.children[operation.path[0]] && isTextBlock) {
+    } else if (operation.path.length === 2 && editor.children[operation.path[0]]) {
       const position =
         block.children.length === 0 || !block.children[operation.path[1] - 1] ? 'before' : 'after'
       const child = fromSlateValue(
@@ -134,7 +132,12 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
           {
             _key: 'bogus',
             _type: portableTextFeatures.types.block.name,
-            children: [operation.node]
+            children: [
+              {
+                ...operation.node,
+                _type: operation.node._type || portableTextFeatures.types.span.name
+              }
+            ]
           }
         ],
         portableTextFeatures.types.block.name
