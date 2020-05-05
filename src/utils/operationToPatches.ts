@@ -241,11 +241,11 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       const block = beforeValue[operation.path[0]]
       const targetKey = block && block._key
       if (targetKey) {
-        patches.push(
-          set(editor.children[operation.path[0] - 1], [
-            {_key: editor.children[operation.path[0] - 1]._key}
-          ])
-        )
+        const newBlock = fromSlateValue(
+          [editor.children[operation.path[0] - 1]],
+          portableTextFeatures.types.block.name
+        )[0]
+        patches.push(set(newBlock, [{_key: newBlock._key}]))
         patches.push(unset([{_key: targetKey}]))
       } else {
         throw new Error('Targetkey not found!')
