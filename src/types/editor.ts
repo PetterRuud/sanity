@@ -7,13 +7,16 @@ import {Subject, Observable} from 'rxjs'
 export interface EditableAPI {
   blur: () => void
   focus: () => void
+  findDOMNode: (element: PortableTextBlock | PortableTextChild) => HTMLElement
   focusBlock: () => PortableTextBlock | undefined
   focusChild: () => PortableTextChild | undefined
+  findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
   hasBlockStyle: (style: string) => boolean
   insert: (items: PortableTextChild[] | PortableTextBlock[], selection?: EditorSelection) => void
   insertBlock: (type: Type, value?: {[prop: string]: any}) => void
   insertChild: (type: Type, value?: {[prop: string]: any}) => void
   isMarkActive: (mark: string) => boolean
+  isVoid: (element: PortableTextBlock | PortableTextChild) => boolean
   marks: () => string[]
   redo: () => void
   remove: (selection?: EditorSelection) => void
@@ -167,3 +170,9 @@ export type OnPasteFn = (arg0: {
 export type OnCopyFn = (event: React.ClipboardEvent<HTMLDivElement>) => undefined | any
 
 export type PatchObservable = Observable<Patch>
+
+export type RenderAttributes = {
+  focused: boolean
+  selected: boolean
+  path: Path
+}
