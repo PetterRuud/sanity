@@ -3,38 +3,47 @@ import {EditorSelection, EditorSelectionPoint} from '../types/editor'
 import {PortableTextBlock} from 'src/types/portableText'
 import {isEqual} from 'lodash'
 
-function createKeyedPath(point: Point, editor: Editor) {
-  let block: any = point.path[0]
-  if (block !== undefined) {
-    block = editor.children[point.path[0]] ? {_key: editor.children[point.path[0]]._key} : undefined
-  } else {
+export function createKeyedPath(point: Point, editor: Editor) {
+  let blockPath = [point.path[0]]
+  const [block] = Editor.node(editor, blockPath, {depth: 1})
+  if (!block) {
     return null
   }
-  let child: any = point.path[1]
-  if (block && child !== undefined) {
-    child = editor.children[point.path[0]].children[child]
-      ? {_key: editor.children[point.path[0]].children[child]._key}
-      : undefined
+  const keyedBlockPath = [{_key: block._key}]
+  if (editor.isVoid({_type: block._type, children: block.children})) {
+    return keyedBlockPath
   }
-  return child ? [block, 'children', child] : [block]
+  let keyedChildPath
+  const childPath = point.path.slice(0, 2)
+  if (childPath) {
+    const [child] = Editor.node(editor, childPath, {depth: 2})
+    keyedChildPath = ['children', {_key: child._key}]
+  }
+  return keyedChildPath ? [...keyedBlockPath, ...keyedChildPath] : keyedBlockPath
 }
 
-function createArrayedPath(
-  point: EditorSelectionPoint,
-  value: PortableTextBlock[] | undefined
-): SlatePath {
-  if (!value) {
+export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): SlatePath {
+  if (!editor) {
     return []
   }
-  const first = value.findIndex(blk => blk._key === point.path[0]['_key'])
-  let second: any
-  if (point.path[2]) {
-    const blk = value.find(item => item._key === point.path[0]['_key'])
-    if (blk) {
-      second = blk.children.findIndex(child => child._key === point.path[2]['_key'])
-    }
+  const [block, blockPath] = Array.from(
+    Editor.nodes(editor, {at: [], match: n => n._key === point.path[0]['_key']})
+  )[0]
+  if (!block) {
+    return []
   }
-  return second !== undefined ? [first, second] : [first]
+  if (editor.isVoid({_type: block._type, children: block.children})) {
+    return blockPath
+  }
+  const childPath = [point.path[2]]
+  let childIndex = block.children.findIndex(child => isEqual([{_key: child._key}], childPath))
+  if (childIndex >= 0) {
+    if (editor.isVoid(block.children[childIndex])) {
+      return blockPath.concat(childIndex).concat(0)
+    }
+    return blockPath.concat(childIndex)
+  }
+  return blockPath
 }
 
 function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[]) {
@@ -111,19 +120,16 @@ export function toPortableTextRange(editor: Editor): EditorSelection | null {
   return range
 }
 
-export function toSlateRange(
-  selection: EditorSelection,
-  value: PortableTextBlock[] | undefined
-): Range | null {
-  if (!selection || !value) {
+export function toSlateRange(selection: EditorSelection, editor: Editor): Range | null {
+  if (!selection || !editor) {
     return null
   }
   const anchor = {
-    path: createArrayedPath(selection.anchor, value),
+    path: createArrayedPath(selection.anchor, editor),
     offset: selection.anchor.offset
   }
   const focus = {
-    path: createArrayedPath(selection.focus, value),
+    path: createArrayedPath(selection.focus, editor),
     offset: selection.focus.offset
   }
   const range = anchor && focus ? {anchor, focus} : null
