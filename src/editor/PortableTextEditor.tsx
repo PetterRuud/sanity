@@ -6,6 +6,7 @@ import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
 import {Patch} from '../types/patch'
+import {HotkeyOptions} from '../types/options'
 import {
   EditorSelection,
   EditorChange,
@@ -27,7 +28,7 @@ export const keyGenerator = () => randomKey(12)
 const debug = debugWithName('component:PortableTextEditor')
 
 type Props = {
-  hotkeys?: {marks: {}}
+  hotkeys?: HotkeyOptions
   incomingPatche$?: PatchObservable
   keyGenerator?: () => string
   maxBlocks?: number | string

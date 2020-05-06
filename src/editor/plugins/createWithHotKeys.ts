@@ -1,11 +1,12 @@
 import {Editor} from 'slate'
 import isHotkey from 'is-hotkey'
 import {PortableTextSlateEditor} from '../../types/editor'
+import {HotkeyOptions} from '../../types/options'
 import {debugWithName} from '../../utils/debug'
 
 const debug = debugWithName('plugin:withHotKeys')
 
-const DEFAULT_HOTKEYS = {
+const DEFAULT_HOTKEYS: HotkeyOptions = {
   marks: {
     'mod+b': 'strong',
     'mod+i': 'em',
@@ -20,9 +21,9 @@ const DEFAULT_HOTKEYS = {
  * TODO: move a lot of these out the their respective plugins
  *
  */
-export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
+export function createWithHotkeys(hotkeys: HotkeyOptions, change$, portableTextFeatures) {
   const reservedHotkeys = ['enter', 'tab', 'shift', 'delete']
-  const activeHotkeys = hotkeys || DEFAULT_HOTKEYS
+  const activeHotkeys = hotkeys || DEFAULT_HOTKEYS // TODO: Merge where possible? A union?
   return function withHotKeys(editor: Editor) {
     let backspaceCount = 0
     editor.pteWithHotKeys = (
@@ -38,9 +39,12 @@ export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
             }
             if (isHotkey(hotkey, event.nativeEvent)) {
               event.preventDefault()
-              const mark = hotkeys[cat][hotkey]
-              debug(`HotKey ${hotkey} to toggle ${mark}`)
-              editor.pteToggleMark(mark)
+              const possibleMark = hotkeys[cat]
+              if (possibleMark) {
+                const mark = possibleMark[hotkey]
+                debug(`HotKey ${hotkey} to toggle ${mark}`)
+                editor.pteToggleMark(mark)
+              }
             }
           }
         }
@@ -51,8 +55,11 @@ export function createWithHotkeys(hotkeys, change$, portableTextFeatures) {
             }
             if (isHotkey(hotkey, event.nativeEvent)) {
               event.preventDefault()
-              const command = hotkeys[cat][hotkey]
-              command(event)
+              const possibleCommand = hotkeys[cat]
+              if (possibleCommand) {
+                const command = possibleCommand[hotkey]
+                command(event)
+              }
             }
           }
         }

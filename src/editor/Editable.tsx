@@ -13,6 +13,7 @@ import {
   PatchObservable,
   EditableAPI
 } from '../types/editor'
+import {HotkeyOptions} from '../types/options'
 import {toSlateValue, fromSlateValue} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
 import {createWithInsertData} from './plugins'
@@ -28,7 +29,7 @@ const debug = debugWithName('component:Editable')
 type Props = {
   change$: EditorChanges
   editable: (args0) => EditableAPI
-  hotkeys?: {marks: {}}
+  hotkeys?: HotkeyOptions
   incomingPatche$?: PatchObservable
   isThrottling: boolean
   keyGenerator: () => string

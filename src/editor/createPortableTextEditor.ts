@@ -10,19 +10,8 @@ import {
   createWithUndoRedo,
   createWithPortableTextBlockStyle
 } from './plugins'
-import {PortableTextFeatures} from '../types/portableText'
 import {createOperationToPatches} from '../utils/operationToPatches'
-import {Subject} from 'rxjs'
-import {EditorChange, PatchObservable} from 'src/types/editor'
-
-type Options = {
-  portableTextFeatures: PortableTextFeatures
-  keyGenerator: () => string
-  change$: Subject<EditorChange>
-  maxBlocks?: number
-  hotkeys?: {marks: {}}
-  incomingPatche$?: PatchObservable
-}
+import {Options} from '../types/options'
 
 // This is the signature of a minimal Slate plugin
 const NOOPPlugin = (editor: Editor) => {
