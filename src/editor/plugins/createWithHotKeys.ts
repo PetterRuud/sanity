@@ -21,9 +21,9 @@ const DEFAULT_HOTKEYS: HotkeyOptions = {
  * TODO: move a lot of these out the their respective plugins
  *
  */
-export function createWithHotkeys(hotkeys: HotkeyOptions, change$, portableTextFeatures) {
+export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
   const reservedHotkeys = ['enter', 'tab', 'shift', 'delete']
-  const activeHotkeys = hotkeys || DEFAULT_HOTKEYS // TODO: Merge where possible? A union?
+  const activeHotkeys = hotkeysFromOptions || DEFAULT_HOTKEYS // TODO: Merge where possible? A union?
   return function withHotKeys(editor: Editor) {
     let backspaceCount = 0
     editor.pteWithHotKeys = (
@@ -33,13 +33,13 @@ export function createWithHotkeys(hotkeys: HotkeyOptions, change$, portableTextF
       // Wire up custom marks hotkeys
       Object.keys(activeHotkeys).forEach(cat => {
         if (cat === 'marks') {
-          for (const hotkey in hotkeys[cat]) {
+          for (const hotkey in activeHotkeys[cat]) {
             if (reservedHotkeys.includes(hotkey)) {
               throw new Error(`The hotkey ${hotkey} is reserved!`)
             }
             if (isHotkey(hotkey, event.nativeEvent)) {
               event.preventDefault()
-              const possibleMark = hotkeys[cat]
+              const possibleMark = activeHotkeys[cat]
               if (possibleMark) {
                 const mark = possibleMark[hotkey]
                 debug(`HotKey ${hotkey} to toggle ${mark}`)
@@ -49,13 +49,13 @@ export function createWithHotkeys(hotkeys: HotkeyOptions, change$, portableTextF
           }
         }
         if (cat === 'custom') {
-          for (const hotkey in hotkeys[cat]) {
+          for (const hotkey in activeHotkeys[cat]) {
             if (reservedHotkeys.includes(hotkey)) {
               throw new Error(`The hotkey ${hotkey} is reserved!`)
             }
             if (isHotkey(hotkey, event.nativeEvent)) {
               event.preventDefault()
-              const possibleCommand = hotkeys[cat]
+              const possibleCommand = activeHotkeys[cat]
               if (possibleCommand) {
                 const command = possibleCommand[hotkey]
                 command(event)

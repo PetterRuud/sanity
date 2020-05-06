@@ -35,7 +35,7 @@ export function createPortableTextEditor(options: Options) {
   )
   const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : NOOPPlugin
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures, change$)
-  const withHotkeys = createWithHotkeys(options.hotkeys, options.change$, portableTextFeatures)
+  const withHotkeys = createWithHotkeys(options.hotkeys)
   const withUndoRedo = createWithUndoRedo(incomingPatche$)
   const withPortableTextMarkModel = createWithPortableTextMarkModel(change$)
   const withPortableTextBlockStyle = createWithPortableTextBlockStyle(portableTextFeatures, change$)
