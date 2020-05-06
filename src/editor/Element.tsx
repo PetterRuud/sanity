@@ -76,10 +76,17 @@ export const Element: FunctionComponent<ElementProps> = ({
           focused = true
         }
       }
+      const handleMouseDown = event => {
+        // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
+        if (focused) {
+          event.stopPropagation()
+          event.preventDefault()
+        }
+      }
       return (
         <span {...attributes}>
           {renderChild && (
-            <span ref={inlineBlockObjectRef} key={keyGenerator()}>
+            <span ref={inlineBlockObjectRef} key={keyGenerator()} onMouseDown={handleMouseDown}>
               {renderChild(
                 value,
                 type,
@@ -124,10 +131,17 @@ export const Element: FunctionComponent<ElementProps> = ({
       if (!type) {
         throw new Error('Could not find type for block element')
       }
+      const handleMouseDown = event => {
+        // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
+        if (focused) {
+          event.stopPropagation()
+          event.preventDefault()
+        }
+      }
       return (
         <div {...attributes}>
           {renderBlock && (
-            <div ref={blockObjectRef} key={keyGenerator()}>
+            <div ref={blockObjectRef} key={keyGenerator()} onMouseDown={handleMouseDown}>
               {renderBlock(
                 value,
                 type,
