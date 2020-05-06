@@ -1,38 +1,43 @@
 import React, {ReactElement, FunctionComponent} from 'react'
-import {Element as SlateElement} from 'slate'
-import {useFocused, useSelected, useEditor} from 'slate-react'
+import {Element as SlateElement, Editor} from 'slate'
+import {useSelected, useEditor} from 'slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import Block from './nodes/TextBlock'
-import DefaultBlock from './nodes/DefaultBlock'
-import {InlineObject as InlineObjectContainer, BlockObject as BlockObjectContainer} from './nodes/index'
+import Object from './nodes/DefaultObject'
+import {
+  InlineObject as InlineObjectContainer,
+  BlockObject as BlockObjectContainer
+} from './nodes/index'
 import {Type as SchemaType} from '../types/schema'
+import {RenderAttributes} from '../types/editor'
+import {fromSlateValue} from '../utils/values'
+import {keyGenerator} from './PortableTextEditor'
 
 type ElementProps = {
   attributes: string
   children: ReactElement
   element: SlateElement
   block: PortableTextBlock
-  type: SchemaType
   value: PortableTextBlock
   portableTextFeatures: PortableTextFeatures
   renderBlock?: (
     value: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
-    attributes: {focused: boolean; selected: boolean},
+    attributes: RenderAttributes,
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
     value: PortableTextChild,
     type: SchemaType,
     ref: React.RefObject<HTMLSpanElement>,
-    attributes: {focused: boolean, selected: boolean},
+    attributes: RenderAttributes,
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
 }
 
-const defaultRender = child => {
-  return <DefaultBlock block={child} />
+const defaultRender = value => {
+  return <Object value={value} />
 }
 
 export const Element: FunctionComponent<ElementProps> = ({
@@ -41,27 +46,60 @@ export const Element: FunctionComponent<ElementProps> = ({
   children,
   element,
   portableTextFeatures,
-  type,
   renderBlock,
   renderChild
 }) => {
   const editor = useEditor()
   const selected = useSelected()
-  const focused = useFocused()
   const blockObjectRef = React.useRef(null)
   const inlineBlockObjectRef = React.useRef(null)
+  let focused = false
   // Test for inline objects first
+  // TODO: This is probably not the best way to find the child's block.
   if (editor.isInline(element)) {
-    return (
-      <span {...attributes}>
-        <span ref={inlineBlockObjectRef}>
-          <InlineObjectContainer selected={selected}>
-            {renderChild && renderChild(value, type, inlineBlockObjectRef, {focused, selected}, defaultRender)}
-          </InlineObjectContainer>
+    const [block] = Array.from(
+      Editor.nodes(editor, {
+        at: [],
+        match: n => n.children && n.children.find(c => c._key === value._key)
+      })
+    )[0]
+    const type = portableTextFeatures.types.inlineObjects.find(type => type.name === value._type)
+    if (!type) {
+      throw new Error('Could not find type for inline block element')
+    }
+    if (block) {
+      const blockValue = fromSlateValue([block], portableTextFeatures.types.block.name)[0]
+      const path = [{_key: blockValue._key}, 'children', {_key: value._key}]
+      if (editor.selection?.focus) {
+        const [node] = Editor.node(editor, editor.selection.focus.path.slice(0, 2), {depth: 2})
+        if (node._key === value._key) {
+          focused = true
+        }
+      }
+      return (
+        <span {...attributes}>
+          {renderChild && (
+            <span ref={inlineBlockObjectRef} key={keyGenerator()}>
+              {renderChild(
+                value,
+                type,
+                inlineBlockObjectRef,
+                {focused, selected, path},
+                defaultRender
+              )}
+            </span>
+          )}
+          {!renderChild && (
+            <InlineObjectContainer selected={selected}>
+              {defaultRender(value)}
+            </InlineObjectContainer>
+          )}
+          {children}
         </span>
-        {children}
-      </span>
-    )
+      )
+    } else {
+      throw new Error('Block not found!')
+    }
   }
   // If not inline, it's either a block (text) or a block object (non-text)
   switch (element._type) {
@@ -76,14 +114,32 @@ export const Element: FunctionComponent<ElementProps> = ({
         </Block>
       )
     default:
+      if (editor.selection?.focus) {
+        const [node] = Editor.node(editor, editor.selection.focus.path, {depth: 1})
+        if (node._key === value._key) {
+          focused = true
+        }
+      }
+      const type = portableTextFeatures.types.blockObjects.find(type => type.name === value._type)
+      if (!type) {
+        throw new Error('Could not find type for block element')
+      }
       return (
         <div {...attributes}>
-          <div ref={blockObjectRef}>
-            <BlockObjectContainer selected={selected}>
-              {renderBlock &&
-                renderBlock(value, type, blockObjectRef, {focused, selected}, defaultRender)}
-            </BlockObjectContainer>
-          </div>
+          {renderBlock && (
+            <div ref={blockObjectRef} key={keyGenerator()}>
+              {renderBlock(
+                value,
+                type,
+                blockObjectRef,
+                {focused, selected, path: [{_key: value._key}]},
+                defaultRender
+              )}
+            </div>
+          )}
+          {!renderBlock && (
+            <BlockObjectContainer selected={selected}>{defaultRender(value)}</BlockObjectContainer>
+          )}
           {children}
         </div>
       )

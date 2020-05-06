@@ -7,6 +7,7 @@ import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../typ
 import {Type} from '../types/schema'
 import {Patch} from '../types/patch'
 import {HotkeyOptions} from '../types/options'
+import {Path} from '../types/path'
 import {
   EditorSelection,
   EditorChange,
@@ -119,6 +120,15 @@ export class PortableTextEditor extends React.Component<Props, State> {
   }
   static toggleBlockStyle = (editor: PortableTextEditor, blockStyle: string) => {
     return editor.editable?.toggleBlockStyle(blockStyle)
+  }
+  static isVoid = (editor: PortableTextEditor, element: PortableTextBlock | PortableTextChild) => {
+    return editor.editable?.isVoid(element)
+  }
+  static findDOMNode = (editor: PortableTextEditor, element: PortableTextBlock | PortableTextChild) => {
+    return editor.editable?.findDOMNode(element)
+  }
+  static findByPath = (editor: PortableTextEditor, path: Path) => {
+    return editor.editable?.findByPath(path)
   }
 
   private portableTextFeatures: PortableTextFeatures

@@ -2,9 +2,11 @@ import {Text, Range, Transforms, Editor} from 'slate'
 import {isEqual} from 'lodash'
 import React, {useCallback, useMemo, useState, useEffect, useLayoutEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
-import {toSlateRange} from '../utils/selection'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
+import {Path} from '../types/path'
+import {RenderAttributes} from '../types/editor'
+
 import {
   EditorSelection,
   EditorChanges,
@@ -20,7 +22,12 @@ import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
-import {normalizeSelection, toPortableTextRange} from '../utils/selection'
+import {
+  normalizeSelection,
+  toPortableTextRange,
+  toSlateRange,
+  createKeyedPath
+} from '../utils/selection'
 import {Type as SchemaType} from 'src/types/schema'
 import {debugWithName} from '../utils/debug'
 
@@ -43,20 +50,14 @@ type Props = {
     value: PortableTextBlock,
     type: SchemaType,
     ref: React.RefObject<HTMLDivElement>,
-    attributes: {
-      focused: boolean
-      selected: boolean
-    },
+    attributes: RenderAttributes,
     defaultRender: (block: PortableTextBlock) => JSX.Element
   ) => JSX.Element
   renderChild?: (
     value: PortableTextChild,
     type: SchemaType,
     ref: React.RefObject<HTMLSpanElement>,
-    attributes: {
-      focused: boolean
-      selected: boolean
-    },
+    attributes: RenderAttributes,
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
   searchAndReplace?: boolean
@@ -161,9 +162,14 @@ export const Editable = (props: Props) => {
     undo: (): void => editor.undo(),
     redo: (): void => editor.redo(),
     select: (selection: EditorSelection): void => {
-      const slateSelection = toSlateRange(selection, props.value)
+      const slateSelection = toSlateRange(selection, editor)
       if (slateSelection) {
-        Transforms.select(editor, slateSelection)
+        const [node] = Editor.node(editor, slateSelection)
+        if (Editor.isVoid(editor, node)) {
+          Transforms.select(editor, slateSelection.focus.path.concat(0))
+        } else {
+          Transforms.select(editor, slateSelection)
+        }
         ReactEditor.focus(editor)
         return
       }
@@ -180,8 +186,15 @@ export const Editable = (props: Props) => {
     },
     focusChild: (): PortableTextChild | undefined => {
       if (editor.selection) {
-        const node = Editor.node(editor, editor.selection.focus, {depth: 2})
-        if (node) {
+        const [node] = Array.from(
+          Editor.nodes(editor, {
+            mode: 'lowest',
+            at: editor.selection.focus,
+            match: n => n._type !== undefined,
+            voids: true
+          })
+        )[0]
+        if (node && !Editor.isBlock(editor, node)) {
           return fromSlateValue([node], portableTextFeatures.types.block.name)[0]
         }
       }
@@ -205,7 +218,8 @@ export const Editable = (props: Props) => {
         ],
         portableTextFeatures.types.block.name
       )[0]
-      Editor.insertNode(editor, block.children[0])
+      const child = block.children[0]
+      Editor.insertNode(editor, child)
       editor.onChange()
     },
     insertBlock: (type: Type, value?: {[prop: string]: any}): void => {
@@ -224,21 +238,42 @@ export const Editable = (props: Props) => {
     },
     hasBlockStyle: (style: string): boolean => {
       return editor.pteHasBlockStyle(style)
+    },
+    isVoid: (element: PortableTextBlock | PortableTextChild) => {
+      return ![
+        portableTextFeatures.types.block.name,
+        portableTextFeatures.types.span.name
+      ].includes(element._type)
+    },
+    findByPath: (path: Path): [PortableTextBlock | PortableTextChild | undefined, Path | undefined] => {
+      const slatePath = toSlateRange({focus: {path, offset: 0}, anchor: {path, offset: 0}}, editor)
+      if (slatePath) {
+        const [node] = Editor.node(editor, slatePath.focus.path.slice(0, 2), {})
+        if (node) {
+          return [
+            fromSlateValue([node], portableTextFeatures.types.block.name)[0],
+            createKeyedPath(slatePath.focus, editor) || []
+          ]
+        }
+      }
+      return [undefined, undefined]
+    },
+    findDOMNode: (element: PortableTextBlock | PortableTextChild) => {
+      const [item] = Array.from(
+        Editor.nodes(editor, {at: [], match: n => n._key === element._key})
+      )[0]
+      return ReactEditor.toDOMNode(editor, item)
     }
   })
 
   const renderElement = useCallback(
     eProps => {
       const value = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
-      if (value && portableTextFeatures.types.portableText.of) {
-        const type = portableTextFeatures.types.portableText.of.find(
-          type => type.name === value._type
-        )
+      if (value) {
         return (
           <Element
             {...eProps}
             value={value}
-            type={type}
             portableTextFeatures={portableTextFeatures}
             renderBlock={props.renderBlock}
             renderChild={props.renderChild}
@@ -320,7 +355,7 @@ export const Editable = (props: Props) => {
       const normalizedSelection = normalizeSelection(pSelection, props.value)
       if (normalizedSelection !== null) {
         debug('Normalized selection from props', normalizedSelection)
-        const slateRange = toSlateRange(normalizedSelection, props.value)
+        const slateRange = toSlateRange(normalizedSelection, editor)
         setSelection(slateRange)
       } else if (stateValue) {
         debug('Selecting top document')
