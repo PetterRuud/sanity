@@ -28,8 +28,14 @@ export const TextStrong = styled.span`
 export const TextEmphasis = styled.span`
   font-style: italic;
 `
-
 export const TextCode = styled.code``
+
+export const TextUnderline = styled.span`
+  text-decoration: underline;
+`
+export const TextStrikeThrough = styled.span`
+  text-decoration: line-through;
+`
 
 export const BlockObject = styled.div`
   user-select: none;
