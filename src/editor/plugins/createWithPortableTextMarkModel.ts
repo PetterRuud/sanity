@@ -182,3 +182,4 @@ export function createWithPortableTextMarkModel(change$: Subject<EditorChange>) 
     }
   }
 }
+

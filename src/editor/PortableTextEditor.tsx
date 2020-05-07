@@ -49,7 +49,7 @@ type Props = {
     value: PortableTextChild,
     type: SchemaType,
     ref: React.RefObject<HTMLSpanElement>,
-    attributes: {focused: boolean, selected: boolean},
+    attributes: {focused: boolean; selected: boolean},
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
   renderEditor?: (editor: JSX.Element) => JSX.Element
@@ -98,18 +98,10 @@ export class PortableTextEditor extends React.Component<Props, State> {
   static marks = (editor: PortableTextEditor) => {
     return editor.editable?.marks()
   }
-  static insertChild = (
-    editor: PortableTextEditor,
-    type: Type,
-    value?: {[prop: string]: any}
-  ) => {
+  static insertChild = (editor: PortableTextEditor, type: Type, value?: {[prop: string]: any}) => {
     return editor.editable?.insertChild(type, value)
   }
-  static insertBlock = (
-    editor: PortableTextEditor,
-    type: Type,
-    value?: {[prop: string]: any}
-  ) => {
+  static insertBlock = (editor: PortableTextEditor, type: Type, value?: {[prop: string]: any}) => {
     return editor.editable?.insertBlock(type, value)
   }
   static toggleList = (editor: PortableTextEditor, listStyle: string): void => {
@@ -124,16 +116,25 @@ export class PortableTextEditor extends React.Component<Props, State> {
   static isVoid = (editor: PortableTextEditor, element: PortableTextBlock | PortableTextChild) => {
     return editor.editable?.isVoid(element)
   }
-  static findDOMNode = (editor: PortableTextEditor, element: PortableTextBlock | PortableTextChild) => {
+  static findDOMNode = (
+    editor: PortableTextEditor,
+    element: PortableTextBlock | PortableTextChild
+  ) => {
     return editor.editable?.findDOMNode(element)
   }
   static findByPath = (editor: PortableTextEditor, path: Path) => {
     return editor.editable?.findByPath(path)
   }
-  static isAnnotationTypeActive = (editor: PortableTextEditor, annotationType: Type) =>
-    editor.editable?.isAnnotationTypeActive(annotationType)
-  static toggleAnnotation = (editor: PortableTextEditor, type: Type, value?: {[prop: string]: any}) =>
-    editor.editable?.toggleAnnotation(type, value)
+  static activeAnnotations = (editor: PortableTextEditor): PortableTextBlock[] => {
+    return editor && editor.editable ? editor.editable.activeAnnotations() : []
+  }
+  static addAnnotation = (
+    editor: PortableTextEditor,
+    type: Type,
+    value?: {[prop: string]: any}
+  ): Path | undefined => editor.editable?.addAnnotation(type, value)
+  static removeAnnotation = (editor: PortableTextEditor, type: Type) =>
+    editor.editable?.removeAnnotation(type)
 
   private portableTextFeatures: PortableTextFeatures
   private editable?: EditableAPI

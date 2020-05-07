@@ -1,7 +1,7 @@
 import {set, insert, unset, diffMatchPatch, setIfMissing} from '../patch/PatchEvent'
 import {EditorOperation} from '../types/editor'
 import {Patch} from '../types/patch'
-import {Editor} from 'slate'
+import {Editor, MoveNodeOperation} from 'slate'
 import {omitBy, isUndefined} from 'lodash'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
 import {fromSlateValue} from './values'
@@ -264,10 +264,20 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     }
     return patches
   }
+
+  function moveNodePatch(
+    editor: Editor,
+    operation: MoveNodeOperation,
+    beforeValue: PortableTextBlock[]
+  ) {
+    throw new Error('Not implemented')
+  }
+
   return {
     insertNodePatch,
     insertTextPatch,
     mergeNodePatch,
+    moveNodePatch,
     removeNodePatch,
     removeTextPatch,
     setNodePatch,

@@ -28,6 +28,7 @@ export function createWithPatches(
     insertNodePatch,
     insertTextPatch,
     mergeNodePatch,
+    moveNodePatch,
     removeNodePatch,
     removeTextPatch,
     setNodePatch,
@@ -118,9 +119,7 @@ export function createWithPatches(
           patches = [...patches, ...mergeNodePatch(editor, operation, previousChildren)]
           break
         case 'move_node':
-          // Doesn't seem to be implemented in Slate at the moment (april 2020)
-          // TODO: confirm this
-          debugger
+          patches = [...patches, ...moveNodePatch(editor, operation, previousChildren)]
           break
         case 'set_selection':
         default:

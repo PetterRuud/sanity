@@ -1,4 +1,4 @@
-import {Text, Range, Transforms, Editor} from 'slate'
+import {Text, Range, Transforms, Editor, Path as SlatePath} from 'slate'
 import {isEqual} from 'lodash'
 import React, {useCallback, useMemo, useState, useEffect, useLayoutEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
@@ -22,14 +22,10 @@ import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {createPortableTextEditor} from './createPortableTextEditor'
-import {
-  normalizeSelection,
-  toPortableTextRange,
-  toSlateRange,
-  createKeyedPath
-} from '../utils/selection'
+import {normalizeSelection, toPortableTextRange, toSlateRange} from '../utils/selection'
 import {Type as SchemaType} from 'src/types/schema'
 import {debugWithName} from '../utils/debug'
+import {DOMNode} from 'slate-react/dist/utils/dom'
 
 const debug = debugWithName('component:Editable')
 
@@ -245,30 +241,51 @@ export const Editable = (props: Props) => {
         portableTextFeatures.types.span.name
       ].includes(element._type)
     },
-    findByPath: (path: Path): [PortableTextBlock | PortableTextChild | undefined, Path | undefined] => {
+    findByPath: (
+      path: Path
+    ): [PortableTextBlock | PortableTextChild | undefined, Path | undefined] => {
       const slatePath = toSlateRange({focus: {path, offset: 0}, anchor: {path, offset: 0}}, editor)
       if (slatePath) {
-        const [node] = Editor.node(editor, slatePath.focus.path.slice(0, 2), {})
-        if (node) {
-          return [
-            fromSlateValue([node], portableTextFeatures.types.block.name)[0],
-            createKeyedPath(slatePath.focus, editor) || []
-          ]
+        const [block, blockPath] = Editor.node(editor, slatePath.focus.path.slice(0, 1))
+        if (block && blockPath) {
+          if (slatePath.focus.path.length === 1) {
+            return [
+              fromSlateValue([block], portableTextFeatures.types.block.name)[0],
+              [{_key: block._key}]
+            ]
+          }
+          const ptBlock = fromSlateValue([block], portableTextFeatures.types.block.name)[0]
+          const ptChild = ptBlock.children[slatePath.focus.path[1]]
+          if (ptChild) {
+            return [ptChild, [{_key: block._key}, 'children', {_key: ptChild._key}]]
+          }
         }
       }
       return [undefined, undefined]
     },
-    findDOMNode: (element: PortableTextBlock | PortableTextChild) => {
+    findDOMNode: (element: PortableTextBlock | PortableTextChild): DOMNode => {
       const [item] = Array.from(
         Editor.nodes(editor, {at: [], match: n => n._key === element._key})
       )[0]
       return ReactEditor.toDOMNode(editor, item)
     },
-    isAnnotationTypeActive: (annotationType: Type): boolean => {
-      // TODO: d
-      return false
+    activeAnnotations: (): PortableTextBlock[] => {
+      if (!editor.selection || editor.selection.focus.path.length < 2) {
+        return []
+      }
+      const [block] = Editor.node(editor, editor.selection.focus.path.slice(0, 1))
+      if (!Array.isArray(block.markDefs)) {
+        return []
+      }
+      const [span] = Editor.node(editor, editor.selection.focus.path.slice(0, 2))
+      return block.markDefs.filter(
+        def => Array.isArray(span.marks) && span.marks.includes(def._key)
+      )
     },
-    toggleAnnotation: (type: Type, value?: {[prop: string]: any}): void => {
+    addAnnotation: (
+      type: Type,
+      value?: {[prop: string]: any}
+    ): {spanPath: Path; markDefPath: Path} | undefined => {
       const {selection} = editor
       if (selection) {
         const [blockElement] = Editor.node(editor, selection.focus, {depth: 1})
@@ -283,18 +300,87 @@ export const Editable = (props: Props) => {
                   {_type: type.name, _key: annotationKey, ...value}
                 ]
               },
-              {at: selection.focus, voids: false}
+              {at: selection.focus}
             )
             editor.pteExpandToWord()
-            const [textNode, textNodePath] = Editor.node(editor, selection.focus, {depth: 2})
-            if (Array.isArray(textNode.marks)) {
+            const [textNode] = Editor.node(editor, selection.focus, {depth: 2})
+            if (Array.isArray(textNode.marks) && editor.selection) {
+              Editor.withoutNormalizing(editor, () => {
+                // Split if needed
+                Transforms.setNodes(editor, {}, {match: Text.isText, split: true})
+                if (editor.selection) {
+                  Transforms.setNodes(
+                    editor,
+                    {
+                      marks: [...textNode.marks, annotationKey]
+                    },
+                    {
+                      at: editor.selection,
+                      match: n => n._type === portableTextFeatures.types.span.name
+                    }
+                  )
+                }
+              })
+              Editor.normalize(editor)
+              editor.onChange()
+              const newSelection = toPortableTextRange(editor)
+              if (newSelection) {
+                return {
+                  spanPath: newSelection.focus.path,
+                  markDefPath: [{_key: blockElement._key}, 'markDefs', {_key: annotationKey}]
+                }
+              }
+            }
+          }
+        }
+      }
+      return undefined
+    },
+    removeAnnotation: (type: Type): void => {
+      const {selection} = editor
+      if (selection) {
+        const [blockElement] = Editor.node(editor, selection.focus, {depth: 1})
+        if (blockElement._type === portableTextFeatures.types.block.name) {
+          if (Array.isArray(blockElement.markDefs)) {
+            const annotation = blockElement.markDefs.find(def => def._type === type.name)
+            if (annotation && annotation._key) {
               Transforms.setNodes(
                 editor,
                 {
-                  marks: [...textNode.marks, annotationKey]
+                  markDefs: [...blockElement.markDefs.filter(def => def._type !== type.name)]
                 },
-                {at: textNodePath, voids: false, split: false, match: Text.isText}
+                {voids: false, match: n => Array.isArray(n.markDefs)}
               )
+              editor.pteExpandToWord()
+
+              for (const [node, path] of Editor.nodes(editor, {
+                at: selection,
+                match: Text.isText
+              })) {
+                if (Array.isArray(node.marks)) {
+                  Transforms.setNodes(
+                    editor,
+                    {
+                      marks: [...node.marks.filter(mark => mark !== annotation._key)]
+                    },
+                    {at: path, voids: false, split: false, match: Text.isText}
+                  )
+                }
+              }
+              // Merge similar adjecent spans
+              for (const [node, path] of Array.from(
+                Editor.nodes(editor, {
+                  at: Editor.range(editor, [selection.anchor.path[0]], [selection.focus.path[0]]),
+                  match: Text.isText
+                })
+              ).reverse()) {
+                const [parent] = Editor.node(editor, SlatePath.parent(path))
+                const nextPath = [path[0], path[1] + 1]
+                const nextTextNode = parent.children[nextPath[1]]
+                if (nextTextNode && nextTextNode.text && isEqual(nextTextNode.marks, node.marks)) {
+                  Transforms.mergeNodes(editor, {at: nextPath, voids: true})
+                }
+              }
               editor.onChange()
             }
           }

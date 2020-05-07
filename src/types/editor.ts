@@ -5,27 +5,28 @@ import {Type} from '../types/schema'
 import {PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Subject, Observable} from 'rxjs'
 export interface EditableAPI {
+  activeAnnotations: () => PortableTextBlock[]
+  addAnnotation: (type: Type, value?: {[prop: string]: any}) => Path | undefined
   blur: () => void
-  focus: () => void
+  findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
   findDOMNode: (element: PortableTextBlock | PortableTextChild) => HTMLElement
+  focus: () => void
   focusBlock: () => PortableTextBlock | undefined
   focusChild: () => PortableTextChild | undefined
-  findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
   hasBlockStyle: (style: string) => boolean
   insert: (items: PortableTextChild[] | PortableTextBlock[], selection?: EditorSelection) => void
   insertBlock: (type: Type, value?: {[prop: string]: any}) => void
   insertChild: (type: Type, value?: {[prop: string]: any}) => void
   isMarkActive: (mark: string) => boolean
-  isAnnotationTypeActive: (annotationType: Type) => boolean
   isVoid: (element: PortableTextBlock | PortableTextChild) => boolean
   marks: () => string[]
   redo: () => void
   remove: (selection?: EditorSelection) => void
+  removeAnnotation: (type: Type) => void
   select: (selection: EditorSelection) => void
-  toggleAnnotation: (type: Type, value?: {[prop: string]: any}) => void
-  toggleMark: (mark: string) => void
-  toggleList: (listStyle: string) => void
   toggleBlockStyle: (blockStyle: string) => void
+  toggleList: (listStyle: string) => void
+  toggleMark: (mark: string) => void
   undo: () => void
 }
 
