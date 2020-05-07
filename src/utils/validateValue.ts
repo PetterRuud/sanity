@@ -95,6 +95,24 @@ export function validateValue(
               }
               return true
             }
+            // TODO: remove
+            if (child._type === portableTextFeatures.types.span.name && child.text === undefined) {
+              resolution = {
+                patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
+                description: `Span with key ${child._key} is missing text property!`,
+                action: 'Remove the object'
+              }
+              return true
+            }
+            // TODO: remove
+            if (child.__inline) {
+              resolution = {
+                patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
+                description: `Object with key ${child._key} has an invalid value`,
+                action: 'Remove the object'
+              }
+              return true
+            }
             if (
               ![
                 ...portableTextFeatures.types.inlineObjects.map(type => type.name),
