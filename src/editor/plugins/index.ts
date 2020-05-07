@@ -8,4 +8,5 @@ export {createWithHotkeys} from './createWithHotKeys'
 export {createWithInsertData} from './createWithInsertData'
 export {createWithUndoRedo} from './createWithUndoRedo'
 export {createWithPortableTextBlockStyle} from './createWithPortableTextBlockStyle'
+export {createWithUtils} from './createWithUtils'
 

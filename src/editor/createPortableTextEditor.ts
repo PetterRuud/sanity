@@ -8,7 +8,8 @@ import {
   createWithPortableTextLists,
   createWithHotkeys,
   createWithUndoRedo,
-  createWithPortableTextBlockStyle
+  createWithPortableTextBlockStyle,
+  createWithUtils
 } from './plugins'
 import {createOperationToPatches} from '../utils/operationToPatches'
 import {Options} from '../types/options'
@@ -39,13 +40,16 @@ export function createPortableTextEditor(options: Options) {
   const withUndoRedo = createWithUndoRedo(incomingPatche$)
   const withPortableTextMarkModel = createWithPortableTextMarkModel(change$)
   const withPortableTextBlockStyle = createWithPortableTextBlockStyle(portableTextFeatures, change$)
+  const withUtils = createWithUtils(portableTextFeatures)
 
   return withPatches(
     withUndoRedo(
       withHotkeys(
-        withPortableTextBlockStyle(
-          withPortableTextLists(
-            withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(createEditor()))))
+        withUtils(
+          withPortableTextBlockStyle(
+            withPortableTextLists(
+              withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(createEditor()))))
+            )
           )
         )
       )
