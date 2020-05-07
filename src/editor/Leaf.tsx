@@ -1,14 +1,17 @@
 import React, {ReactElement} from 'react'
-import {Element} from 'slate'
+import {Editor, Element} from 'slate'
+import {useEditor, useSelected} from 'slate-react'
 import {uniq} from 'lodash'
 import Decorator from './nodes/Decorator'
-import Annotation from './nodes/Annotation'
-import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
-import {Type as SchemaType} from 'src/types/schema'
+import {DefaultAnnotation} from './nodes/DefaultAnnotation'
+import {PortableTextFeatures, PortableTextChild} from '../types/portableText'
+import {Type as SchemaType} from '../types/schema'
+import {keyGenerator} from './PortableTextEditor'
+import {RenderAttributes} from '../types/editor'
 
 type LeafProps = {
-  block: PortableTextBlock
   attributes: string
+  blockElement: Element
   children: ReactElement
   leaf: Element
   portableTextFeatures: PortableTextFeatures
@@ -16,14 +19,19 @@ type LeafProps = {
     value: PortableTextChild,
     type: SchemaType,
     ref: React.RefObject<HTMLSpanElement>,
-    attributes: {focused: boolean, selected: boolean},
+    attributes: RenderAttributes,
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
+  value: PortableTextChild
 }
 
 export const Leaf = (props: LeafProps) => {
-  const {attributes, children, leaf, portableTextFeatures} = props
+  const editor = useEditor()
+  const selected = useSelected()
+  const {attributes, children, leaf, portableTextFeatures, renderChild, blockElement} = props
+  const annotationObjectRef = React.useRef(null)
   let returnedChildren = children
+  let focused = false
   if (leaf._type === portableTextFeatures.types.span.name) {
     const decoratorValues = portableTextFeatures.decorators.map(dec => dec.value)
     const marks: string[] = uniq((leaf.marks || []).filter(mark => decoratorValues.includes(mark)))
@@ -34,26 +42,71 @@ export const Leaf = (props: LeafProps) => {
         </Decorator>
       )
     })
-    const annotations: PortableTextBlock[] = (leaf.marks || [])
-      .map(
-        mark =>
-          !decoratorValues.includes(mark) && props.block.markDefs.find(def => def._key === mark)
-      )
-      .filter(Boolean)
+    if (editor.selection?.focus) {
+      const [node] = Editor.node(editor, editor.selection.focus.path.slice(0, 2), {depth: 2})
+      if (node._key === leaf._key) {
+        focused = true
+      }
+    }
+    const annotations: any[] =
+      leaf.marks && leaf.marks.length > 0
+        ? (leaf.marks || [])
+            .map(
+              mark =>
+                !decoratorValues.includes(mark) &&
+                blockElement &&
+                blockElement.markDefs &&
+                blockElement.markDefs.find(def => def._key === mark)
+            )
+            .filter(Boolean)
+        : []
 
-    annotations.map(annotation => {
-      returnedChildren = (
-        <Annotation attributes={attributes} annotation={annotation}>
-          {returnedChildren}
-        </Annotation>
-      )
-    })
+    const handleMouseDown = event => {
+      // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
+      if (focused) {
+        event.stopPropagation()
+        event.preventDefault()
+      }
+    }
+    if (annotations.length > 0) {
+      const defaultRender = (annotation: PortableTextChild) => returnedChildren
+      if (!renderChild) {
+        annotations.map(annotation => {
+          returnedChildren = (
+            <DefaultAnnotation attributes={attributes} annotation={annotation}>
+              {returnedChildren}
+            </DefaultAnnotation>
+          )
+        })
+      } else {
+        annotations.map(annotation => {
+          const type = portableTextFeatures.types.annotations.find(t => t.name === annotation._type)
+          const path = [{_key: blockElement._key}, 'children', {_key: leaf._key}]
+          if (type) {
+            returnedChildren = (
+              <span ref={annotationObjectRef} key={keyGenerator()} onMouseDown={handleMouseDown}>
+                {renderChild(
+                  annotation,
+                  type,
+                  annotationObjectRef,
+                  {focused, selected, path, annotations},
+                  defaultRender
+                )}
+              </span>
+            )
+          }
+        })
+      }
+    }
   }
-
 
   // TODO: remove hightlight stuff as test for decorations
   return (
-    <span {...attributes} style={{backgroundColor: leaf.highlight ? '#ff0' : '#fff'}}>
+    <span
+      {...attributes}
+      style={{backgroundColor: leaf.__highlight ? '#ff0' : '#fff'}}
+      ref={annotationObjectRef}
+    >
       {returnedChildren}
     </span>
   )

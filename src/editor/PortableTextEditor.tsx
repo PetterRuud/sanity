@@ -130,6 +130,10 @@ export class PortableTextEditor extends React.Component<Props, State> {
   static findByPath = (editor: PortableTextEditor, path: Path) => {
     return editor.editable?.findByPath(path)
   }
+  static isAnnotationTypeActive = (editor: PortableTextEditor, annotationType: Type) =>
+    editor.editable?.isAnnotationTypeActive(annotationType)
+  static toggleAnnotation = (editor: PortableTextEditor, type: Type, value?: {[prop: string]: any}) =>
+    editor.editable?.toggleAnnotation(type, value)
 
   private portableTextFeatures: PortableTextFeatures
   private editable?: EditableAPI

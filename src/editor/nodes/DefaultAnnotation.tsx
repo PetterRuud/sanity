@@ -6,7 +6,7 @@ type Props = {
   annotation: PortableTextBlock
   children: React.ReactNode
 }
-export default function AnnotationComponent(props: Props) {
+export function DefaultAnnotation(props: Props) {
   return (
     <span style={{color: 'blue'}} onClick={() => alert(JSON.stringify(props.annotation))}>
       {props.children}

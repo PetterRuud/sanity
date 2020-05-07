@@ -16,11 +16,13 @@ export interface EditableAPI {
   insertBlock: (type: Type, value?: {[prop: string]: any}) => void
   insertChild: (type: Type, value?: {[prop: string]: any}) => void
   isMarkActive: (mark: string) => boolean
+  isAnnotationTypeActive: (annotationType: Type) => boolean
   isVoid: (element: PortableTextBlock | PortableTextChild) => boolean
   marks: () => string[]
   redo: () => void
   remove: (selection?: EditorSelection) => void
   select: (selection: EditorSelection) => void
+  toggleAnnotation: (type: Type, value?: {[prop: string]: any}) => void
   toggleMark: (mark: string) => void
   toggleList: (listStyle: string) => void
   toggleBlockStyle: (blockStyle: string) => void
@@ -175,4 +177,5 @@ export type RenderAttributes = {
   focused: boolean
   selected: boolean
   path: Path
+  annotations?: PortableTextBlock[]
 }

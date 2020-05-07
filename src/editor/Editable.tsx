@@ -16,7 +16,7 @@ import {
   EditableAPI
 } from '../types/editor'
 import {HotkeyOptions} from '../types/options'
-import {toSlateValue, fromSlateValue} from '../utils/values'
+import {toSlateValue, fromSlateValue, isEqualToEmptyEditor} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
 import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
@@ -263,11 +263,51 @@ export const Editable = (props: Props) => {
         Editor.nodes(editor, {at: [], match: n => n._key === element._key})
       )[0]
       return ReactEditor.toDOMNode(editor, item)
+    },
+    isAnnotationTypeActive: (annotationType: Type): boolean => {
+      // TODO: d
+      return false
+    },
+    toggleAnnotation: (type: Type, value?: {[prop: string]: any}): void => {
+      const {selection} = editor
+      if (selection) {
+        const [blockElement] = Editor.node(editor, selection.focus, {depth: 1})
+        if (blockElement._type === portableTextFeatures.types.block.name) {
+          const annotationKey = keyGenerator()
+          if (Array.isArray(blockElement.markDefs)) {
+            Transforms.setNodes(
+              editor,
+              {
+                markDefs: [
+                  ...blockElement.markDefs.filter(def => def._type !== type.name),
+                  {_type: type.name, _key: annotationKey, ...value}
+                ]
+              },
+              {at: selection.focus, voids: false}
+            )
+            editor.pteExpandToWord()
+            const [textNode, textNodePath] = Editor.node(editor, selection.focus, {depth: 2})
+            if (Array.isArray(textNode.marks)) {
+              Transforms.setNodes(
+                editor,
+                {
+                  marks: [...textNode.marks, annotationKey]
+                },
+                {at: textNodePath, voids: false, split: false, match: Text.isText}
+              )
+              editor.onChange()
+            }
+          }
+        }
+      }
     }
   })
 
   const renderElement = useCallback(
     eProps => {
+      if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+        return <div {...eProps.attributes}>{eProps.children}</div>
+      }
       const value = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
       if (value) {
         return (
@@ -287,14 +327,17 @@ export const Editable = (props: Props) => {
 
   const renderLeaf = useCallback(
     lProps => {
-      const block = lProps.children.props.parent
+      if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+        return <span {...lProps.attributes}>{lProps.children}</span>
+      }
+      const blockElement = lProps.children.props.parent
       return (
         <Leaf
           {...lProps}
-          block={block}
+          blockElement={blockElement}
           portableTextFeatures={portableTextFeatures}
           renderChild={props.renderChild}
-        ></Leaf>
+        />
       )
     },
     [props.value]
@@ -322,7 +365,7 @@ export const Editable = (props: Props) => {
             ranges.push({
               anchor: {path, offset: offset - woot.length},
               focus: {path, offset},
-              highlight: true
+              __highlight: true
             })
           }
 

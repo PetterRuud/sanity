@@ -1,28 +1,42 @@
 import {PortableTextFeatures} from '../types/portableText'
+import {Type} from '../types/schema'
 
 export function getPortableTextFeatures(portabletextType): PortableTextFeatures {
   if (!portabletextType) {
-    throw new Error("Parameter 'portabletextType' required")
+    throw new Error("Parameter 'portabletextType' missing (required)")
   }
-  const blockType = portabletextType.of.find(findBlockType)
+  const blockType: Type = portabletextType.of.find(findBlockType)
   if (!blockType) {
-    throw new Error("'block' type is not defined in this schema (required).")
+    throw new Error('Block type is not defined in this schema (required)')
   }
-  const ofType = blockType.fields.find(field => field.name === 'children').type.of
-  const spanType = ofType.find(memberType => memberType.name === 'span')
-  const inlineObjectTypes = ofType.filter(memberType => memberType.name !== 'span')
-  const blockObjectTypes = portabletextType.of.filter(field => field.name !== 'block')
+  const childrenField =
+    blockType && blockType.fields && blockType.fields.find(field => field.name === 'children')
+  if (!childrenField) {
+    throw new Error('Children field for block type found in schema (required)')
+  }
+  const ofType = childrenField.type && childrenField.type.of
+  if (!ofType) {
+    throw new Error('Valid types for block children not found in schema (required)')
+  }
+  const spanType = ofType.find((memberType: Type) => memberType.name === 'span')
+  if (!spanType) {
+    throw new Error('Span type not found in schema (required)')
+  }
+  const inlineObjectTypes: Type[] = ofType.filter(memberType => memberType.name !== 'span')
+  const blockObjectTypes: Type[] = portabletextType.of.filter(field => field.name !== 'block')
+  const annotations = resolveEnabledAnnotationTypes(spanType)
   return {
     styles: resolveEnabledStyles(blockType),
     decorators: resolveEnabledDecorators(spanType),
-    annotations: resolveEnabledAnnotationTypes(spanType),
     lists: resolveEnabledListItems(blockType),
+    annotations: annotations,
     types: {
       block: blockType,
       span: spanType,
       portableText: portabletextType,
       inlineObjects: inlineObjectTypes,
-      blockObjects: blockObjectTypes
+      blockObjects: blockObjectTypes,
+      annotations: annotations.map(an => an.type)
     }
   }
 }
@@ -47,6 +61,7 @@ function resolveEnabledAnnotationTypes(spanType) {
   return spanType.annotations.map(annotation => {
     return {
       blockEditor: annotation.blockEditor,
+      portableText: annotation.portableText,
       title: annotation.title,
       type: annotation,
       value: annotation.name,

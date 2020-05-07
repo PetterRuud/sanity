@@ -54,6 +54,7 @@ export type PortableTextFeatures = {
     blockObjects: SchemaType[]
     inlineObjects: SchemaType[]
     portableText: SchemaType
-    span: SchemaType
+    span: SchemaType,
+    annotations: SchemaType[]
   }
 }
