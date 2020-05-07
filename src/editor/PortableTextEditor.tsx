@@ -132,7 +132,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     editor: PortableTextEditor,
     type: Type,
     value?: {[prop: string]: any}
-  ): Path | undefined => editor.editable?.addAnnotation(type, value)
+  ): {spanPath: Path; markDefPath: Path} | undefined => editor.editable?.addAnnotation(type, value)
   static removeAnnotation = (editor: PortableTextEditor, type: Type) =>
     editor.editable?.removeAnnotation(type)
 

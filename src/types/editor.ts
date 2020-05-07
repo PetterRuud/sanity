@@ -6,7 +6,7 @@ import {PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Subject, Observable} from 'rxjs'
 export interface EditableAPI {
   activeAnnotations: () => PortableTextBlock[]
-  addAnnotation: (type: Type, value?: {[prop: string]: any}) => Path | undefined
+  addAnnotation: (type: Type, value?: {[prop: string]: any}) => {spanPath: Path; markDefPath: Path} | undefined
   blur: () => void
   findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
   findDOMNode: (element: PortableTextBlock | PortableTextChild) => HTMLElement
