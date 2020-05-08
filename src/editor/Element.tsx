@@ -121,7 +121,7 @@ export const Element: FunctionComponent<ElementProps> = ({
         throw new Error('Could not find type for block element')
       }
       const handleMouseDown = event => {
-        // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
+        // slate-react will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
         if (focused) {
           event.stopPropagation()
           event.preventDefault()
