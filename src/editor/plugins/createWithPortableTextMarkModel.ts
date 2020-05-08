@@ -95,9 +95,9 @@ export function createWithPortableTextMarkModel(change$: Subject<EditorChange>) 
       }
     }
 
-    editor.pteIsMarkActive = (mark: string) => {
+    editor.pteIsMarkActive = (mark: string): boolean => {
       if (!editor.selection) {
-        return null
+        return false
       }
       let existingMarks
       if (Range.isExpanded(editor.selection)) {
@@ -112,7 +112,7 @@ export function createWithPortableTextMarkModel(change$: Subject<EditorChange>) 
       } else {
         const {anchor} = editor.selection
         const {path} = anchor
-        let [node] = Editor.leaf(editor, path)
+        let [node] = Array.from(Editor.nodes(editor, {at: path}))[0]
 
         if (anchor.offset === 0) {
           const prev = Editor.previous(editor, {at: path, match: Text.isText})

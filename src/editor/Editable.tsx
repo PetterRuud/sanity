@@ -107,6 +107,7 @@ export const Editable = (props: Props) => {
             portableTextFeatures,
             keyGenerator,
             change$,
+            setMustAdjustSelection: (arg0: boolean) => setMustAdjustSelection(arg0),
             maxBlocks,
             hotkeys,
             incomingPatche$
@@ -127,6 +128,8 @@ export const Editable = (props: Props) => {
 
   // Track selection state
   const [selection, setSelection] = useState(editor.selection)
+
+  const [mustAdjustSelection, setMustAdjustSelection] = useState(false)
 
   editable({
     focus: (): void => {
@@ -441,8 +444,18 @@ export const Editable = (props: Props) => {
   )
 
   const handleChange = val => {
-    setStateValue(val)
-    setSelection(editor.selection)
+    if (val !== stateValue) {
+      setStateValue(val)
+      // debug('Updated state value')
+    } else {
+      // debug('Not updating value because it is not changed')
+    }
+    if (editor.selection !== selection) {
+      setSelection(editor.selection)
+      // debug('Updated state selection', mustAdjustSelection)
+    } else {
+      // debug('Not updating selection because it is not changed')
+    }
   }
 
   // Test Slate decorations. Highlight the word 'w00t'
@@ -476,8 +489,9 @@ export const Editable = (props: Props) => {
 
   // Restore value from props
   useEffect(() => {
-    const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
-    if (!props.isThrottling) {
+    if (!props.isThrottling && mustAdjustSelection === false) {
+      const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
+      debug('Setting value from props')
       setStateValue(slateValueFromProps)
     }
   }, [props.value, props.isThrottling])
@@ -508,9 +522,13 @@ export const Editable = (props: Props) => {
   // Note: since the selection is coupled to DOM selections,
   // we must useLayoutEffect for this, or the DOM selection will lag behind.
   useLayoutEffect(() => {
-    const newSelection = toPortableTextRange(editor)
-    change$.next({type: 'selection', selection: newSelection})
-    // debug('Set new selection state', JSON.stringify(newSelection))
+    try {
+      const newSelection = toPortableTextRange(editor)
+      change$.next({type: 'selection', selection: newSelection})
+      // debug('Set new selection state', JSON.stringify(newSelection))
+    } catch (err) {
+      debug('Invalid selection', editor.selection)
+    }
   }, [selection])
 
   // Handle copy in the editor

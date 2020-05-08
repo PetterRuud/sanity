@@ -24,7 +24,7 @@ const NOOPPlugin = (editor: Editor) => {
  * Creates a new Portable Text Editor (which can be used without React)
  */
 export function createPortableTextEditor(options: Options) {
-  const {portableTextFeatures, keyGenerator, change$, maxBlocks, incomingPatche$} = options
+  const {portableTextFeatures, keyGenerator, change$, maxBlocks, incomingPatche$, setMustAdjustSelection} = options
   const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
@@ -32,8 +32,10 @@ export function createPortableTextEditor(options: Options) {
     operationToPatches,
     change$,
     portableTextFeatures,
+    setMustAdjustSelection,
     incomingPatche$
   )
+
   const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : NOOPPlugin
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures, change$)
   const withHotkeys = createWithHotkeys(options.hotkeys)

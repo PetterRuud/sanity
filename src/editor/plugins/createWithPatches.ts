@@ -36,6 +36,7 @@ export function createWithPatches(
   },
   change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures,
+  setMustAdjustSelection: (arg0: boolean) => void,
   incomingPatche$?: PatchObservable
 ) {
   let isThrottling = false
@@ -55,7 +56,9 @@ export function createWithPatches(
     if (incomingPatche$) {
       incomingPatche$.subscribe((patch: Patch) => {
         if (!isThrottling) {
+          setMustAdjustSelection(true)
           adjustSelection(editor, patch, previousChildren)
+          setMustAdjustSelection(false)
           editor.onChange()
         } else {
           pendingIncoming.push(patch)
@@ -194,10 +197,12 @@ export function createWithPatches(
 }
 
 function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
-  if (editor.selection === null) {
+  let selection = editor.selection
+  if (selection === null) {
     debug('No selection, not adjusting selection')
     return
   }
+
   // Text patches on same line
   if (patch.type === 'diffMatchPatch') {
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
@@ -209,7 +214,7 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
       return
     }
     const onSameBlock =
-      editor.selection.focus.path[0] === blockIndex && editor.selection.focus.path[1] === childIndex
+      selection.focus.path[0] === blockIndex && selection.focus.path[1] === childIndex
 
     if (onSameBlock) {
       const parsed = dmp.patch_fromText(patch.value)[0]
@@ -224,8 +229,8 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
         }
         // This thing is exotic but actually works!
         const isBeforeUserSelection =
-          parsed.start1 + testString.length <= editor.selection.focus.offset &&
-          parsed.start1 + testString.length <= editor.selection.anchor.offset
+          parsed.start1 + testString.length <= selection.focus.offset &&
+          parsed.start1 + testString.length <= selection.anchor.offset
 
         const distance = parsed.length2 - parsed.length1
 
@@ -239,9 +244,9 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
               testString
             })}`
           )
-          const newSelection = {...editor.selection}
-          newSelection.focus = {...editor.selection.focus}
-          newSelection.anchor = {...editor.selection.anchor}
+          const newSelection = {...selection}
+          newSelection.focus = {...selection.focus}
+          newSelection.anchor = {...selection.anchor}
           newSelection.anchor.offset = newSelection.anchor.offset + distance
           newSelection.focus.offset = newSelection.focus.offset + distance
           Transforms.select(editor, newSelection)
@@ -257,24 +262,24 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
     if (!block) {
       return
     }
-    if (editor.selection.focus.path[0] === blockIndex) {
+    if (selection.focus.path[0] === blockIndex) {
       const prevText = block.children.slice(-1)[0].text
-      const newSelection = {...editor.selection}
-      if (Path.isAfter(editor.selection.anchor.path, [blockIndex])) {
-        newSelection.anchor = {...editor.selection.anchor}
+      const newSelection = {...selection}
+      if (Path.isAfter(selection.anchor.path, [blockIndex])) {
+        newSelection.anchor = {...selection.anchor}
         newSelection.anchor.path = newSelection.anchor.path = [
           newSelection.anchor.path[0] - 1,
           block.children.length - 1
         ]
-        newSelection.anchor.offset = editor.selection.anchor.offset + prevText.length
+        newSelection.anchor.offset = selection.anchor.offset + prevText.length
       }
-      if (Path.isAfter(editor.selection.focus.path, [blockIndex])) {
-        newSelection.focus = {...editor.selection.focus}
+      if (Path.isAfter(selection.focus.path, [blockIndex])) {
+        newSelection.focus = {...selection.focus}
         newSelection.focus.path = newSelection.focus.path = [
           newSelection.focus.path[0] - 1,
           block.children.length - 1
         ]
-        newSelection.focus.offset = editor.selection.focus.offset + prevText.length
+        newSelection.focus.offset = selection.focus.offset + prevText.length
       }
       debug('adjusting selection for unset block child')
       Transforms.select(editor, newSelection)
@@ -287,18 +292,18 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
     if (!block) {
       debug('no block found in editor trying to adjust selection')
       // Naively try to adjust as the block above us have been removed.
-      blockIndex = editor.selection.focus.path[0] - 1 || 0
+      blockIndex = selection.focus.path[0] - 1 || 0
     }
-    const newSelection = {...editor.selection}
-    if (Path.isAfter(editor.selection.anchor.path, [blockIndex])) {
-      newSelection.anchor = {...editor.selection.anchor}
+    const newSelection = {...selection}
+    if (Path.isAfter(selection.anchor.path, [blockIndex])) {
+      newSelection.anchor = {...selection.anchor}
       newSelection.anchor.path = newSelection.anchor.path = [
         newSelection.anchor.path[0] - 1,
         ...newSelection.anchor.path.slice(1)
       ]
     }
-    if (Path.isAfter(editor.selection.focus.path, [blockIndex])) {
-      newSelection.focus = {...editor.selection.focus}
+    if (Path.isAfter(selection.focus.path, [blockIndex])) {
+      newSelection.focus = {...selection.focus}
       newSelection.focus.path = newSelection.focus.path = [
         newSelection.focus.path[0] - 1,
         ...newSelection.focus.path.slice(1)
@@ -314,16 +319,16 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
     if (!block) {
       return
     }
-    const newSelection = {...editor.selection}
-    if (Path.isAfter(editor.selection.anchor.path, [blockIndex])) {
-      newSelection.anchor = {...editor.selection.anchor}
+    const newSelection = {...selection}
+    if (Path.isAfter(selection.anchor.path, [blockIndex])) {
+      newSelection.anchor = {...selection.anchor}
       newSelection.anchor.path = newSelection.anchor.path = [
         newSelection.anchor.path[0] + patch.items.length,
         ...newSelection.anchor.path.slice(1)
       ]
     }
-    if (Path.isAfter(editor.selection.focus.path, [blockIndex])) {
-      newSelection.focus = {...editor.selection.focus}
+    if (Path.isAfter(selection.focus.path, [blockIndex])) {
+      newSelection.focus = {...selection.focus}
       newSelection.focus.path = newSelection.focus.path = [
         newSelection.focus.path[0] + patch.items.length,
         ...newSelection.focus.path.slice(1)
@@ -343,10 +348,7 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
     if (!child) {
       return
     }
-    if (
-      editor.selection.focus.path[0] === blockIndex &&
-      editor.selection.focus.path[1] === childIndex
-    ) {
+    if (selection.focus.path[0] === blockIndex && selection.focus.path[1] === childIndex) {
       const nextIndex = childIndex + patch.items.length
       const isSplitOperation =
         !editor.children[blockIndex].children[nextIndex] &&
@@ -354,30 +356,30 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
         editor.children[blockIndex + 1].children &&
         editor.children[blockIndex + 1].children[0] &&
         isEqual(editor.children[blockIndex + 1].children[0]._key, patch.items[0]['_key'])
-      const [node] = Editor.node(editor, editor.selection)
+      const [node] = Editor.node(editor, selection)
       const nodeText = node.text
       if (!nodeText) {
         return
       }
       if (!isSplitOperation) {
-        const newSelection = {...editor.selection}
-        newSelection.focus = {...editor.selection.focus}
-        newSelection.anchor = {...editor.selection.anchor}
+        const newSelection = {...selection}
+        newSelection.focus = {...selection.focus}
+        newSelection.anchor = {...selection.anchor}
         newSelection.anchor.path = Path.next(newSelection.anchor.path)
         newSelection.anchor.offset = nodeText.length - newSelection.anchor.offset
         newSelection.focus.path = Path.next(newSelection.focus.path)
         newSelection.focus.offset = nodeText.length - newSelection.focus.offset
         Transforms.select(editor, newSelection)
       } else {
-        if (editor.selection.focus.offset >= nodeText.length) {
+        if (selection.focus.offset >= nodeText.length) {
           debug('adjusting selection for split node')
-          const newSelection = {...editor.selection}
-          newSelection.focus = {...editor.selection.focus}
-          newSelection.anchor = {...editor.selection.anchor}
+          const newSelection = {...selection}
+          newSelection.focus = {...selection.focus}
+          newSelection.anchor = {...selection.anchor}
           newSelection.anchor.path = [blockIndex + 1, 0]
-          newSelection.anchor.offset = editor.selection.anchor.offset - nodeText.length || 0
+          newSelection.anchor.offset = selection.anchor.offset - nodeText.length || 0
           newSelection.focus.path = [blockIndex + 1, 0]
-          newSelection.focus.offset = editor.selection.focus.offset - nodeText.length || 0
+          newSelection.focus.offset = selection.focus.offset - nodeText.length || 0
           Transforms.select(editor, newSelection)
         }
       }
