@@ -1,6 +1,6 @@
 import React, {ReactElement} from 'react'
-import {Editor, Element} from 'slate'
-import {useEditor, useSelected} from 'slate-react'
+import {Element, Range} from 'slate'
+import {useSelected, useEditor} from 'slate-react'
 import {uniq} from 'lodash'
 import Decorator from './nodes/Decorator'
 import {DefaultAnnotation} from './nodes/DefaultAnnotation'
@@ -31,7 +31,7 @@ export const Leaf = (props: LeafProps) => {
   const {attributes, children, leaf, portableTextFeatures, renderChild, blockElement} = props
   const annotationObjectRef = React.useRef(null)
   let returnedChildren = children
-  let focused = false
+  const focused = selected && editor.selection && Range.isCollapsed(editor.selection) || false
   if (leaf._type === portableTextFeatures.types.span.name) {
     const decoratorValues = portableTextFeatures.decorators.map(dec => dec.value)
     const marks: string[] = uniq((leaf.marks || []).filter(mark => decoratorValues.includes(mark)))
@@ -42,12 +42,6 @@ export const Leaf = (props: LeafProps) => {
         </Decorator>
       )
     })
-    if (editor.selection?.focus) {
-      const [node] = Editor.node(editor, editor.selection.focus.path.slice(0, 2), {depth: 2})
-      if (node._key === leaf._key) {
-        focused = true
-      }
-    }
     const annotations: any[] =
       leaf.marks && leaf.marks.length > 0
         ? (leaf.marks || [])

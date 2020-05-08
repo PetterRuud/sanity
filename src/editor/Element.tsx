@@ -1,5 +1,5 @@
 import React, {ReactElement, FunctionComponent} from 'react'
-import {Element as SlateElement, Editor} from 'slate'
+import {Element as SlateElement, Editor, Range} from 'slate'
 import {useSelected, useEditor} from 'slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import Block from './nodes/TextBlock'
@@ -53,7 +53,7 @@ export const Element: FunctionComponent<ElementProps> = ({
   const selected = useSelected()
   const blockObjectRef = React.useRef(null)
   const inlineBlockObjectRef = React.useRef(null)
-  let focused = false
+  const focused = selected && editor.selection && Range.isCollapsed(editor.selection) || false
   // Test for inline objects first
   // TODO: This is probably not the best way to find the child's block.
   if (editor.isInline(element)) {
@@ -70,14 +70,9 @@ export const Element: FunctionComponent<ElementProps> = ({
     if (block) {
       const blockValue = fromSlateValue([block], portableTextFeatures.types.block.name)[0]
       const path = [{_key: blockValue._key}, 'children', {_key: value._key}]
-      if (editor.selection?.focus) {
-        const [node] = Editor.node(editor, editor.selection.focus.path.slice(0, 2), {depth: 2})
-        if (node._key === value._key) {
-          focused = true
-        }
-      }
+
+      // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
       const handleMouseDown = event => {
-        // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
         if (focused) {
           event.stopPropagation()
           event.preventDefault()
@@ -121,12 +116,12 @@ export const Element: FunctionComponent<ElementProps> = ({
         </Block>
       )
     default:
-      if (editor.selection?.focus) {
-        const [node] = Editor.node(editor, editor.selection.focus.path, {depth: 1})
-        if (node._key === value._key) {
-          focused = true
-        }
-      }
+      // if (editor.selection?.focus) {
+      //   const [node] = Editor.node(editor, editor.selection.focus.path, {depth: 1})
+      //   if (node._key === value._key) {
+      //     focused = true
+      //   }
+      // }
       const type = portableTextFeatures.types.blockObjects.find(type => type.name === value._type)
       if (!type) {
         throw new Error('Could not find type for block element')
