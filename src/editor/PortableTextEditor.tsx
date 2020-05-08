@@ -23,6 +23,7 @@ import {compactPatches} from '../utils/patches'
 import {validateValue} from '../utils/validateValue'
 import {Type as SchemaType} from '../types/schema'
 import {debugWithName} from '../utils/debug'
+import {ErrorBoundary} from './ErrorBoundary'
 
 export const keyGenerator = () => randomKey(12)
 
@@ -227,6 +228,11 @@ export class PortableTextEditor extends React.Component<Props, State> {
     }
   }
 
+  handleEditableError = (error) => {
+    debug('Cached error', error)
+    this.forceUpdate()
+  }
+
   render() {
     const {
       hotkeys,
@@ -245,25 +251,27 @@ export class PortableTextEditor extends React.Component<Props, State> {
       return null
     }
     const editable = (
-      <Editable
-        change$={this.change$}
-        editable={editable => (this.editable = editable)}
-        hotkeys={hotkeys}
-        incomingPatche$={incomingPatche$}
-        isThrottling={this.isThrottling}
-        keyGenerator={this.props.keyGenerator || keyGenerator}
-        maxBlocks={maxBlocks ? Number(maxBlocks) || undefined : undefined}
-        onPaste={onPaste}
-        onCopy={onCopy}
-        placeholderText={value === undefined ? placeholderText : undefined}
-        portableTextFeatures={this.portableTextFeatures}
-        readOnly={readOnly}
-        renderBlock={this.props.renderBlock}
-        renderChild={this.props.renderChild}
-        selection={selection}
-        spellCheck={spellCheck}
-        value={value}
-      />
+      <ErrorBoundary onError={this.handleEditableError}>
+        <Editable
+          change$={this.change$}
+          editable={editable => (this.editable = editable)}
+          hotkeys={hotkeys}
+          incomingPatche$={incomingPatche$}
+          isThrottling={this.isThrottling}
+          keyGenerator={this.props.keyGenerator || keyGenerator}
+          maxBlocks={maxBlocks ? Number(maxBlocks) || undefined : undefined}
+          onPaste={onPaste}
+          onCopy={onCopy}
+          placeholderText={value === undefined ? placeholderText : undefined}
+          portableTextFeatures={this.portableTextFeatures}
+          readOnly={readOnly}
+          renderBlock={this.props.renderBlock}
+          renderChild={this.props.renderChild}
+          selection={selection}
+          spellCheck={spellCheck}
+          value={value}
+        />
+      </ErrorBoundary>
     )
     if (renderEditor) {
       return renderEditor(editable)
