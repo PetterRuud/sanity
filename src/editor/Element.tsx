@@ -116,12 +116,6 @@ export const Element: FunctionComponent<ElementProps> = ({
         </Block>
       )
     default:
-      // if (editor.selection?.focus) {
-      //   const [node] = Editor.node(editor, editor.selection.focus.path, {depth: 1})
-      //   if (node._key === value._key) {
-      //     focused = true
-      //   }
-      // }
       const type = portableTextFeatures.types.blockObjects.find(type => type.name === value._type)
       if (!type) {
         throw new Error('Could not find type for block element')
