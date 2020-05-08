@@ -171,16 +171,18 @@ export const Editable = (props: Props) => {
       }
       Transforms.deselect(editor)
     },
-    focusBlock: (): PortableTextBlock | undefined => {
+    focusBlock: useCallback((): PortableTextBlock | undefined => {
       if (editor.selection) {
-        const [node] = Editor.node(editor, editor.selection.focus, {depth: 1})
-        if (node) {
-          return fromSlateValue([node], portableTextFeatures.types.block.name)[0]
+        const [block] = Array.from(
+          Editor.nodes(editor, {at: editor.selection.focus, match: n => Editor.isBlock(editor, n)})
+        )[0]
+        if (block) {
+          return fromSlateValue([block], portableTextFeatures.types.block.name)[0]
         }
       }
       return undefined
-    },
-    focusChild: (): PortableTextChild | undefined => {
+    }, [selection]),
+    focusChild: useCallback((): PortableTextChild | undefined => {
       if (editor.selection) {
         const [node] = Array.from(
           Editor.nodes(editor, {
@@ -195,7 +197,7 @@ export const Editable = (props: Props) => {
         }
       }
       return undefined
-    },
+    }, [selection]),
     insertChild: (type: Type, value?: {[prop: string]: any}): void => {
       // TODO: test selection if inline is applicable
       const block = toSlateValue(
@@ -232,15 +234,21 @@ export const Editable = (props: Props) => {
       Editor.insertNode(editor, block)
       editor.onChange()
     },
-    hasBlockStyle: (style: string): boolean => {
-      return editor.pteHasBlockStyle(style)
-    },
-    isVoid: (element: PortableTextBlock | PortableTextChild) => {
-      return ![
-        portableTextFeatures.types.block.name,
-        portableTextFeatures.types.span.name
-      ].includes(element._type)
-    },
+    hasBlockStyle: useCallback(
+      (style: string): boolean => {
+        return editor.pteHasBlockStyle(style)
+      },
+      [selection]
+    ),
+    isVoid: useCallback(
+      (element: PortableTextBlock | PortableTextChild) => {
+        return ![
+          portableTextFeatures.types.block.name,
+          portableTextFeatures.types.span.name
+        ].includes(element._type)
+      },
+      [selection]
+    ),
     findByPath: (
       path: Path
     ): [PortableTextBlock | PortableTextChild | undefined, Path | undefined] => {
@@ -269,7 +277,7 @@ export const Editable = (props: Props) => {
       )[0]
       return ReactEditor.toDOMNode(editor, item)
     },
-    activeAnnotations: (): PortableTextBlock[] => {
+    activeAnnotations: useCallback((): PortableTextBlock[] => {
       if (!editor.selection || editor.selection.focus.path.length < 2) {
         return []
       }
@@ -281,7 +289,7 @@ export const Editable = (props: Props) => {
       return block.markDefs.filter(
         def => Array.isArray(span.marks) && span.marks.includes(def._key)
       )
-    },
+    }, [selection]),
     addAnnotation: (
       type: Type,
       value?: {[prop: string]: any}
@@ -386,7 +394,10 @@ export const Editable = (props: Props) => {
           }
         }
       }
-    }
+    },
+    getSelection: useCallback(() => {
+      return toPortableTextRange(editor)
+    }, [selection])
   })
 
   const renderElement = useCallback(
