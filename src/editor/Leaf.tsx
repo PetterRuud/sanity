@@ -28,10 +28,11 @@ type LeafProps = {
 export const Leaf = (props: LeafProps) => {
   const editor = useEditor()
   const selected = useSelected()
+  const [shouldBePrevented, setShouldBePrevented] = useState(false)
   const {attributes, children, leaf, portableTextFeatures, renderChild, blockElement} = props
   const annotationObjectRef = React.useRef(null)
   let returnedChildren = children
-  const focused = selected && editor.selection && Range.isCollapsed(editor.selection) || false
+  const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
   if (leaf._type === portableTextFeatures.types.span.name) {
     const decoratorValues = portableTextFeatures.decorators.map(dec => dec.value)
     const marks: string[] = uniq((leaf.marks || []).filter(mark => decoratorValues.includes(mark)))
