@@ -9,6 +9,16 @@ export function validateValue(
   keyGenerator: () => string
 ): {valid: boolean; resolution: InvalidValueResolution} {
   let resolution: InvalidValueResolution = null
+  let valid = true
+  const validChildTypes = [
+    ...[portableTextFeatures.types.span.name],
+    ...portableTextFeatures.types.inlineObjects.map(t => t.name)
+  ]
+  const validBlockTypes = [
+    ...[portableTextFeatures.types.block.name],
+    ...portableTextFeatures.types.blockObjects.map(t => t.name)
+  ]
+
   // Undefined is allowed
   if (value === undefined) {
     return {valid: true, resolution: null}
@@ -20,49 +30,57 @@ export function validateValue(
       resolution: {
         patches: [unset([])],
         description: 'Value must be an array or undefined',
-        action: 'Unset the value'
+        action: 'Unset the value',
+        item: value
       }
     }
   }
-  let valid = true
   if (
     value.some((blk: PortableTextBlock, index: number): boolean => {
       if (!isObject(blk)) {
         resolution = {
           patches: [unset([index])],
           description: `Block must be an object, got ${String(blk)}`,
-          action: `Unset ${String(blk)}`
+          action: `Unset invalid item`,
+          item: blk
         }
         return true
       }
-      // Test that every block has a _key and _type
+      // Test that every block has a _key
       if (!blk._key) {
-        const newBlk = {...blk, _key: keyGenerator()}
         resolution = {
-          patches: [set(newBlk, [index])],
+          patches: [set({...blk, _key: keyGenerator()}, [index])],
           description: `Block at index ${index} is missing required _key.`,
-          action: 'Set the block with a fresh _key'
+          action: 'Set the block with a fresh _key',
+          item: blk
         }
         return true
       }
-      if (!blk._type) {
+      // Test that every block has valid _type
+      if (!blk._type || validBlockTypes.includes(blk._type) === false) {
         resolution = {
           patches: [unset([{_key: blk._key}])],
-          description: `Block with _key '${blk._key}' is missing required key '_type'.`,
-          action: 'Remove the block'
+          description: `Block with _key '${
+            blk._key
+          }' has invalid _type (is '${blk._type.toString()}').`,
+          action: 'Remove the block',
+          item: blk
         }
         return true
       }
       // Test that every child in text block is valid
       if (blk._type === portableTextFeatures.types.block.name) {
+        // Test that it has children
         if (!blk.children) {
           resolution = {
             patches: [unset([{_key: blk._key}])],
             description: `Text block with _key '${blk._key}' is missing required key 'children'.`,
-            action: 'Remove the block'
+            action: 'Remove the block',
+            item: blk
           }
           return true
         }
+        // Test that children is lengthy
         if (blk.children && blk.children.length === 0) {
           const newSpan = {
             _type: portableTextFeatures.types.span.name,
@@ -72,57 +90,45 @@ export function validateValue(
           resolution = {
             patches: [insert([newSpan], 'after', [{_key: blk._key}, 'children', 0])],
             description: `Children for text block with _key '${blk._key}' is empty.`,
-            action: 'Insert an empty text'
+            action: 'Insert an empty text',
+            item: blk
           }
           return true
         }
+        // Test very child
         if (
           blk.children.some((child, cIndex) => {
             if (!child._key) {
               const newchild = {...child, _key: keyGenerator()}
               resolution = {
                 patches: [set(newchild, [{_key: blk._key}, 'children', cIndex])],
-                description: `Object at index ${cIndex} is missing required _key in block with _key ${blk._key}.`,
-                action: 'Set a new random _key on the object'
+                description: `Child at index ${cIndex} is missing required _key in block with _key ${blk._key}.`,
+                action: 'Set a new random _key on the object',
+                item: blk
               }
               return true
             }
-            if (!child._type && blk._key) {
+            // Verify that childs have valid types
+            if (!child._type || validChildTypes.includes(child._type) === false) {
               resolution = {
                 patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
-                description: `Object with _key '${child._key}' in block with key '${blk._key}' is missing required key '_type' property.`,
-                action: 'Remove the object'
+                description: `Child with _key '${child._key}' in block with key '${
+                  blk._key
+                }' has invalid '_type' property (is ${blk._type.toString()}).`,
+                action: 'Remove the object',
+                item: blk
               }
               return true
             }
-            // TODO: remove
+            // Verify that spans have .text
             if (child._type === portableTextFeatures.types.span.name && child.text === undefined) {
               resolution = {
-                patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
-                description: `Span with key ${child._key} is missing text property!`,
-                action: 'Remove the object'
-              }
-              return true
-            }
-            // TODO: remove
-            if (child.__inline) {
-              resolution = {
-                patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
-                description: `Object with key ${child._key} has an invalid value`,
-                action: 'Remove the object'
-              }
-              return true
-            }
-            if (
-              ![
-                ...portableTextFeatures.types.inlineObjects.map(type => type.name),
-                portableTextFeatures.types.span.name
-              ].includes(child._type)
-            ) {
-              resolution = {
-                patches: [unset([])],
-                description: `Found unknown object _type ('${child._type}') for block with _key ${blk._key}`,
-                action: 'Remove the object'
+                patches: [
+                  set({...child, text: ''}, [{_key: blk._key}, 'children', {_key: child._key}])
+                ],
+                description: `Child with _key '${child._key}' in block with key '${blk._key}' is missing text property!`,
+                action: `Write an empty .text to the object`,
+                item: blk
               }
               return true
             }
