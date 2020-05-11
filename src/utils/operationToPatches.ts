@@ -270,6 +270,8 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     operation: MoveNodeOperation,
     beforeValue: PortableTextBlock[]
   ) {
+    // TODO: implement this if we need to use wrapNodes/unwrapNodes transformations.
+    // So far it's not needed 2020-05-10
     throw new Error('Not implemented')
   }
 
