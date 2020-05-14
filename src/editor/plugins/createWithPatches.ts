@@ -305,7 +305,7 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
     if (Path.isAfter(selection.focus.path, [blockIndex])) {
       newSelection.focus = {...selection.focus}
       newSelection.focus.path = newSelection.focus.path = [
-        newSelection.focus.path[0] - 1,
+        newSelection.focus.path[0] - 1 || 0,
         ...newSelection.focus.path.slice(1)
       ]
     }
