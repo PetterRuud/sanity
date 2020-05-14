@@ -1,7 +1,17 @@
 import {set, insert, unset, diffMatchPatch, setIfMissing} from '../patch/PatchEvent'
-import {EditorOperation} from '../types/editor'
 import {Patch} from '../types/patch'
-import {Editor, MoveNodeOperation} from 'slate'
+import {Path} from '../types/path'
+import {
+  Editor,
+  MoveNodeOperation,
+  InsertTextOperation,
+  RemoveTextOperation,
+  SetNodeOperation,
+  InsertNodeOperation,
+  SplitNodeOperation,
+  RemoveNodeOperation,
+  MergeNodeOperation
+} from 'slate'
 import {omitBy, isUndefined} from 'lodash'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
 import {fromSlateValue} from './values'
@@ -24,18 +34,21 @@ function findBlock(path, value: PortableTextBlock[] | undefined) {
 export function createOperationToPatches(portableTextFeatures: PortableTextFeatures) {
   function insertTextPatch(
     editor: Editor,
-    operation: EditorOperation,
+    operation: InsertTextOperation,
     beforeValue: PortableTextBlock[]
   ) {
     const block = editor && editor.children[operation.path[0]]
     if (!block) {
       throw new Error('Could not find block')
     }
-    const child = block && block.children && block.children[operation.path[1]]
+    if (typeof block._key !== 'string') {
+      throw new Error('Expected block to have a _key')
+    }
+    const child = block && Array.isArray(block.children) && block.children[operation.path[1]]
     if (!child) {
       throw new Error('Could not find child')
     }
-    const path = [{_key: block._key}, 'children', {_key: child._key}, 'text']
+    const path: Path = [{_key: block._key}, 'children', {_key: child._key}, 'text']
     const prevBlock = findBlock(operation.path, beforeValue)
     const prevText =
       prevBlock &&
@@ -47,18 +60,21 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
 
   function removeTextPatch(
     editor: Editor,
-    operation: EditorOperation,
+    operation: RemoveTextOperation,
     beforeValue: PortableTextBlock[]
   ) {
     const block = editor && editor.children[operation.path[0]]
     if (!block) {
       throw new Error('Could not find block')
     }
-    const child = block && block.children && block.children[operation.path[1]]
+    if (typeof block._key !== 'string') {
+      throw new Error('Expected block to have a _key')
+    }
+    const child = block && Array.isArray(block.children) && block.children[operation.path[1]]
     if (!child) {
       throw new Error('Could not find child')
     }
-    const path = [{_key: block._key}, 'children', {_key: child._key}, 'text']
+    const path: Path = [{_key: block._key}, 'children', {_key: child._key}, 'text']
     const prevText =
       beforeValue[operation.path[0]] &&
       beforeValue[operation.path[0]].children &&
@@ -67,26 +83,37 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     return [diffMatchPatch(prevText || '', child.text, path)]
   }
 
-  function setNodePatch(editor: Editor, operation: EditorOperation) {
+  function setNodePatch(editor: Editor, operation: SetNodeOperation) {
     if (operation.path.length === 1) {
+      const block = editor.children[operation.path[0]]
+      if (typeof block._key !== 'string') {
+        throw new Error('Expected block to have a _key')
+      }
       const setNode = omitBy(
         {...editor.children[operation.path[0]], ...operation.newProperties},
         isUndefined
       )
       return [
         set(fromSlateValue([setNode], portableTextFeatures.types.block.name)[0], [
-          {_key: editor.children[operation.path[0]]._key}
+          {_key: block._key}
         ])
       ]
     } else if (operation.path.length === 2) {
-      const child = editor.children[operation.path[0]].children[operation.path[1]]
-      return [
-        set({...child, ...operation.newProperties}, [
-          {_key: editor.children[operation.path[0]]._key},
-          'children',
-          {_key: child._key}
-        ])
-      ]
+      const block = editor.children[operation.path[0]]
+      if (Editor.isBlock(editor, block) && typeof block._key === 'string') {
+        const child = block.children[operation.path[1]]
+        if (child && typeof child._key === 'string') {
+          return [
+            set({...child, ...operation.newProperties}, [
+              {_key: block._key},
+              'children',
+              {_key: child._key}
+            ])
+          ]
+        }
+        throw new Error('Could not find a valid child')
+      }
+      throw new Error('Could not find a valid block')
     } else {
       throw new Error(`Unexpected path encountered: ${JSON.stringify(operation.path)}`)
     }
@@ -94,7 +121,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
 
   function insertNodePatch(
     editor: Editor,
-    operation: EditorOperation,
+    operation: InsertNodeOperation,
     beforeValue: PortableTextBlock[]
   ) {
     const block = beforeValue[operation.path[0]]
@@ -162,12 +189,12 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
 
   function splitNodePatch(
     editor: Editor,
-    operation: EditorOperation,
+    operation: SplitNodeOperation,
     beforeValue: PortableTextBlock[]
   ) {
     const patches: Patch[] = []
     const splitBlock = editor.children[operation.path[0]]
-    if (!splitBlock) {
+    if (!Editor.isBlock(editor, splitBlock) || typeof splitBlock._key !== 'string') {
       throw new Error(`Block with path ${JSON.stringify(operation.path[0])} could not be found`)
     }
     if (operation.path.length === 1) {
@@ -186,17 +213,13 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       return patches
     }
     if (operation.path.length === 2) {
-      const splitSpan = editor.children[operation.path[0]].children[operation.path[1]]
-      const targetSpans = editor.children[operation.path[0]].children.slice(
-        operation.path[1] + 1,
-        operation.path[1] + 2
-      )
+      const splitSpan = splitBlock.children[operation.path[1]]
+      if (typeof splitSpan._key !== 'string') {
+        throw new Error('Span is missing _key')
+      }
+      const targetSpans = splitBlock.children.slice(operation.path[1] + 1, operation.path[1] + 2)
       patches.push(
-        insert(targetSpans, 'after', [
-          {_key: splitBlock._key},
-          'children',
-          {_key: editor.children[operation.path[0]].children[operation.path[1]]._key}
-        ])
+        insert(targetSpans, 'after', [{_key: splitBlock._key}, 'children', {_key: splitSpan._key}])
       )
       patches.push(
         set(splitSpan.text, [{_key: splitBlock._key}, 'children', {_key: splitSpan._key}, 'text'])
@@ -208,7 +231,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
 
   function removeNodePatch(
     _: Editor,
-    operation: EditorOperation,
+    operation: RemoveNodeOperation,
     beforeValue: PortableTextBlock[]
   ) {
     const block = beforeValue[operation.path[0]]
@@ -233,7 +256,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
 
   function mergeNodePatch(
     editor: Editor,
-    operation: EditorOperation,
+    operation: MergeNodeOperation,
     beforeValue: PortableTextBlock[]
   ) {
     const patches: Patch[] = []
@@ -253,7 +276,17 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     } else if (operation.path.length === 2) {
       const block = beforeValue[operation.path[0]]
       const mergedSpan = block.children[operation.path[1]]
-      const targetSpan = editor.children[operation.path[0]].children[operation.path[1] - 1]
+      const targetBlock = editor.children[operation.path[0]]
+      if (!Editor.isBlock(editor, targetBlock)) {
+        throw new Error('Block expected')
+      }
+      if (typeof targetBlock._key !== 'string') {
+        throw new Error('Expected block to have a _key')
+      }
+      const targetSpan = targetBlock.children[operation.path[1] - 1]
+      if (typeof targetSpan._key !== 'string') {
+        throw new Error('Expected span to have a _key')
+      }
       // Set the merged span with it's new value
       patches.push(
         set(targetSpan.text, [{_key: block._key}, 'children', {_key: targetSpan._key}, 'text'])

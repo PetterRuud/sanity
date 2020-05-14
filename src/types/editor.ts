@@ -40,11 +40,20 @@ export type EditorNode = SlateNode & {
   _type: string
 }
 
-export type EditorOperation = SlateOperation
+export type HistoryItem = {
+  operations: SlateOperation[]
+  timestamp: Date
+}
+
+export interface History {
+  redos: HistoryItem[]
+  undos: HistoryItem[]
+}
 
 export type EditorSelectionPoint = {path: Path; offset: number}
 export type EditorSelection = {anchor: EditorSelectionPoint; focus: EditorSelectionPoint} | null
 export interface PortableTextSlateEditor extends SlateEditor {
+  history: History
   /**
    * Increments selected list items levels, or decrements them if @reverse is true.
    *
@@ -67,10 +76,49 @@ export interface PortableTextSlateEditor extends SlateEditor {
   /**
    * Toggle marks in the selection
    *
-   * @param {Editor} editor
    * @param {string} mark
    */
   pteToggleMark: (mark: string) => void
+  /**
+   * Teset if a mark is active in the current selection
+   *
+   * @param {string} mark
+   */
+  pteIsMarkActive: (mark: string) => boolean
+  /**
+   * Toggle the selected block style
+   *
+   * @param {string} style The style name
+   *
+   */
+  pteToggleBlockStyle: (style: string) => void
+  /**
+   * Test if the current selection has a certain block style
+   *
+   * @param {string} style The style name
+   *
+   */
+  pteHasBlockStyle: (style: string) => boolean
+  /**
+   * Try to expand the current selection to a word
+   *
+   */
+  pteExpandToWord: () => void
+  /**
+   * Use hotkeys
+   *
+   */
+  pteWithHotKeys: (event: React.KeyboardEvent<HTMLDivElement>) => void
+  /**
+   * Undo
+   *
+   */
+  undo: () => void
+  /**
+   * Redo
+   *
+   */
+  redo: () => void,
 }
 
 export type MutationChange = {

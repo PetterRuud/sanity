@@ -1,4 +1,4 @@
-import {Editor, Point, Path as SlatePath, Range} from 'slate'
+import {Editor, Point, Path as SlatePath, Range, Element} from 'slate'
 import {EditorSelection, EditorSelectionPoint} from '../types/editor'
 import {PortableTextBlock} from 'src/types/portableText'
 import {isEqual} from 'lodash'
@@ -6,11 +6,11 @@ import {isEqual} from 'lodash'
 export function createKeyedPath(point: Point, editor: Editor) {
   let blockPath = [point.path[0]]
   const [block] = Editor.node(editor, blockPath, {depth: 1})
-  if (!block) {
+  if (!block || !Element.isElement(block)) {
     return null
   }
   const keyedBlockPath = [{_key: block._key}]
-  if (editor.isVoid({_type: block._type, children: block.children})) {
+  if (editor.isVoid(block)) {
     return keyedBlockPath
   }
   let keyedChildPath
@@ -29,16 +29,17 @@ export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): 
   const [block, blockPath] = Array.from(
     Editor.nodes(editor, {at: [], match: n => n._key === point.path[0]['_key']})
   )[0]
-  if (!block) {
+  if (!block || !Element.isElement(block)) {
     return []
   }
-  if (editor.isVoid({_type: block._type, children: block.children})) {
+  if (editor.isVoid(block)) {
     return blockPath
   }
   const childPath = [point.path[2]]
-  let childIndex = block.children.findIndex(child => isEqual([{_key: child._key}], childPath))
-  if (childIndex >= 0) {
-    if (editor.isVoid(block.children[childIndex])) {
+  const childIndex = block.children.findIndex(child => isEqual([{_key: child._key}], childPath))
+  if (childIndex >= 0 && block.children[childIndex]) {
+    const child = block.children[childIndex]
+    if (Element.isElement(child) && editor.isVoid(child)) {
       return blockPath.concat(childIndex).concat(0)
     }
     return blockPath.concat(childIndex)

@@ -1,4 +1,4 @@
-import {Editor} from 'slate'
+import {Editor, Transforms} from 'slate'
 import isHotkey from 'is-hotkey'
 import {PortableTextSlateEditor} from '../../types/editor'
 import {HotkeyOptions} from '../../types/options'
@@ -22,14 +22,11 @@ const DEFAULT_HOTKEYS: HotkeyOptions = {
  *
  */
 export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
-  const reservedHotkeys = ['enter', 'tab', 'shift', 'delete']
+  const reservedHotkeys = ['enter', 'tab', 'shift', 'delete', 'end']
   const activeHotkeys = hotkeysFromOptions || DEFAULT_HOTKEYS // TODO: Merge where possible? A union?
-  return function withHotKeys(editor: Editor) {
+  return function withHotKeys(editor: PortableTextSlateEditor) {
     let backspaceCount = 0
-    editor.pteWithHotKeys = (
-      editor: PortableTextSlateEditor,
-      event: React.KeyboardEvent<HTMLDivElement>
-    ) => {
+    editor.pteWithHotKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
       // Wire up custom marks hotkeys
       Object.keys(activeHotkeys).forEach(cat => {
         if (cat === 'marks') {
@@ -70,8 +67,18 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
       const isShiftEnter = isHotkey('shift+enter', event.nativeEvent)
       const isShiftTab = isHotkey('shift+tab', event.nativeEvent)
       const isBackspace = isHotkey('backspace', event.nativeEvent)
+      const isEnd = isHotkey('end', event.nativeEvent)
+      // const isShift = isHotkey('shift', event.nativeEvent)
 
-      // Disallow deleting void blocks by backspace from another line
+      if (isEnd) {
+        event.preventDefault()
+        Transforms.move(editor, {unit: 'line'})
+        return
+      }
+
+      // Disallow deleting void blocks by backspace from another line unless pressed twice.
+      // Otherwise it's so easy to delete the void block above when trying to delete text on
+      // the line below
       if (isBackspace) {
         const prevBlock = editor.selection && editor.children[editor.selection.focus.path[0] - 1]
         const focusBlock = editor.selection && editor.children[editor.selection.focus.path[0]]
@@ -88,6 +95,7 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
         } else if (backspaceCount >= 1) {
           backspaceCount = 0
         }
+        return
       }
 
       // Deal with tab for lists
@@ -99,24 +107,26 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
       // Deal with list item enter key
       if (isEnter && !isShiftEnter) {
         editor.pteEndList() && event.preventDefault()
+        return
       }
 
       // Deal with soft line breaks
       if (isShiftEnter) {
         event.preventDefault()
         editor.insertText('\n')
+        return
       }
-
-      // TODO: Deal with search/replace? Plugin perhaps?
 
       // Deal with undo/redo
       if (isHotkey('mod+z', event.nativeEvent)) {
         event.preventDefault()
         editor.undo()
+        return
       }
       if (isHotkey('mod+y', event.nativeEvent) || isHotkey('mod+shift+z', event.nativeEvent)) {
         event.preventDefault()
         editor.redo()
+        return
       }
     }
     return editor

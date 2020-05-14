@@ -15,9 +15,9 @@ type Props = {
 export default class TextBlock extends React.Component<Props> {
   render() {
     const {attributes, portableTextFeatures, children, element, readOnly} = this.props
-    const listItem = element.listItem || undefined
-    const level = element.level || 1
-    const style = element.style || 'normal'
+    const listItem = typeof element.listItem === 'string' ? element.listItem : undefined
+    const level = typeof element.level === 'number' ? element.level : 1
+    const style = typeof element.style === 'string' ? element.style : 'normal'
     // Should we render a custom style?
     let styleComponent
     const customStyle =

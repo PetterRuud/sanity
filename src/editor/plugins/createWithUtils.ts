@@ -1,5 +1,6 @@
 import {Editor, Range, Transforms, Text} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
+import {PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 
 const debug = debugWithName('plugin:withUtils')
@@ -8,7 +9,7 @@ const debug = debugWithName('plugin:withUtils')
  *
  */
 export function createWithUtils(portableTextFeatures: PortableTextFeatures) {
-  return function withUtils(editor: Editor) {
+  return function withUtils(editor: PortableTextSlateEditor) {
     // Expands the the selection to wrap around the word the focus is at
     editor.pteExpandToWord = () => {
       const {selection} = editor

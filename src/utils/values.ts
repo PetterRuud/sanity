@@ -1,6 +1,6 @@
 import {isEqual} from 'lodash'
 import {Node, Element} from 'slate'
-import {PortableTextBlock} from '../types/portableText'
+import {PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {PathSegment} from '../types/path'
 
 type Partial<T> = {
@@ -45,26 +45,30 @@ export function fromSlateValue(
   if (value && Array.isArray(value)) {
     return value.map(block => {
       const isPortableText = block && block._type === textBlockType
-      if (isPortableText) {
+      if (isPortableText && Element.isElement(block)) {
         let hasInlines = false
         const children = block.children.map(child => {
           const {_type} = child
-          if (_type !== 'span') {
+          if (_type !== 'span' && typeof child.value === 'object') {
             hasInlines = true
             const {value, children, __inline, ...rest} = child
-            return {...rest, ...value}
+            return {...rest, ...value} as PortableTextChild
           } else {
-            return child
+            return child as PortableTextChild
           }
         })
-        if (!hasInlines && Element.isElement(block)) {
-          // Original object
-          return block
+        if (typeof block._key === 'string' && typeof block._type === 'string') {
+          if (!hasInlines) {
+            // Original object
+            return (block as unknown) as PortableTextBlock
+          }
+          return {_key: block._key, _type: block._type, ...block, children} as PortableTextBlock
         }
-        return {...block, children}
+        throw new Error('Not a valid block type')
       }
       const {_key, _type} = block
-      return {_key, _type, ...block.value}
+      const value = block.value as PortableTextBlock
+      return {_key, _type, ...(typeof value === 'object' ? value : {})} as PortableTextBlock
     })
   }
   return value
@@ -88,7 +92,7 @@ export function isEqualToEmptyEditor(children, portableTextFeatures) {
 export function findBlockAndIndexFromPath(
   firstPathSegment: PathSegment,
   children: Node[]
-): [Node | undefined, number] {
+): [Element | undefined, number | undefined] {
   let blockIndex = -1
   const isNumber = Number.isInteger(Number(firstPathSegment))
   if (isNumber) {
@@ -97,15 +101,15 @@ export function findBlockAndIndexFromPath(
     blockIndex = children.findIndex(blk => isEqual({_key: blk._key}, firstPathSegment))
   }
   if (blockIndex > -1) {
-    return [children[blockIndex], blockIndex]
+    return [children[blockIndex] as Element, blockIndex]
   }
   return [undefined, -1]
 }
 
 export function findChildAndIndexFromPath(
   secondPathSegment: PathSegment,
-  block: Node
-): [Node | undefined, number] {
+  block: Element
+): [Element | Text | undefined, number] {
   let childIndex = -1
   const isNumber = Number.isInteger(Number(secondPathSegment))
   if (isNumber) {
@@ -114,7 +118,7 @@ export function findChildAndIndexFromPath(
     childIndex = block.children.findIndex(child => isEqual({_key: child._key}, secondPathSegment))
   }
   if (childIndex > -1) {
-    return [block.children[childIndex], childIndex]
+    return [block.children[childIndex] as Element | Text, childIndex]
   }
   return [undefined, -1]
 }

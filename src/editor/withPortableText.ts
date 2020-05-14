@@ -1,4 +1,4 @@
-import {createEditor, Editor} from 'slate'
+import {Editor} from 'slate'
 import {
   createWithObjectKeys,
   createWithPortableTextMarkModel,
@@ -13,24 +13,27 @@ import {
 } from './plugins'
 import {createOperationToPatches} from '../utils/operationToPatches'
 import {createEditorOptions} from '../types/options'
+import {PortableTextSlateEditor} from '../types/editor'
 import {debugWithName} from '../utils/debug'
 
 const debug = debugWithName('createPortableTextEditor')
 
-const disablePlugin = (name: string): ((editor: Editor) => Editor) => {
+const disablePlugin = (
+  name: string
+): ((editor: PortableTextSlateEditor) => PortableTextSlateEditor) => {
   debug(`Editor plugin '${name}' is disabled`)
   // This is the signature of a minimal Slate plugin
-  return (editor: Editor) => {
+  return (editor: PortableTextSlateEditor) => {
     // Do some transformations here
     return editor
   }
 }
 
-/**
- * Creates a new Portable Text Editor (which can be used without React)
- * TODO: Clean up the options here when stable. 2020-05-10
- */
-export function createPortableTextEditor(options: createEditorOptions) {
+export const withPortableText = <T extends Editor>(
+  editor: T,
+  options: createEditorOptions
+): PortableTextSlateEditor => {
+  const e = editor as T & PortableTextSlateEditor
   const {
     portableTextFeatures,
     keyGenerator,
@@ -69,9 +72,7 @@ export function createPortableTextEditor(options: createEditorOptions) {
         withUtils(
           withPortableTextBlockStyle(
             withPortableTextLists(
-              withPortableTextMarkModel(
-                withObjectKeys(withScemaTypes(withMaxBlocks(createEditor())))
-              )
+              withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(e))))
             )
           )
         )

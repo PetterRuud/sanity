@@ -4,18 +4,21 @@
  */
 
 import {isEqual, flatten} from 'lodash'
-import {Editor, Operation, Path} from 'slate'
+import {
+  Editor,
+  Operation,
+  Path,
+  SplitNodeOperation,
+  InsertTextOperation,
+  RemoveTextOperation
+} from 'slate'
 import {Patch} from '../../types/patch'
-import {PatchObservable} from 'src/types/editor'
+import {PatchObservable, PortableTextSlateEditor} from 'src/types/editor'
 import * as DMP from 'diff-match-patch'
 import {debugWithName} from '../../utils/debug'
 
 const debug = debugWithName('plugin:withUndoRedo')
 const dmp = new DMP.diff_match_patch()
-export interface History {
-  redos: {operations: Operation[]; value: Node[]}[]
-  undos: {operations: Operation[]; value: Node[]}[]
-}
 
 const SAVING = new WeakMap<Editor, boolean | undefined>()
 const MERGING = new WeakMap<Editor, boolean | undefined>()
@@ -38,7 +41,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
     })
   }
 
-  return (editor: Editor) => {
+  return (editor: PortableTextSlateEditor) => {
     editor.history = {undos: [], redos: []}
     const {apply} = editor
     // Apply function for merging and saving local history inspired from 'slate-history' by Ian Storm Taylor
@@ -46,8 +49,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
       const {operations, history} = editor
       const {undos} = history
       const step = undos[undos.length - 1]
-      const lastOp =
-        step && step.operations && step.operations[step.operations.length - 1]
+      const lastOp = step && step.operations && step.operations[step.operations.length - 1]
       const overwrite = shouldOverwrite(op, lastOp)
       let save = isSaving(editor)
       let merge = isMerging(editor)
@@ -114,7 +116,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                 .forEach(op => {
                   try {
                     editor.apply(op)
-                  } catch(err) {
+                  } catch (err) {
                     console.warn('Could not perform undo step', err)
                     editor.history.redos.push(step)
                     editor.history.undos.pop()
@@ -148,7 +150,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
               transformedOperations.forEach(op => {
                 try {
                   editor.apply(op)
-                } catch(err) {
+                } catch (err) {
                   console.warn('Could not perform redo step', err)
                   editor.history.undos.push(step)
                   editor.history.redos.pop()
@@ -193,7 +195,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
   if (patch.type === 'diffMatchPatch') {
     let blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
     const block = editor.children[blockIndex]
-    if (block) {
+    if (block && Array.isArray(block.children)) {
       const childIndex = block.children.findIndex(child =>
         isEqual({_key: child._key}, patch.path[2])
       )
@@ -206,16 +208,17 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
       const patchIsRemovingText = parsed.diffs.some(diff => diff[0] === -1)
 
       if (operation.type === 'split_node' && operation.path.length > 1) {
+        const splitOperation = transformedOperation as SplitNodeOperation
         if (patchIsRemovingText) {
-          transformedOperation.position = transformedOperation.position - distance
+          splitOperation.position = splitOperation.position - distance
         } else {
-          transformedOperation.position = transformedOperation.position + distance
+          splitOperation.position = splitOperation.position + distance
         }
-        return [transformedOperation]
+        return [splitOperation]
       }
 
       if (
-        operation.path &&
+        Path.isPath(operation.path) &&
         operation.path[0] !== undefined &&
         operation.path[0] === blockIndex &&
         operation.path[1] === childIndex
@@ -231,7 +234,9 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
             }
           }
           if (insertOffset + parsed.start1 <= operation.offset) {
-            transformedOperation.offset = transformedOperation.offset + distance
+            const insertTextOperation = transformedOperation as InsertTextOperation
+            insertTextOperation.offset = insertTextOperation.offset + distance
+            transformedOperation = insertTextOperation
           }
           // TODO: deal with overlapping ranges
           return [transformedOperation]
@@ -248,7 +253,9 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
             }
           }
           if (insertOffset + parsed.start1 <= operation.offset) {
-            transformedOperation.offset = transformedOperation.offset - distance
+            const removeTextOperation = transformedOperation as RemoveTextOperation
+            removeTextOperation.offset = removeTextOperation.offset - distance
+            transformedOperation = removeTextOperation
           }
           return [transformedOperation]
         }

@@ -7,6 +7,7 @@ import Object from './nodes/DefaultObject'
 import {BlockObject as BlockObjectContainer} from './nodes/index'
 import {Type as SchemaType} from '../types/schema'
 import {RenderAttributes} from '../types/editor'
+import {Path} from '../types/path'
 import {fromSlateValue} from '../utils/values'
 import {keyGenerator} from './PortableTextEditor'
 import {debugWithName} from '../utils/debug'
@@ -64,8 +65,8 @@ export const Element: FunctionComponent<ElementProps> = ({
     if (!type) {
       throw new Error('Could not find type for inline block element')
     }
-    if (block) {
-      const path = [{_key: block._key}, 'children', {_key: element._key}]
+    if (block && typeof element._key === 'string' && typeof block._key === 'string') {
+      const path: Path = [{_key: block._key}, 'children', {_key: element._key}]
       debugRenders && debug(`Render ${element._key} (inline object)`)
       const inlineBlockStyle = {display: 'inline-block'}
       return (
@@ -114,6 +115,9 @@ export const Element: FunctionComponent<ElementProps> = ({
       const type = portableTextFeatures.types.blockObjects.find(type => type.name === element._type)
       if (!type) {
         throw new Error(`Could not find type for block element of _type ${element._type}`)
+      }
+      if (typeof element._key !== 'string') {
+        throw new Error(`Expected element to have a _key property`)
       }
       debugRenders && debug(`Render ${element._key} (block)`)
       return (

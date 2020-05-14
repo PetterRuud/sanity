@@ -1,4 +1,12 @@
-import {Text, Range, Transforms, Editor, Path as SlatePath} from 'slate'
+import {
+  Text,
+  Range,
+  Transforms,
+  Editor,
+  Path as SlatePath,
+  createEditor,
+  Element as SlateElement
+} from 'slate'
 import {isEqual} from 'lodash'
 import React, {useCallback, useMemo, useState, useEffect, useLayoutEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
@@ -21,7 +29,7 @@ import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
 import {createWithInsertData} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
-import {createPortableTextEditor} from './createPortableTextEditor'
+import {withPortableText} from './withPortableText'
 import {normalizeSelection, toPortableTextRange, toSlateRange} from '../utils/selection'
 import {Type as SchemaType} from 'src/types/schema'
 import {debugWithName} from '../utils/debug'
@@ -95,16 +103,14 @@ export const Editable = (props: Props) => {
     ]
   })
 
+  const withInsertData = createWithInsertData(change$, portableTextFeatures, keyGenerator)
+
   // Init Editor
   const editor = useMemo(
     () =>
-      createWithInsertData(
-        change$,
-        portableTextFeatures,
-        keyGenerator
-      )(
+      withInsertData(
         withReact(
-          createPortableTextEditor({
+          withPortableText(createEditor(), {
             portableTextFeatures,
             keyGenerator,
             change$,
@@ -223,7 +229,7 @@ export const Editable = (props: Props) => {
           }
         ],
         portableTextFeatures.types.block.name
-      )[0]
+      )[0] as SlateElement
       const child = block.children[0]
       Editor.insertNode(editor, child)
       editor.onChange()
@@ -266,7 +272,7 @@ export const Editable = (props: Props) => {
       const slatePath = toSlateRange({focus: {path, offset: 0}, anchor: {path, offset: 0}}, editor)
       if (slatePath) {
         const [block, blockPath] = Editor.node(editor, slatePath.focus.path.slice(0, 1))
-        if (block && blockPath) {
+        if (block && blockPath && typeof block._key === 'string') {
           if (slatePath.focus.path.length === 1) {
             return [
               fromSlateValue([block], portableTextFeatures.types.block.name)[0],
@@ -331,7 +337,7 @@ export const Editable = (props: Props) => {
                   Transforms.setNodes(
                     editor,
                     {
-                      marks: [...textNode.marks, annotationKey]
+                      marks: [...(textNode.marks as string[]), annotationKey]
                     },
                     {
                       at: editor.selection,
@@ -343,7 +349,7 @@ export const Editable = (props: Props) => {
               Editor.normalize(editor)
               editor.onChange()
               const newSelection = toPortableTextRange(editor)
-              if (newSelection) {
+              if (newSelection && typeof blockElement._key === 'string') {
                 return {
                   spanPath: newSelection.focus.path,
                   markDefPath: [{_key: blockElement._key}, 'markDefs', {_key: annotationKey}]
@@ -404,10 +410,16 @@ export const Editable = (props: Props) => {
                 })
               ).reverse()) {
                 const [parent] = Editor.node(editor, SlatePath.parent(path))
-                const nextPath = [path[0], path[1] + 1]
-                const nextTextNode = parent.children[nextPath[1]]
-                if (nextTextNode && nextTextNode.text && isEqual(nextTextNode.marks, node.marks)) {
-                  Transforms.mergeNodes(editor, {at: nextPath, voids: true})
+                if (Editor.isBlock(editor, parent)) {
+                  const nextPath = [path[0], path[1] + 1]
+                  const nextTextNode = parent.children[nextPath[1]]
+                  if (
+                    nextTextNode &&
+                    nextTextNode.text &&
+                    isEqual(nextTextNode.marks, node.marks)
+                  ) {
+                    Transforms.mergeNodes(editor, {at: nextPath, voids: true})
+                  }
                 }
               }
               editor.onChange()
@@ -575,7 +587,7 @@ export const Editable = (props: Props) => {
         onCopy={handleCopy}
         onFocus={() => change$.next({type: 'focus'})}
         onBlur={() => change$.next({type: 'blur'})}
-        onKeyDown={event => editor.pteWithHotKeys(editor, event)}
+        onKeyDown={editor.pteWithHotKeys}
         placeholder={placeholderText}
         readOnly={readOnly}
         renderElement={renderElement}

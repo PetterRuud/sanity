@@ -37,7 +37,9 @@ export const Leaf = (props: LeafProps) => {
   const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
   if (leaf._type === portableTextFeatures.types.span.name) {
     const decoratorValues = portableTextFeatures.decorators.map(dec => dec.value)
-    const marks: string[] = uniq((leaf.marks || []).filter(mark => decoratorValues.includes(mark)))
+    const marks: string[] = uniq(
+      (Array.isArray(leaf.marks) ? leaf.marks : []).filter(mark => decoratorValues.includes(mark))
+    )
     marks.map(mark => {
       returnedChildren = (
         <Decorator attributes={attributes} mark={mark}>
@@ -46,18 +48,15 @@ export const Leaf = (props: LeafProps) => {
       )
     })
     const blockElement = children.props.parent
-    const annotations: any[] =
-      leaf.marks && leaf.marks.length > 0
-        ? (leaf.marks || [])
-            .map(
-              mark =>
-                !decoratorValues.includes(mark) &&
-                blockElement &&
-                blockElement.markDefs &&
-                blockElement.markDefs.find(def => def._key === mark)
-            )
-            .filter(Boolean)
-        : []
+    const annotations: any[] = (Array.isArray(leaf.marks) ? leaf.marks : [])
+      .map(
+        mark =>
+          !decoratorValues.includes(mark) &&
+          blockElement &&
+          blockElement.markDefs &&
+          blockElement.markDefs.find(def => def._key === mark)
+      )
+      .filter(Boolean)
 
     const handleMouseDown = event => {
       // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04

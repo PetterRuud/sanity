@@ -1,6 +1,6 @@
 import {Editor, Transforms, Element, Path} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
-import {EditorChange} from '../../types/editor'
+import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 import {toPortableTextRange} from '../../utils/selection'
 import {Subject} from 'rxjs'
@@ -11,7 +11,7 @@ export function createWithPortableTextBlockStyle(
   portableTextFeatures: PortableTextFeatures,
   change$: Subject<EditorChange>
 ) {
-  return function withPortableTextBlockStyle(editor: Editor) {
+  return function withPortableTextBlockStyle(editor: PortableTextSlateEditor) {
     const normalStyle = portableTextFeatures.styles[0].value
     // Extend Slate's default normalization to reset split node to normal style
     // if there is no text at the right end of the split.

@@ -1,5 +1,6 @@
-import {Element, Transforms, Editor, Node} from 'slate'
+import {Element, Transforms, Node} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
+import {PortableTextSlateEditor} from '../../types/editor'
 
 /**
  * This plugin makes sure that every new node in the editor get a new _key prop when created
@@ -9,7 +10,7 @@ export function createWithObjectKeys(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {
-  return function withKeys(editor: Editor) {
+  return function withKeys(editor: PortableTextSlateEditor) {
     const {apply, normalizeNode} = editor
     editor.apply = operation => {
       if (operation.type === 'split_node') {

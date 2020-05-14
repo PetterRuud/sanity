@@ -14,7 +14,7 @@ import {
   findChildAndIndexFromPath
 } from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
-import {EditorChange, PatchObservable} from '../../types/editor'
+import {EditorChange, PatchObservable, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 
 const debug = debugWithName('plugin:withPatches')
@@ -44,7 +44,7 @@ export function createWithPatches(
 
   let previousChildren
 
-  return function withPatches(editor: Editor) {
+  return function withPatches(editor: PortableTextSlateEditor) {
     previousChildren = editor.children̈́
 
     // This will cancel the throttle when the user is not producing anything for a short time
@@ -187,7 +187,7 @@ export function createWithPatches(
         // Emit value
         change$.next({
           type: 'value',
-          value: fromSlateValue(editor.value, portableTextFeatures.types.block.name)
+          value: fromSlateValue(editor.children, portableTextFeatures.types.block.name)
         })
         cancelThrottle()
       }
@@ -263,7 +263,7 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
       return
     }
     if (selection.focus.path[0] === blockIndex) {
-      const prevText = block.children.slice(-1)[0].text
+      const prevText = block.children.slice(-1)[0].text as Text
       const newSelection = {...selection}
       if (Path.isAfter(selection.anchor.path, [blockIndex])) {
         newSelection.anchor = {...selection.anchor}
@@ -289,7 +289,7 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
   // Unset patches on block level
   if (patch.type === 'unset' && patch.path.length === 1) {
     let [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], previousChildren)
-    if (!block) {
+    if (!block || typeof blockIndex === 'undefined') {
       debug('no block found in editor trying to adjust selection')
       // Naively try to adjust as the block above us have been removed.
       blockIndex = selection.focus.path[0] - 1 || 0
@@ -316,7 +316,7 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
   // Insert patches on block level
   if (patch.type === 'insert' && patch.path.length === 1) {
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
-    if (!block) {
+    if (!block || typeof blockIndex === 'undefined') {
       return
     }
     const newSelection = {...selection}
@@ -341,23 +341,26 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
   // Insert patches on block children level
   if (patch.type === 'insert' && patch.path.length === 3) {
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
-    if (!block) {
+    if (!block || typeof blockIndex === 'undefined') {
       return
     }
     const [child, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
-    if (!child) {
+    if (!child || typeof childIndex === 'undefined') {
       return
     }
     if (selection.focus.path[0] === blockIndex && selection.focus.path[1] === childIndex) {
       const nextIndex = childIndex + patch.items.length
+      const blockChildren = editor.children[blockIndex].children as Node[]
+      const nextBlock = editor.children[blockIndex + 1]
       const isSplitOperation =
-        !editor.children[blockIndex].children[nextIndex] &&
-        editor.children[blockIndex + 1] &&
-        editor.children[blockIndex + 1].children &&
-        editor.children[blockIndex + 1].children[0] &&
-        isEqual(editor.children[blockIndex + 1].children[0]._key, patch.items[0]['_key'])
+        !blockChildren[nextIndex] &&
+        Editor.isBlock(editor, nextBlock) &&
+        nextBlock.children &&
+        nextBlock.children[0] &&
+        typeof nextBlock.children[0]._key === 'string' &&
+        isEqual(nextBlock.children[0]._key, patch.items[0]['_key'])
       const [node] = Editor.node(editor, selection)
-      const nodeText = node.text
+      const nodeText = node.text as Text
       if (!nodeText) {
         return
       }

@@ -1,5 +1,5 @@
 import {PortableTextFeatures} from '../../types/portableText'
-import {EditorChanges} from '../../types/editor'
+import {EditorChanges, PortableTextSlateEditor} from '../../types/editor'
 import {Transforms, Node} from 'slate'
 import {ReactEditor} from 'slate-react'
 import {fromSlateValue} from '../../utils/values'
@@ -17,7 +17,7 @@ export function createWithInsertData(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {
-  return function withInsertData(editor: ReactEditor) {
+  return function withInsertData(editor: PortableTextSlateEditor & ReactEditor) {
     const {setFragmentData} = editor
     editor.setFragmentData = (data: DataTransfer) => {
       debug('set fragment data')

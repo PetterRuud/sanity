@@ -8,7 +8,7 @@ import {isEqual, flatten} from 'lodash'
 import {Subject} from 'rxjs'
 
 import {debugWithName} from '../../utils/debug'
-import {EditorChange} from '../../types/editor'
+import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {toPortableTextRange} from '../../utils/selection'
 import {PortableTextFeatures} from 'src/types/portableText'
 
@@ -18,7 +18,7 @@ export function createWithPortableTextMarkModel(
   portableTextFeatures: PortableTextFeatures,
   change$: Subject<EditorChange>
 ) {
-  return function withPortableTextMarkModel(editor: Editor) {
+  return function withPortableTextMarkModel(editor: PortableTextSlateEditor) {
     // Extend Slate's default normalization. Merge spans with same set of .marks when doing merge_node operations
     const {normalizeNode} = editor
     editor.normalizeNode = nodeEntry => {
@@ -35,7 +35,6 @@ export function createWithPortableTextMarkModel(
       //     Transforms.setNodes(editor, {marks: []}, {at: path})
       //   }
       // }
-
     }
 
     // Override built in addMark function
@@ -56,7 +55,12 @@ export function createWithPortableTextMarkModel(
             return
           }
           splitTextNodes.forEach(([node, path]) => {
-            const marks = [...(node.marks || []).filter((eMark: string) => eMark !== mark), mark]
+            const marks = [
+              ...(Array.isArray(node.marks) ? node.marks : []).filter(
+                (eMark: string) => eMark !== mark
+              ),
+              mark
+            ]
             Transforms.setNodes(editor, {marks}, {at: path})
           })
           mergeSpans(editor)
@@ -87,7 +91,11 @@ export function createWithPortableTextMarkModel(
           splitTextNodes.forEach(([node, path]) => {
             Transforms.setNodes(
               editor,
-              {marks: (node.marks || []).filter((eMark: string) => eMark !== mark)},
+              {
+                marks: (Array.isArray(node.marks) ? node.marks : []).filter(
+                  (eMark: string) => eMark !== mark
+                )
+              },
               {at: path}
             )
           })
@@ -186,9 +194,11 @@ export function createWithPortableTextMarkModel(
       ).reverse()) {
         const [parent] = Editor.node(editor, Path.parent(path))
         const nextPath = [path[0], path[1] + 1]
-        const nextTextNode = parent.children[nextPath[1]]
-        if (nextTextNode && nextTextNode.text && isEqual(nextTextNode.marks, node.marks)) {
-          Transforms.mergeNodes(editor, {at: nextPath, voids: true})
+        if (Editor.isBlock(editor, parent)) {
+          const nextTextNode = parent.children[nextPath[1]]
+          if (nextTextNode && nextTextNode.text && isEqual(nextTextNode.marks, node.marks)) {
+            Transforms.mergeNodes(editor, {at: nextPath, voids: true})
+          }
         }
       }
     }

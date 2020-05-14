@@ -1,6 +1,6 @@
 import {Editor, Transforms, Element} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
-import {EditorChange} from '../../types/editor'
+import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 import {toPortableTextRange} from '../../utils/selection'
 import {Subject} from 'rxjs'
@@ -13,7 +13,7 @@ export function createWithPortableTextLists(
   portableTextFeatures: PortableTextFeatures,
   change$: Subject<EditorChange>
 ) {
-  return function withPortableTextLists(editor: Editor) {
+  return function withPortableTextLists(editor: PortableTextSlateEditor) {
     // // Extend Slate's default normalization to set / unset level on .listItem blocks.
     // const {normalizeNode} = editor
     // editor.normalizeNode = nodeEntry => {
@@ -71,7 +71,7 @@ export function createWithPortableTextLists(
 
     editor.pteEndList = () => {
       if (!editor.selection) {
-        return
+        return false
       }
       const selectedBlocks = [
         ...Editor.nodes(editor, {
@@ -85,7 +85,7 @@ export function createWithPortableTextLists(
         })
       ]
       if (selectedBlocks.length === 0) {
-        return
+        return false
       }
       selectedBlocks.forEach(([node, path]) => {
         debug('Unset list')
@@ -95,21 +95,21 @@ export function createWithPortableTextLists(
       return true // Note: we are exiting the plugin chain by not returning editor (or hotkey plugin 'enter' will fire)
     }
 
-    editor.pteIncrementBlockLevels = throttle((reverse: boolean): void => {
+    editor.pteIncrementBlockLevels = throttle((reverse?: boolean): boolean => {
       if (!editor.selection) {
-        return
+        return false
       }
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node => Element.isElement(node) && node.listItem
+          match: node => !!(Element.isElement(node) && node.listItem)
         })
       ]
       if (selectedBlocks.length === 0) {
-        return
+        return false
       }
       selectedBlocks.forEach(([node, path]) => {
-        let level = node.level || 1
+        let level = typeof node.level === 'number' ? node.level : 1
         if (reverse) {
           level--
           debug('Decrementing list level', Math.min(MAX_LIST_LEVEL, Math.max(1, level)))
@@ -125,7 +125,9 @@ export function createWithPortableTextLists(
       })
       change$.next({type: 'selection', selection: toPortableTextRange(editor)})
       editor.onChange()
+      return true
     }, 100)
+
     return editor
   }
 }
