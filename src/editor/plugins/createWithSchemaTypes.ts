@@ -11,8 +11,9 @@ export function createWithSchemaTypes(portableTextFeatures: PortableTextFeatures
   return function withSchemaTypes(editor: Editor) {
     editor.isVoid = (element: Element): boolean => {
       return (
-        portableTextFeatures.types.blockObjects.map(obj => obj.name).includes(element._type) ||
-        portableTextFeatures.types.inlineObjects.map(obj => obj.name).includes(element._type)
+        portableTextFeatures.types.block.name !== element._type &&
+        (portableTextFeatures.types.blockObjects.map(obj => obj.name).includes(element._type) ||
+          portableTextFeatures.types.inlineObjects.map(obj => obj.name).includes(element._type))
       )
     }
     editor.isInline = (element: Element): boolean => {
