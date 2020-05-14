@@ -241,8 +241,8 @@ export class PortableTextEditor extends React.Component<Props, State> {
   }
 
   handleEditableError = error => {
-    debug('Cached error', error)
-    this.forceUpdate()
+    debug('Catched error', error)
+    console.error(error)
   }
 
   render() {
