@@ -4,15 +4,17 @@ import ListItem from './ListItem'
 import Text from './Text'
 import {PortableTextFeatures} from '../../types/portableText'
 import {TextBlock as TextBlockWrapper} from './index'
+import {DraggableBlock} from '../DraggableBlock'
 
 type Props = {
   attributes?: {}
   element: Element
   portableTextFeatures: PortableTextFeatures
+  readOnly: boolean
 }
 export default class TextBlock extends React.Component<Props> {
   render() {
-    const {attributes, portableTextFeatures, children, element} = this.props
+    const {attributes, portableTextFeatures, children, element, readOnly} = this.props
     const listItem = element.listItem || undefined
     const level = element.level || 1
     const style = element.style || 'normal'
@@ -40,9 +42,11 @@ export default class TextBlock extends React.Component<Props> {
     }
     return (
       <TextBlockWrapper {...attributes}>
-        <Text style={style} styleComponent={styleComponent}>
-          {children}
-        </Text>
+        <DraggableBlock element={element} readOnly={readOnly}>
+          <Text style={style} styleComponent={styleComponent}>
+            {children}
+          </Text>
+        </DraggableBlock>
       </TextBlockWrapper>
     )
   }
