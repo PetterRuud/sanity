@@ -8,10 +8,13 @@ import {PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import {Type as SchemaType} from '../types/schema'
 import {keyGenerator} from './PortableTextEditor'
 import {RenderAttributes} from '../types/editor'
+import {debugWithName} from '../utils/debug'
+import {DraggableChild} from './DraggableChild'
+const debug = debugWithName('components:Leaf')
+const debugRenders = false
 
 type LeafProps = {
   attributes: string
-  blockElement: Element
   children: ReactElement
   leaf: Element
   portableTextFeatures: PortableTextFeatures
@@ -22,14 +25,13 @@ type LeafProps = {
     attributes: RenderAttributes,
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
-  value: PortableTextChild
+  readOnly: boolean
 }
 
 export const Leaf = (props: LeafProps) => {
   const editor = useEditor()
   const selected = useSelected()
-  const [shouldBePrevented, setShouldBePrevented] = useState(false)
-  const {attributes, children, leaf, portableTextFeatures, renderChild, blockElement} = props
+  const {attributes, children, leaf, portableTextFeatures, renderChild} = props
   const annotationObjectRef = React.useRef(null)
   let returnedChildren = children
   const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
@@ -43,6 +45,7 @@ export const Leaf = (props: LeafProps) => {
         </Decorator>
       )
     })
+    const blockElement = children.props.parent
     const annotations: any[] =
       leaf.marks && leaf.marks.length > 0
         ? (leaf.marks || [])
@@ -94,7 +97,7 @@ export const Leaf = (props: LeafProps) => {
       }
     }
   }
-
+  debugRenders && debug(`Render ${leaf._key} (span)`)
   // TODO: remove hightlight stuff as test for decorations
   return (
     <span
@@ -102,7 +105,13 @@ export const Leaf = (props: LeafProps) => {
       style={{backgroundColor: leaf.__highlight ? '#ff0' : '#fff'}}
       ref={annotationObjectRef}
     >
-      {returnedChildren}
+      <DraggableChild
+        element={leaf}
+        readOnly={props.readOnly}
+        spanType={portableTextFeatures.types.span.name}
+      >
+        {returnedChildren}
+      </DraggableChild>
     </span>
   )
 }
