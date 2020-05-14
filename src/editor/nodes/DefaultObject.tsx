@@ -6,7 +6,7 @@ type Props = {
 }
 
 const DefaultObject = (props: Props): JSX.Element => {
-  return <>{JSON.stringify(props.value)}</>
+  return <pre>{JSON.stringify(props.value, null, 2)}</pre>
 }
 
 export default DefaultObject
