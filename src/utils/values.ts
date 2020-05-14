@@ -1,5 +1,5 @@
 import {isEqual} from 'lodash'
-import {Node} from 'slate'
+import {Node, Element} from 'slate'
 import {PortableTextBlock} from '../types/portableText'
 import {PathSegment} from '../types/path'
 
@@ -16,14 +16,20 @@ export function toSlateValue(
       const {_type, _key, ...rest} = block
       const isPortableText = block && block._type === textBlockType
       if (isPortableText) {
+        let hasInlines = false
         const children = block.children.map(child => {
           const {_type, _key, ...rest} = child
           if (_type !== 'span') {
+            hasInlines = true
             return {_type, _key, children: [{text: ''}], value: rest, __inline: true}
           } else {
             return child
           }
         })
+        if (!hasInlines && Element.isElement(block)) {
+          // Original object
+          return block
+        }
         return {_type, _key, ...rest, children}
       }
       return {_type, _key, children: [{text: ''}], value: rest}
@@ -40,15 +46,21 @@ export function fromSlateValue(
     return value.map(block => {
       const isPortableText = block && block._type === textBlockType
       if (isPortableText) {
+        let hasInlines = false
         const children = block.children.map(child => {
           const {_type} = child
           if (_type !== 'span') {
+            hasInlines = true
             const {value, children, __inline, ...rest} = child
             return {...rest, ...value}
           } else {
             return child
           }
         })
+        if (!hasInlines && Element.isElement(block)) {
+          // Original object
+          return block
+        }
         return {...block, children}
       }
       const {_key, _type} = block
@@ -65,11 +77,11 @@ export function isEqualToEmptyEditor(children, portableTextFeatures) {
     (children &&
       Array.isArray(children) &&
       children.length === 1 &&
-        children[0]._type === portableTextFeatures.types.block.name &&
-        children[0].children &&
-        children[0].children.length === 1 &&
-        children[0].children[0]._type === 'span' &&
-        children[0].children[0].text === '')
+      children[0]._type === portableTextFeatures.types.block.name &&
+      children[0].children &&
+      children[0].children.length === 1 &&
+      children[0].children[0]._type === 'span' &&
+      children[0].children[0].text === '')
   )
 }
 
