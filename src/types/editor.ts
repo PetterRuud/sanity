@@ -6,7 +6,10 @@ import {PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Subject, Observable} from 'rxjs'
 export interface EditableAPI {
   activeAnnotations: () => PortableTextBlock[]
-  addAnnotation: (type: Type, value?: {[prop: string]: any}) => {spanPath: Path; markDefPath: Path} | undefined
+  addAnnotation: (
+    type: Type,
+    value?: {[prop: string]: any}
+  ) => {spanPath: Path; markDefPath: Path} | undefined
   blur: () => void
   findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
   findDOMNode: (element: PortableTextBlock | PortableTextChild) => HTMLElement
@@ -18,11 +21,12 @@ export interface EditableAPI {
   insert: (items: PortableTextChild[] | PortableTextBlock[], selection?: EditorSelection) => void
   insertBlock: (type: Type, value?: {[prop: string]: any}) => void
   insertChild: (type: Type, value?: {[prop: string]: any}) => void
+  isDragging: () => boolean
   isMarkActive: (mark: string) => boolean
   isVoid: (element: PortableTextBlock | PortableTextChild) => boolean
   marks: () => string[]
   redo: () => void
-  remove: (selection?: EditorSelection) => void
+  remove: (selection?: EditorSelection, options?: {mode?: 'block' | 'children'}) => void
   removeAnnotation: (type: Type) => void
   select: (selection: EditorSelection) => void
   toggleBlockStyle: (blockStyle: string) => void
