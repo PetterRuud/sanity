@@ -10,7 +10,8 @@ import {
   Path,
   SplitNodeOperation,
   InsertTextOperation,
-  RemoveTextOperation
+  RemoveTextOperation,
+  SelectionOperation
 } from 'slate'
 import {Patch} from '../../types/patch'
 import {PatchObservable, PortableTextSlateEditor} from 'src/types/editor'
@@ -75,7 +76,10 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
           }
           step.operations.push(op)
         } else {
-          const operations = [op]
+          const operations = [
+            ...(editor.selection !== null ? [createSelectOperation(editor)] : []),
+            op
+          ]
           const step = {
             operations,
             timestamp: new Date()
@@ -114,6 +118,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                 .map(Operation.inverse)
                 .reverse()
                 .forEach(op => {
+                  // TODO: stop trying this, and have a perfect transformation!
                   try {
                     editor.apply(op)
                   } catch (err) {
@@ -330,7 +335,7 @@ const shouldMerge = (op: Operation, prev: Operation | undefined): boolean => {
 }
 
 const shouldSave = (op: Operation, prev: Operation | undefined): boolean => {
-  if (op.type === 'set_selection' && op.newProperties == null) {
+  if (op.type === 'set_selection' && op.newProperties === null) {
     return false
   }
 
@@ -358,4 +363,12 @@ function withoutSaving(editor: Editor, fn: () => void): void {
   SAVING.set(editor, false)
   fn()
   SAVING.set(editor, prev)
+}
+
+function createSelectOperation(editor): SelectionOperation {
+  return {
+    type: 'set_selection',
+    properties: {...editor.selection},
+    newProperties: {...editor.selection}
+  }
 }
