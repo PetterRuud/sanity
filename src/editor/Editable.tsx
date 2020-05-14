@@ -111,7 +111,8 @@ export const Editable = (props: Props) => {
             setMustAdjustSelection: (arg0: boolean) => setMustAdjustSelection(arg0),
             maxBlocks,
             hotkeys,
-            incomingPatche$
+            incomingPatche$,
+            readOnly: props.readOnly || false
           })
         )
       ),
@@ -447,13 +448,12 @@ export const Editable = (props: Props) => {
       if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
         return <span {...lProps.attributes}>{lProps.children}</span>
       }
-      const blockElement = lProps.children.props.parent
       return (
         <Leaf
           {...lProps}
-          blockElement={blockElement}
           portableTextFeatures={portableTextFeatures}
           renderChild={props.renderChild}
+          readOnly={readOnly}
         />
       )
     },
