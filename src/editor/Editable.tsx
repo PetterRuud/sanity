@@ -570,7 +570,7 @@ export const Editable = (props: Props) => {
       value={getValue(stateValue, [createPlaceHolderBlock()])}
     >
       <SlateEditable
-        autoFocus={true}
+        autoFocus={false}
         decorate={decorate}
         onCopy={handleCopy}
         onFocus={() => change$.next({type: 'focus'})}
