@@ -60,9 +60,8 @@ export function validateValue(
       if (!blk._type || validBlockTypes.includes(blk._type) === false) {
         resolution = {
           patches: [unset([{_key: blk._key}])],
-          description: `Block with _key '${
-            blk._key
-          }' has invalid _type (is '${blk._type.toString()}').`,
+          description: `Block with _key '${blk._key}' has invalid _type (is '${blk._type ||
+            'undefined'}').`,
           action: 'Remove the block',
           item: blk
         }
