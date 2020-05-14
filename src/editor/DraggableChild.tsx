@@ -44,10 +44,9 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
 
     let domRange
     const {document} = window
-    const {clientX: x, clientY: y, target} = event
-    console.log(target)
+    const {clientX: x, clientY: y} = event
 
-    // COMPAT: In Firefox, `caretRangeFromPoint` doesn't exist. (2016/07/25)
+    // COMPAT: In Firefox, `caretRangeFromPoint` doesn't exist. (2020-05-14)
     if (document.caretRangeFromPoint) {
       domRange = document.caretRangeFromPoint(x, y)
     } else {
