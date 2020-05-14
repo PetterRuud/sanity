@@ -426,19 +426,15 @@ export const Editable = (props: Props) => {
       if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
         return <div {...eProps.attributes}>{eProps.children}</div>
       }
-      const value = fromSlateValue([eProps.element], portableTextFeatures.types.block.name)[0]
-      if (value) {
-        return (
-          <Element
-            {...eProps}
-            value={value}
-            portableTextFeatures={portableTextFeatures}
-            renderBlock={props.renderBlock}
-            renderChild={props.renderChild}
-          />
-        )
-      }
-      throw new Error('Could not resolve block')
+      return (
+        <Element
+          {...eProps}
+          portableTextFeatures={portableTextFeatures}
+          readOnly={readOnly}
+          renderBlock={props.renderBlock}
+          renderChild={props.renderChild}
+        />
+      )
     },
     [props.value]
   )
@@ -509,6 +505,7 @@ export const Editable = (props: Props) => {
     if (!props.isThrottling && mustAdjustSelection === false) {
       const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
       debug('Setting value from props')
+      // TODO: figure out what is changed and only update that?
       setStateValue(slateValueFromProps)
     }
   }, [props.value, props.isThrottling])
