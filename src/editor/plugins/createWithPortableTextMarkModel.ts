@@ -3,20 +3,22 @@
  * This plugin will change Slate's default marks model (every prop is a mark) with the Portable Text model (marks is an array of strings on prop .marks).
  */
 
- import {Editor, Range, Transforms, Text, Path, NodeEntry} from 'slate'
+import {Editor, Range, Transforms, Text, Path, NodeEntry} from 'slate'
 import {isEqual, flatten} from 'lodash'
 import {Subject} from 'rxjs'
 
 import {debugWithName} from '../../utils/debug'
 import {EditorChange} from '../../types/editor'
 import {toPortableTextRange} from '../../utils/selection'
+import {PortableTextFeatures} from 'src/types/portableText'
 
 const debug = debugWithName('plugin:withPortableTextMarkModel')
 
-export function createWithPortableTextMarkModel(change$: Subject<EditorChange>) {
+export function createWithPortableTextMarkModel(
+  portableTextFeatures: PortableTextFeatures,
+  change$: Subject<EditorChange>
+) {
   return function withPortableTextMarkModel(editor: Editor) {
-
-
     // Extend Slate's default normalization. Merge spans with same set of .marks when doing merge_node operations
     const {normalizeNode} = editor
     editor.normalizeNode = nodeEntry => {
@@ -24,6 +26,16 @@ export function createWithPortableTextMarkModel(change$: Subject<EditorChange>) 
       if (editor.operations.some(op => op.type === 'merge_node')) {
         mergeSpans(editor)
       }
+      // This should not be needed? Commented out for now.
+      // // Ensure that every span node has .marks
+      // const [node, path] = nodeEntry
+      // if (node._type === portableTextFeatures.types.span.name) {
+      //   if (!node.marks) {
+      //     debug('Adding .marks to span node')
+      //     Transforms.setNodes(editor, {marks: []}, {at: path})
+      //   }
+      // }
+
     }
 
     // Override built in addMark function
@@ -182,4 +194,3 @@ export function createWithPortableTextMarkModel(change$: Subject<EditorChange>) 
     }
   }
 }
-
