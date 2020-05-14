@@ -44,8 +44,8 @@
     "get-random-values": "^1.2.0",
     "is-hotkey": "^0.1.6",
     "lodash": "^4.17.15",
-    "slate": "^0.57.1",
-    "slate-react": "^0.57.1",
+    "slate": "^0.58.1",
+    "slate-react": "^0.58.1",
     "styled-components": "^5.0.0",
     "typescript-plugin-styled-components": "^1.4.4"
   },
