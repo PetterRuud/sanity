@@ -51,7 +51,7 @@ export function validateValue(
         resolution = {
           patches: [set({...blk, _key: keyGenerator()}, [index])],
           description: `Block at index ${index} is missing required _key.`,
-          action: 'Set the block with a fresh _key',
+          action: 'Set the block with a random _key value',
           item: blk
         }
         return true
