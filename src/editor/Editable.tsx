@@ -26,6 +26,7 @@ import {normalizeSelection, toPortableTextRange, toSlateRange} from '../utils/se
 import {Type as SchemaType} from 'src/types/schema'
 import {debugWithName} from '../utils/debug'
 import {DOMNode} from 'slate-react/dist/utils/dom'
+import {IS_DRAGGING} from '../utils/weakMaps'
 
 const debug = debugWithName('component:Editable')
 
@@ -161,6 +162,10 @@ export const Editable = (props: Props) => {
     undo: (): void => editor.undo(),
     redo: (): void => editor.redo(),
     select: (selection: EditorSelection): void => {
+      if (!props.value || selection === null) {
+        Transforms.deselect(editor)
+        return
+      }
       const slateSelection = toSlateRange(selection, editor)
       if (slateSelection) {
         const [node] = Editor.node(editor, slateSelection)
@@ -172,7 +177,6 @@ export const Editable = (props: Props) => {
         ReactEditor.focus(editor)
         return
       }
-      Transforms.deselect(editor)
     },
     focusBlock: useCallback((): PortableTextBlock | undefined => {
       if (editor.selection) {
@@ -243,6 +247,9 @@ export const Editable = (props: Props) => {
       },
       [selection]
     ),
+    isDragging: () => {
+      return IS_DRAGGING.get(editor)
+    },
     isVoid: useCallback(
       (element: PortableTextBlock | PortableTextChild) => {
         return ![
@@ -347,6 +354,17 @@ export const Editable = (props: Props) => {
       }
       return undefined
     },
+    remove: (selection: EditorSelection, options?: {mode?: 'block' | 'children'}): void => {
+      const range = toSlateRange(selection, editor)
+      if (range) {
+        const ptMode: string | undefined = (options && options.mode) || undefined
+        let mode
+        if (ptMode) {
+          mode = mode === 'block' ? 'highest' : 'lowest'
+        }
+        Transforms.removeNodes(editor, {at: range, mode})
+      }
+    },
     removeAnnotation: (type: Type): void => {
       const {selection} = editor
       if (selection) {
@@ -363,7 +381,6 @@ export const Editable = (props: Props) => {
                 {voids: false, match: n => Array.isArray(n.markDefs)}
               )
               editor.pteExpandToWord()
-
               for (const [node, path] of Editor.nodes(editor, {
                 at: selection,
                 match: Text.isText

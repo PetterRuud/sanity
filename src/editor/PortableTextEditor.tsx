@@ -66,15 +66,15 @@ type State = {
 }
 
 export class PortableTextEditor extends React.Component<Props, State> {
-  static focus = (editor: PortableTextEditor) => {
+  static focus = (editor: PortableTextEditor): void => {
     debug('Host requesting focus')
     editor.editable?.focus()
   }
-  static blur = (editor: PortableTextEditor) => {
+  static blur = (editor: PortableTextEditor): void => {
     debug('Host blurred')
     editor.editable?.blur()
   }
-  static toggleMark = (editor: PortableTextEditor, mark: string) => {
+  static toggleMark = (editor: PortableTextEditor, mark: string): void => {
     debug(`Host toggling mark`, mark)
     editor.editable?.toggleMark(mark)
   }
@@ -88,8 +88,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     return editor.portableTextFeatures
   }
   static isDragging = (editor: PortableTextEditor) => {
-    debug(`Host dragging`)
-    return false // TODO: - when drag is implemented
+    return editor.editable?.isDragging()
   }
   static focusBlock = (editor: PortableTextEditor) => {
     return editor.editable?.focusBlock()
@@ -115,6 +114,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     return editor.editable?.hasBlockStyle(blockStyle)
   }
   static toggleBlockStyle = (editor: PortableTextEditor, blockStyle: string) => {
+    debug(`Host is toggling block style`)
     return editor.editable?.toggleBlockStyle(blockStyle)
   }
   static isVoid = (editor: PortableTextEditor, element: PortableTextBlock | PortableTextChild) => {
@@ -127,6 +127,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
     return editor.editable?.findDOMNode(element)
   }
   static findByPath = (editor: PortableTextEditor, path: Path) => {
+    debug(`Host is finding by path`)
     return editor.editable?.findByPath(path)
   }
   static activeAnnotations = (editor: PortableTextEditor): PortableTextBlock[] => {
@@ -139,6 +140,11 @@ export class PortableTextEditor extends React.Component<Props, State> {
   ): {spanPath: Path; markDefPath: Path} | undefined => editor.editable?.addAnnotation(type, value)
   static removeAnnotation = (editor: PortableTextEditor, type: Type) =>
     editor.editable?.removeAnnotation(type)
+  static remove = (
+    editor: PortableTextEditor,
+    selection: EditorSelection,
+    options?: {mode?: 'block' | 'children'}
+  ) => editor.editable?.remove(selection, options)
 
   private portableTextFeatures: PortableTextFeatures
   private editable?: EditableAPI
