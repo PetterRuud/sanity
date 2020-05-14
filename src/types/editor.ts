@@ -120,7 +120,12 @@ export type ReadyChange = {
   type: 'ready'
 }
 
-export type InvalidValueResolution = null | {patches: Patch[]; description: string; action: string}
+export type InvalidValueResolution = null | {
+  patches: Patch[]
+  description: string
+  action: string
+  item: PortableTextBlock[] | PortableTextBlock | PortableTextChild | undefined
+}
 
 export type InvalidValue = {
   type: 'invalidValue'
