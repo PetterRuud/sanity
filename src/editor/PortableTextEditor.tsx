@@ -15,7 +15,8 @@ import {
   OnCopyFn,
   EditorChanges,
   PatchObservable,
-  EditableAPI
+  EditableAPI,
+  InvalidValueResolution
 } from '../types/editor'
 import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
@@ -61,7 +62,7 @@ type Props = {
 }
 
 type State = {
-  invalidValue: PortableTextBlock[] | undefined
+  invalidValueResolution: InvalidValueResolution
 }
 
 export class PortableTextEditor extends React.Component<Props, State> {
@@ -171,15 +172,16 @@ export class PortableTextEditor extends React.Component<Props, State> {
       this.props.keyGenerator || keyGenerator
     )
     if (props.value && !validation.valid) {
-      invalidValue = props.value
       this.change$.next({type: 'loading', isLoading: false})
-      this.change$.next({
+      invalidValue = {
         type: 'invalidValue',
         resolution: validation.resolution,
         value: props.value
-      })
+      }
+      this.change$.next(invalidValue)
+      this.state = {invalidValueResolution: validation.resolution}
     }
-    this.state = {invalidValue}
+    this.state = this.state || {}
   }
 
   componentWillUnmount() {
@@ -187,8 +189,10 @@ export class PortableTextEditor extends React.Component<Props, State> {
   }
 
   componentDidMount() {
-    this.change$.next({type: 'loading', isLoading: false})
-    this.change$.next({type: 'ready'})
+    if (!this.state.invalidValueResolution) {
+      this.change$.next({type: 'ready'})
+      this.change$.next({type: 'selection', selection: this.props.selection || null})
+    }
   }
 
   private onChange = (next: EditorChange): void => {
@@ -249,8 +253,8 @@ export class PortableTextEditor extends React.Component<Props, State> {
       spellCheck,
       value
     } = this.props
-    if (this.state.invalidValue) {
-      return null
+    if (this.state.invalidValueResolution) {
+      return this.state.invalidValueResolution.description
     }
     const editable = (
       <ErrorBoundary onError={this.handleEditableError}>
