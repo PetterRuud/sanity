@@ -1,25 +1,27 @@
-import React, {ReactElement, FunctionComponent} from 'react'
+import React, {ReactElement, FunctionComponent, useRef} from 'react'
 import {Element as SlateElement, Editor, Range} from 'slate'
-import {useSelected, useEditor} from 'slate-react'
+import {useSelected, useEditor, ReactEditor} from 'slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
-import Block from './nodes/TextBlock'
+import TextBlock from './nodes/TextBlock'
 import Object from './nodes/DefaultObject'
-import {
-  InlineObject as InlineObjectContainer,
-  BlockObject as BlockObjectContainer
-} from './nodes/index'
+import {BlockObject as BlockObjectContainer} from './nodes/index'
 import {Type as SchemaType} from '../types/schema'
 import {RenderAttributes} from '../types/editor'
 import {fromSlateValue} from '../utils/values'
 import {keyGenerator} from './PortableTextEditor'
+import {debugWithName} from '../utils/debug'
+import {DraggableBlock} from './DraggableBlock'
+import {DraggableChild} from './DraggableChild'
+
+const debug = debugWithName('components:Element')
+const debugRenders = false
 
 type ElementProps = {
   attributes: string
   children: ReactElement
   element: SlateElement
-  block: PortableTextBlock
-  value: PortableTextBlock
   portableTextFeatures: PortableTextFeatures
+  readOnly: boolean
   renderBlock?: (
     value: PortableTextBlock,
     type: SchemaType,
@@ -41,109 +43,104 @@ const defaultRender = value => {
 }
 
 export const Element: FunctionComponent<ElementProps> = ({
-  value,
   attributes,
   children,
   element,
   portableTextFeatures,
+  readOnly,
   renderBlock,
   renderChild
 }) => {
   const editor = useEditor()
   const selected = useSelected()
-  const blockObjectRef = React.useRef(null)
-  const inlineBlockObjectRef = React.useRef(null)
-  const focused = selected && editor.selection && Range.isCollapsed(editor.selection) || false
+  const blockObjectRef = useRef(null)
+  const inlineBlockObjectRef = useRef(null)
+  const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
   // Test for inline objects first
-  // TODO: This is probably not the best way to find the child's block.
   if (editor.isInline(element)) {
-    const [block] = Array.from(
-      Editor.nodes(editor, {
-        at: [],
-        match: n => n.children && n.children.find(c => c._key === value._key)
-      })
-    )[0]
-    const type = portableTextFeatures.types.inlineObjects.find(type => type.name === value._type)
+    const path = ReactEditor.findPath(editor, element)
+    const [block] = Editor.node(editor, path, {depth: 1})
+    const type = portableTextFeatures.types.inlineObjects.find(type => type.name === element._type)
     if (!type) {
       throw new Error('Could not find type for inline block element')
     }
     if (block) {
-      const blockValue = fromSlateValue([block], portableTextFeatures.types.block.name)[0]
-      const path = [{_key: blockValue._key}, 'children', {_key: value._key}]
-
-      // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
-      const handleMouseDown = event => {
-        if (focused) {
-          event.stopPropagation()
-          event.preventDefault()
-        }
-      }
+      const path = [{_key: block._key}, 'children', {_key: element._key}]
+      debugRenders && debug(`Render ${element._key} (inline object)`)
+      const inlineBlockStyle = {display: 'inline-block'}
       return (
-        <span {...attributes}>
-          {renderChild && (
-            <span ref={inlineBlockObjectRef} key={keyGenerator()} onMouseDown={handleMouseDown}>
-              {renderChild(
-                value,
-                type,
-                inlineBlockObjectRef,
-                {focused, selected, path},
-                defaultRender
-              )}
-            </span>
-          )}
-          {!renderChild && (
-            <InlineObjectContainer selected={selected}>
-              {defaultRender(value)}
-            </InlineObjectContainer>
-          )}
-          {children}
-        </span>
+        <div {...attributes} contentEditable={false} style={inlineBlockStyle}>
+          <DraggableChild
+            element={element}
+            readOnly={readOnly}
+            spanType={portableTextFeatures.types.span.name}
+          >
+            <div ref={inlineBlockObjectRef} key={element._key} style={inlineBlockStyle}>
+              {renderChild &&
+                renderChild(
+                  fromSlateValue([element], portableTextFeatures.types.block.name)[0],
+                  type,
+                  inlineBlockObjectRef,
+                  {focused, selected, path},
+                  defaultRender
+                )}
+              {!renderChild &&
+                defaultRender(fromSlateValue([element], portableTextFeatures.types.block.name)[0])}
+              {children}
+            </div>
+          </DraggableChild>
+        </div>
       )
     } else {
       throw new Error('Block not found!')
     }
   }
   // If not inline, it's either a block (text) or a block object (non-text)
+  // NOTE: text blocks aren't draggable with DraggableBlock (yet?)
   switch (element._type) {
     case portableTextFeatures.types.block.name:
+      debugRenders && debug(`Render ${element._key} (text block)`)
       return (
-        <Block
+        <TextBlock
           attributes={attributes}
           element={element}
           portableTextFeatures={portableTextFeatures}
+          readOnly={readOnly}
         >
           {children}
-        </Block>
+        </TextBlock>
       )
     default:
-      const type = portableTextFeatures.types.blockObjects.find(type => type.name === value._type)
+      const type = portableTextFeatures.types.blockObjects.find(type => type.name === element._type)
       if (!type) {
-        throw new Error('Could not find type for block element')
+        throw new Error(`Could not find type for block element of _type ${element._type}`)
       }
-      const handleMouseDown = event => {
-        // slate-react will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
-        if (focused) {
-          event.stopPropagation()
-          event.preventDefault()
-        }
-      }
+      debugRenders && debug(`Render ${element._key} (block)`)
       return (
-        <div {...attributes}>
-          {renderBlock && (
-            <div ref={blockObjectRef} key={keyGenerator()} onMouseDown={handleMouseDown}>
-              {renderBlock(
-                value,
-                type,
-                blockObjectRef,
-                {focused, selected, path: [{_key: value._key}]},
-                defaultRender
+        <div {...attributes} contentEditable={false}>
+          <DraggableBlock element={element} readOnly={readOnly}>
+            <>
+              {renderBlock && (
+                <div ref={blockObjectRef} key={keyGenerator()}>
+                  {renderBlock(
+                    fromSlateValue([element], portableTextFeatures.types.block.name)[0],
+                    type,
+                    blockObjectRef,
+                    {focused, selected, path: [{_key: element._key}]},
+                    defaultRender
+                  )}
+                </div>
               )}
-            </div>
-          )}
-          {!renderBlock && (
-            <BlockObjectContainer selected={selected}>{defaultRender(value)}</BlockObjectContainer>
-          )}
-          {children}
+              {!renderBlock && (
+                <BlockObjectContainer selected={selected}>
+                  {defaultRender(
+                    fromSlateValue([element], portableTextFeatures.types.block.name)[0]
+                  )}
+                </BlockObjectContainer>
+              )}
+              {children}
+            </>
+          </DraggableBlock>
         </div>
       )
   }
