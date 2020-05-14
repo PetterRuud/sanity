@@ -37,6 +37,21 @@ export const TextStrikeThrough = styled.span`
   text-decoration: line-through;
 `
 
+export const DraggableBlockWrappper = styled.div`
+  border-top: ${props => {
+    if (props.isDraggingOverTop) {
+      return '1px solid black'
+    }
+    return '1px solid transparent'
+  }};
+  border-bottom: ${props => {
+    if (props.isDraggingOverBottom) {
+      return '1px solid black'
+    }
+    return '1px solid transparent'
+  }};
+`
+
 export const BlockObject = styled.div`
   user-select: none;
   border: ${props => {
