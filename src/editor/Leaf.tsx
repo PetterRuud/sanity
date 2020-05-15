@@ -101,7 +101,7 @@ export const Leaf = (props: LeafProps) => {
   return (
     <span
       {...attributes}
-      style={{backgroundColor: leaf.__highlight ? '#ff0' : '#fff'}}
+      style={{backgroundColor: leaf.__highlight ? '#ff0' : 'inherit'}}
       ref={annotationObjectRef}
     >
       <DraggableChild
