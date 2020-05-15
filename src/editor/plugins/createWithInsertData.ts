@@ -3,7 +3,7 @@ import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChanges, PortableTextSlateEditor} from '../../types/editor'
 import {Transforms, Node, Editor} from 'slate'
 import {ReactEditor} from '@sanity/slate-react'
-import {fromSlateValue, toSlateValue} from '../../utils/values'
+import {fromSlateValue, toSlateValue, isEqualToEmptyEditor} from '../../utils/values'
 import {validateValue} from '../../utils/validateValue'
 import {debugWithName} from '../../utils/debug'
 
@@ -21,11 +21,11 @@ export function createWithInsertData(
   return function withInsertData(editor: PortableTextSlateEditor & ReactEditor) {
     const {setFragmentData} = editor
     editor.setFragmentData = (data: DataTransfer) => {
-      debug('set fragment data')
+      debug('Set fragment data')
       setFragmentData(data)
     }
     editor.getFragment = () => {
-      debug('get fragment data')
+      debug('Get fragment data')
       if (editor.selection) {
         return Node.fragment(editor, editor.selection)
       }
@@ -62,16 +62,25 @@ export function createWithInsertData(
       if (html) {
         const portableText = htmlToBlocks(html, portableTextFeatures.types.portableText)
         const fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
-        debug('inserting html')
+        debug('Inserting HTML')
+        if (fragment.length === 0) {
+          debug('Empty fragment')
+          return
+        }
         // debug('portableText', portableText)
         // debug('fragment', fragment)
         Transforms.splitNodes(editor)
         if (editor.selection) {
-          Transforms.setNodes(
-            editor,
-            {style: fragment[0].style},
-            {at: editor.selection?.focus.path.slice(0, 1)}
-          )
+          // If the text is empty, use the block style from the fragment.
+          const [block] = Editor.node(editor, editor.selection, {depth: 1})
+          const isEmptyText = isEqualToEmptyEditor([block], portableTextFeatures)
+          if (isEmptyText) {
+            Transforms.setNodes(
+              editor,
+              {style: fragment[0].style},
+              {at: editor.selection?.focus.path.slice(0, 1)}
+            )
+          }
         }
         Transforms.insertFragment(editor, fragment)
         editor.onChange()
@@ -80,7 +89,7 @@ export function createWithInsertData(
       }
 
       if (text) {
-        debug('Inserting text')
+        debug('Inserting plain text')
         const lines = text.split(/\n\n/)
         let split = false
 
