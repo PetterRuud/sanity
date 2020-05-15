@@ -113,7 +113,6 @@ export const Editable = (props: Props) => {
             portableTextFeatures,
             keyGenerator,
             change$,
-            setMustAdjustSelection: (arg0: boolean) => setMustAdjustSelection(arg0),
             maxBlocks,
             hotkeys,
             incomingPatche$,
@@ -135,8 +134,6 @@ export const Editable = (props: Props) => {
 
   // Track selection state
   const [selection, setSelection] = useState(editor.selection)
-
-  const [mustAdjustSelection, setMustAdjustSelection] = useState(false)
 
   editable({
     focus: (): void => {
@@ -513,12 +510,14 @@ export const Editable = (props: Props) => {
 
   // Restore value from props
   useEffect(() => {
-    if (!props.isThrottling && mustAdjustSelection === false) {
-      const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
-      debug('Setting value from props')
-      // TODO: figure out what is changed and only update that?
-      setStateValue(slateValueFromProps)
+    if (props.isThrottling) {
+      debug('Not setting value from props (throttling)')
+      return
     }
+    debug('Setting value from props')
+    // TODO: figure out what is changed and only update that?
+    const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
+    setStateValue(slateValueFromProps)
   }, [props.value, props.isThrottling])
 
   // Restore selection from props

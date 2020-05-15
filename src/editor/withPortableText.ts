@@ -24,8 +24,8 @@ const disablePlugin = (
   debug(`Editor plugin '${name}' is disabled`)
   // This is the signature of a minimal Slate plugin
   return (editor: PortableTextSlateEditor) => {
-    // Do some transformations here
-    return editor
+    // Do some transformations here...
+    return editor // Return void to stop the plugin chain here
   }
 }
 
@@ -40,7 +40,6 @@ export const withPortableText = <T extends Editor>(
     change$,
     maxBlocks,
     incomingPatche$,
-    setMustAdjustSelection,
     readOnly
   } = options
   const operationToPatches = createOperationToPatches(portableTextFeatures)
@@ -48,13 +47,7 @@ export const withPortableText = <T extends Editor>(
   const withScemaTypes = createWithSchemaTypes(portableTextFeatures)
   const withPatches = readOnly
     ? disablePlugin('withPatches')
-    : createWithPatches(
-        operationToPatches,
-        change$,
-        portableTextFeatures,
-        setMustAdjustSelection,
-        incomingPatche$
-      )
+    : createWithPatches(operationToPatches, change$, portableTextFeatures, incomingPatche$)
 
   const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : disablePlugin('withMaxBlocks')
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures, change$)

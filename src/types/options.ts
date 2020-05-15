@@ -7,7 +7,6 @@ export type createEditorOptions = {
   portableTextFeatures: PortableTextFeatures
   keyGenerator: () => string
   change$: Subject<EditorChange>
-  setMustAdjustSelection: (arg0: boolean) => void
   maxBlocks?: number
   hotkeys?: HotkeyOptions
   incomingPatche$?: PatchObservable

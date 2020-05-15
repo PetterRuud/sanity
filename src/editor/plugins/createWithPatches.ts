@@ -4,18 +4,24 @@ import {Subject} from 'rxjs'
 import {setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation, Transforms, Path} from 'slate'
 import {Patch} from '../../types/patch'
-import {applyAll} from '../../patch/applyPatch'
+// import {applyAll} from '../../patch/applyPatch'
 import {unset} from './../../patch/PatchEvent'
 import {
   fromSlateValue,
   isEqualToEmptyEditor,
-  toSlateValue,
+  // toSlateValue,
   findBlockAndIndexFromPath,
   findChildAndIndexFromPath
 } from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
-import {EditorChange, PatchObservable, PortableTextSlateEditor} from '../../types/editor'
+import {
+  EditorChange,
+  PatchObservable,
+  PortableTextSlateEditor,
+  EditorSelection
+} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
+import {toSlateRange} from '../../utils/selection'
 
 const debug = debugWithName('plugin:withPatches')
 
@@ -36,13 +42,10 @@ export function createWithPatches(
   },
   change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures,
-  setMustAdjustSelection: (arg0: boolean) => void,
   incomingPatche$?: PatchObservable
 ) {
-  let isThrottling = false
-  let pendingIncoming: Patch[] = []
-
   let previousChildren
+  let lastKnownSelection: EditorSelection = null
 
   return function withPatches(editor: PortableTextSlateEditor) {
     previousChildren = editor.children̈́
@@ -55,28 +58,14 @@ export function createWithPatches(
     // Inspect incoming patches and adjust editor selection accordingly.
     if (incomingPatche$) {
       incomingPatche$.subscribe((patch: Patch) => {
-        if (!isThrottling) {
-          setMustAdjustSelection(true)
-          adjustSelection(editor, patch, previousChildren)
-          setMustAdjustSelection(false)
-          editor.onChange()
-        } else {
-          pendingIncoming.push(patch)
-        }
+        adjustSelection(editor, patch, previousChildren, lastKnownSelection, change$)
       })
     }
 
     // Process pending incoming patches while editor was throttling and not adjusting to remote changes
     change$.subscribe((change: EditorChange) => {
-      if (change.type === 'throttle') {
-        isThrottling = change.throttle
-        if (!isThrottling) {
-          pendingIncoming.forEach(patch => {
-            adjustSelection(editor, patch, previousChildren)
-            pendingIncoming.shift()
-          })
-          editor.onChange()
-        }
+      if (change.type === 'selection') {
+        lastKnownSelection = change.selection
       }
     })
 
@@ -138,35 +127,35 @@ export function createWithPatches(
         })
       }
 
-      // TODO: extract this to a test
-      if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
-        const appliedValue = applyAll(
-          fromSlateValue(previousChildren, portableTextFeatures.types.block.name),
-          patches
-        )
+      // // TODO: extract this to a test
+      // if (debug && !isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+      //   const appliedValue = applyAll(
+      //     fromSlateValue(previousChildren, portableTextFeatures.types.block.name),
+      //     patches
+      //   )
 
-        if (
-          !isEqual(
-            appliedValue,
-            fromSlateValue(editor.children, portableTextFeatures.types.block.name)
-          )
-        ) {
-          debug(
-            'toSlateValue',
-            JSON.stringify(
-              toSlateValue(appliedValue, portableTextFeatures.types.block.name),
-              null,
-              2
-            )
-          )
-          debug('operation', JSON.stringify(operation, null, 2))
-          debug('beforeValue', JSON.stringify(previousChildren, null, 2))
-          debug('afterValue', JSON.stringify(editor.children, null, 2))
-          debug('appliedValue', JSON.stringify(appliedValue, null, 2))
-          debug('patches', JSON.stringify(patches, null, 2))
-          debugger
-        }
-      }
+      //   if (
+      //     !isEqual(
+      //       appliedValue,
+      //       fromSlateValue(editor.children, portableTextFeatures.types.block.name)
+      //     )
+      //   ) {
+      //     debug(
+      //       'toSlateValue',
+      //       JSON.stringify(
+      //         toSlateValue(appliedValue, portableTextFeatures.types.block.name),
+      //         null,
+      //         2
+      //       )
+      //     )
+      //     debug('operation', JSON.stringify(operation, null, 2))
+      //     debug('beforeValue', JSON.stringify(previousChildren, null, 2))
+      //     debug('afterValue', JSON.stringify(editor.children, null, 2))
+      //     debug('appliedValue', JSON.stringify(appliedValue, null, 2))
+      //     debug('patches', JSON.stringify(patches, null, 2))
+      //     debugger
+      //   }
+      // }
 
       if (patches.length > 0) {
         // Signal throttling
@@ -196,11 +185,28 @@ export function createWithPatches(
   }
 }
 
-function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
+function adjustSelection(
+  editor: Editor,
+  patch: Patch,
+  previousChildren,
+  lastKnownSelection,
+  change$
+) {
   let selection = editor.selection
   if (selection === null) {
     debug('No selection, not adjusting selection')
     return
+  }
+
+  // debug('Adjusting selection for patch', patch)
+
+  if (patch.origin === 'internal' && patch.type === 'set' && Array.isArray(patch.value)) {
+    debug('Got rebase event!')
+    const newSlateSelection = toSlateRange(lastKnownSelection, editor)
+    if (newSlateSelection) {
+      debug('Applying last known selection')
+      Transforms.select(editor, newSlateSelection)
+    }
   }
 
   // Text patches on same line
@@ -235,15 +241,16 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren) {
         const distance = parsed.length2 - parsed.length1
 
         if (isBeforeUserSelection) {
-          debug(
-            `Adjusting selection for diffMatchPatch on same line ${JSON.stringify({
-              parsed,
-              distance,
-              isBeforeUserSelection,
-              isRemove: parsed.diffs.some(diff => diff[0] === -1),
-              testString
-            })}`
-          )
+          debug('Adjusting selection for diffMatchPatch on same line')
+          // debug(
+          //   `Adjusting selection for diffMatchPatch on same line ${JSON.stringify({
+          //     parsed,
+          //     distance,
+          //     isBeforeUserSelection,
+          //     isRemove: parsed.diffs.some(diff => diff[0] === -1),
+          //     testString
+          //   })}`
+          // )
           const newSelection = {...selection}
           newSelection.focus = {...selection.focus}
           newSelection.anchor = {...selection.anchor}
