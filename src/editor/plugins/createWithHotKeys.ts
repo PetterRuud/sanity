@@ -1,4 +1,4 @@
-import {Editor, Transforms} from 'slate'
+import {Editor, Transforms, Path} from 'slate'
 import isHotkey from 'is-hotkey'
 import {PortableTextSlateEditor} from '../../types/editor'
 import {HotkeyOptions} from '../../types/options'
@@ -67,21 +67,16 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
       const isShiftEnter = isHotkey('shift+enter', event.nativeEvent)
       const isShiftTab = isHotkey('shift+tab', event.nativeEvent)
       const isBackspace = isHotkey('backspace', event.nativeEvent)
-      const isEnd = isHotkey('end', event.nativeEvent)
-      // const isShift = isHotkey('shift', event.nativeEvent)
-
-      if (isEnd) {
-        event.preventDefault()
-        Transforms.move(editor, {unit: 'line'})
-        return
-      }
 
       // Disallow deleting void blocks by backspace from another line unless pressed twice.
       // Otherwise it's so easy to delete the void block above when trying to delete text on
       // the line below
-      if (isBackspace) {
-        const prevBlock = editor.selection && editor.children[editor.selection.focus.path[0] - 1]
-        const focusBlock = editor.selection && editor.children[editor.selection.focus.path[0]]
+      if (isBackspace && editor.selection && editor.selection.focus.path[0] > 0) {
+        const [prevBlock, prevPath] = Editor.node(
+          editor,
+          Path.previous(editor.selection.focus.path.slice(0, 1))
+        )
+        const [focusBlock] = Editor.node(editor, editor.selection.focus, {depth: 1})
         if (
           prevBlock &&
           focusBlock &&
@@ -91,6 +86,8 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
           backspaceCount < 1
         ) {
           event.preventDefault()
+          Editor.deleteForward(editor)
+          Transforms.select(editor, prevPath)
           backspaceCount++
         } else if (backspaceCount >= 1) {
           backspaceCount = 0
@@ -105,8 +102,14 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
       }
 
       // Deal with list item enter key
-      if (isEnter && !isShiftEnter) {
-        editor.pteEndList() && event.preventDefault()
+      if (isEnter && !isShiftEnter && editor.selection) {
+        let focusBlock
+        try {
+          [focusBlock] = Editor.node(editor, editor.selection.focus, {depth: 1})
+        } catch (err) {}
+        if (focusBlock) {
+          editor.pteEndList() && event.preventDefault()
+        }
         return
       }
 
