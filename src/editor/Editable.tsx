@@ -9,12 +9,11 @@ import {
 } from 'slate'
 import {isEqual} from 'lodash'
 import React, {useCallback, useMemo, useState, useEffect, useLayoutEffect} from 'react'
-import {Editable as SlateEditable, Slate, withReact, ReactEditor} from 'slate-react'
+import {Editable as SlateEditable, Slate, withReact, ReactEditor} from '@sanity/slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
 import {Path} from '../types/path'
 import {RenderAttributes} from '../types/editor'
-
 import {
   EditorSelection,
   EditorChanges,
@@ -33,7 +32,7 @@ import {withPortableText} from './withPortableText'
 import {normalizeSelection, toPortableTextRange, toSlateRange} from '../utils/selection'
 import {Type as SchemaType} from 'src/types/schema'
 import {debugWithName} from '../utils/debug'
-import {DOMNode} from 'slate-react/dist/utils/dom'
+import {DOMNode} from '@sanity/slate-react/dist/utils/dom'
 import {IS_DRAGGING} from '../utils/weakMaps'
 
 const debug = debugWithName('component:Editable')

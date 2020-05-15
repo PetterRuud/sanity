@@ -1,6 +1,6 @@
 import React, {ReactElement} from 'react'
 import {Element, Range} from 'slate'
-import {useSelected, useEditor} from 'slate-react'
+import {useSelected, useEditor} from '@sanity/slate-react'
 import {uniq} from 'lodash'
 import Decorator from './nodes/Decorator'
 import {DefaultAnnotation} from './nodes/DefaultAnnotation'

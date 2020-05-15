@@ -1,6 +1,6 @@
 import React, {ReactElement, FunctionComponent, useRef} from 'react'
 import {Element as SlateElement, Editor, Range} from 'slate'
-import {useSelected, useEditor, ReactEditor} from 'slate-react'
+import {useSelected, useEditor, ReactEditor} from '@sanity/slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import TextBlock from './nodes/TextBlock'
 import Object from './nodes/DefaultObject'

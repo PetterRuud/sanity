@@ -1,5 +1,5 @@
 import {Range, Editor, Node as SlateNode} from 'slate'
-import {ReactEditor} from 'slate-react'
+import {ReactEditor} from '@sanity/slate-react'
 import {fromSlateValue} from '../utils/values'
 
 import DOMNode = globalThis.Node

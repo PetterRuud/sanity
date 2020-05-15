@@ -1,7 +1,7 @@
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChanges, PortableTextSlateEditor} from '../../types/editor'
 import {Transforms, Node} from 'slate'
-import {ReactEditor} from 'slate-react'
+import {ReactEditor} from '@sanity/slate-react'
 import {fromSlateValue} from '../../utils/values'
 import {validateValue} from '../../utils/validateValue'
 import {debugWithName} from '../../utils/debug'
