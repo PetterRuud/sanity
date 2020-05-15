@@ -38,6 +38,12 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
   const incomingPatches: {patch: Patch; time: Date}[] = []
   if (incomingPatche$) {
     incomingPatche$.subscribe(patch => {
+      // Ignore rebase patches, they don't have any meaningful info for us.
+      // TODO: make rebase send what actually happend
+      if (patch.origin === 'internal' &&  patch.type === 'set') {
+        debug('Ignoring rebase patch')
+        return
+      }
       incomingPatches.push({patch: patch, time: new Date()})
     })
   }
