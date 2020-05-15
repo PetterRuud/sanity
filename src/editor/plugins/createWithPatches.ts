@@ -45,7 +45,7 @@ export function createWithPatches(
   incomingPatche$?: PatchObservable
 ) {
   let previousChildren
-  let lastKnownSelection: EditorSelection = null
+  let lastKnownEditorSelection: EditorSelection = null
 
   return function withPatches(editor: PortableTextSlateEditor) {
     previousChildren = editor.children̈́
@@ -58,14 +58,14 @@ export function createWithPatches(
     // Inspect incoming patches and adjust editor selection accordingly.
     if (incomingPatche$) {
       incomingPatche$.subscribe((patch: Patch) => {
-        adjustSelection(editor, patch, previousChildren, lastKnownSelection, change$)
+        adjustSelection(editor, patch, previousChildren, lastKnownEditorSelection)
       })
     }
 
     // Process pending incoming patches while editor was throttling and not adjusting to remote changes
     change$.subscribe((change: EditorChange) => {
       if (change.type === 'selection') {
-        lastKnownSelection = change.selection
+        lastKnownEditorSelection = change.selection
       }
     })
 
@@ -185,13 +185,7 @@ export function createWithPatches(
   }
 }
 
-function adjustSelection(
-  editor: Editor,
-  patch: Patch,
-  previousChildren,
-  lastKnownSelection,
-  change$
-) {
+function adjustSelection(editor: Editor, patch: Patch, previousChildren, lastKnownEditorSelection) {
   let selection = editor.selection
   if (selection === null) {
     debug('No selection, not adjusting selection')
@@ -201,10 +195,12 @@ function adjustSelection(
   // debug('Adjusting selection for patch', patch)
 
   if (patch.origin === 'internal' && patch.type === 'set' && Array.isArray(patch.value)) {
+    // TODO: we really need the atomic rebase patches here in order to adjust correctly.
+    // For now just try to restore the selection from the last known EditorSelection.
     debug('Got rebase event!')
-    const newSlateSelection = toSlateRange(lastKnownSelection, editor)
+    const newSlateSelection = toSlateRange(lastKnownEditorSelection, editor)
     if (newSlateSelection) {
-      debug('Applying last known selection')
+      debug('Applying last known selection', newSlateSelection)
       Transforms.select(editor, newSlateSelection)
     }
   }
