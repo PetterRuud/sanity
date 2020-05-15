@@ -70,13 +70,13 @@ export const Element: FunctionComponent<ElementProps> = ({
       debugRenders && debug(`Render ${element._key} (inline object)`)
       const inlineBlockStyle = {display: 'inline-block'}
       return (
-        <div {...attributes} contentEditable={false} style={inlineBlockStyle}>
+        <span {...attributes} contentEditable={false} style={inlineBlockStyle}>
           <DraggableChild
             element={element}
             readOnly={readOnly}
             spanType={portableTextFeatures.types.span.name}
           >
-            <div ref={inlineBlockObjectRef} key={element._key} style={inlineBlockStyle}>
+            <span ref={inlineBlockObjectRef} key={element._key} style={inlineBlockStyle}>
               {renderChild &&
                 renderChild(
                   fromSlateValue([element], portableTextFeatures.types.block.name)[0],
@@ -88,9 +88,9 @@ export const Element: FunctionComponent<ElementProps> = ({
               {!renderChild &&
                 defaultRender(fromSlateValue([element], portableTextFeatures.types.block.name)[0])}
               {children}
-            </div>
+            </span>
           </DraggableChild>
-        </div>
+        </span>
       )
     } else {
       throw new Error('Block not found!')

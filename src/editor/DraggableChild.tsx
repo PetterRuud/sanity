@@ -128,22 +128,17 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   }
 
   if (isSpan) {
-    return (
-      <div onDragOver={handleDragOver} style={{display: 'inline-block'}}>
-        {children}
-      </div>
-    )
+    return <span onDragOver={handleDragOver}>{children}</span>
   }
 
   return (
-    <div
-      style={{display: 'inline-block'}}
+    <span
       draggable={isVoid}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       {children}
-    </div>
+    </span>
   )
 }
