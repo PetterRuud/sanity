@@ -1,8 +1,9 @@
+import {htmlToBlocks} from '@sanity/block-tools'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChanges, PortableTextSlateEditor} from '../../types/editor'
-import {Transforms, Node} from 'slate'
+import {Transforms, Node, Editor} from 'slate'
 import {ReactEditor} from '@sanity/slate-react'
-import {fromSlateValue} from '../../utils/values'
+import {fromSlateValue, toSlateValue} from '../../utils/values'
 import {validateValue} from '../../utils/validateValue'
 import {debugWithName} from '../../utils/debug'
 
@@ -30,7 +31,6 @@ export function createWithInsertData(
       }
       return []
     }
-    // const {insertData} = editor
     editor.insertData = data => {
       change$.next({type: 'loading', isLoading: true})
       const html = data.getData('text/html')
@@ -50,7 +50,7 @@ export function createWithInsertData(
         const pText = fromSlateValue(parsed, portableTextFeatures.types.block.name)
         const validation = validateValue(pText, portableTextFeatures, keyGenerator)
         if (validation.valid) {
-          debug('inserting fragment', parsed)
+          debug('inserting editor fragment')
           Transforms.insertFragment(editor, parsed)
           editor.onChange()
           change$.next({type: 'loading', isLoading: false})
@@ -60,24 +60,38 @@ export function createWithInsertData(
       }
 
       if (html) {
-        debug('inserting html', html)
+        const portableText = htmlToBlocks(html, portableTextFeatures.types.portableText)
+        const fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
+        debug('inserting html')
+        // debug('portableText', portableText)
+        // debug('fragment', fragment)
+        Transforms.splitNodes(editor)
+        if (editor.selection) {
+          Transforms.setNodes(
+            editor,
+            {style: fragment[0].style},
+            {at: editor.selection?.focus.path.slice(0, 1)}
+          )
+        }
+        Transforms.insertFragment(editor, fragment)
+        editor.onChange()
         change$.next({type: 'loading', isLoading: false})
         return
       }
 
       if (text) {
-        if (text) {
-          const lines = text.split(/\r\n|\r|\n/)
-          let split = false
+        debug('Inserting text')
+        const lines = text.split(/\n\n/)
+        let split = false
 
-          for (const line of lines) {
-            if (split) {
-              Transforms.splitNodes(editor, {always: true})
-            }
-            Transforms.insertText(editor, line)
-            split = true
+        for (const line of lines) {
+          if (split) {
+            Transforms.splitNodes(editor, {always: true})
           }
+          Transforms.insertText(editor, line)
+          split = true
         }
+        return
       }
       change$.next({type: 'loading', isLoading: false})
     }
