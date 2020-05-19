@@ -1,6 +1,6 @@
 {
   "name": "@sanity/portable-text-editor",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Portable Text Editor made in React",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -35,6 +35,9 @@
     "text",
     "portable-text"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@sanity/block-tools": "^1.149.4",
     "@sanity/schema": "^0.147.6",
