@@ -1,9 +1,6 @@
 import React from 'react'
 import {Element} from 'slate'
-import ListItem from './ListItem'
-import Text from './Text'
 import {PortableTextFeatures} from '../../types/portableText'
-import {TextBlock as TextBlockWrapper} from './index'
 import {DraggableBlock} from '../DraggableBlock'
 
 type Props = {
@@ -15,39 +12,26 @@ type Props = {
 export default class TextBlock extends React.Component<Props> {
   render() {
     const {attributes, portableTextFeatures, children, element, readOnly} = this.props
-    const listItem = typeof element.listItem === 'string' ? element.listItem : undefined
-    const level = typeof element.level === 'number' ? element.level : 1
     const style = typeof element.style === 'string' ? element.style : 'normal'
     // Should we render a custom style?
-    let styleComponent
-    const customStyle =
+    let CustomStyle
+    const blockStyle =
       portableTextFeatures && style
         ? portableTextFeatures.styles.find(item => item.value === style)
         : undefined
-    if (customStyle) {
+    if (blockStyle) {
       // TODO: Look into this API.
-      // Added .portableText as .blockEditor as of May 2020, but kept backward comp.
-      styleComponent =
-        (customStyle.blockEditor && customStyle.blockEditor.render) ||
-        (customStyle.portableText && customStyle.portableText.render)
-    }
-    if (listItem) {
-      return (
-        <ListItem attributes={attributes} level={level} listStyle={listItem}>
-          <Text style={style} styleComponent={styleComponent}>
-            {children}
-          </Text>
-        </ListItem>
-      )
+      CustomStyle = blockStyle.blockEditor && blockStyle.blockEditor.render
     }
     return (
-      <TextBlockWrapper {...attributes}>
+      <div {...attributes}>
         <DraggableBlock element={element} readOnly={readOnly}>
-          <Text style={style} styleComponent={styleComponent}>
-            {children}
-          </Text>
+          <>
+            {!CustomStyle && children}
+            {CustomStyle && <CustomStyle style={style}>{children}</CustomStyle>}
+          </>
         </DraggableBlock>
-      </TextBlockWrapper>
+      </div>
     )
   }
 }

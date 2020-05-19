@@ -118,7 +118,7 @@ export interface PortableTextSlateEditor extends SlateEditor {
    * Redo
    *
    */
-  redo: () => void,
+  redo: () => void
 }
 
 export type MutationChange = {
@@ -237,4 +237,16 @@ export type RenderAttributes = {
   selected: boolean
   path: Path
   annotations?: PortableTextBlock[]
+  style?: string
+  listItem?: string
 }
+
+export type RenderBlockArgs = [
+  PortableTextBlock,
+  Type,
+  (block: PortableTextBlock) => JSX.Element,
+  RenderAttributes,
+  React.RefObject<HTMLDivElement>
+]
+
+export type RenderBlockFunction = (...args: RenderBlockArgs) => JSX.Element

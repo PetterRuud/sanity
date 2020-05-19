@@ -69,7 +69,6 @@ export function createWithInsertData(
         }
         // debug('portableText', portableText)
         // debug('fragment', fragment)
-        Transforms.splitNodes(editor)
         if (editor.selection) {
           // If the text is empty, use the block style from the fragment.
           const [block] = Editor.node(editor, editor.selection, {depth: 1})
@@ -80,6 +79,8 @@ export function createWithInsertData(
               {style: fragment[0].style},
               {at: editor.selection?.focus.path.slice(0, 1)}
             )
+          } else {
+            Transforms.splitNodes(editor)
           }
         }
         Transforms.insertFragment(editor, fragment)

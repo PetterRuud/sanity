@@ -16,7 +16,9 @@ import {
   EditorChanges,
   PatchObservable,
   EditableAPI,
-  InvalidValueResolution
+  InvalidValueResolution,
+  RenderAttributes,
+  RenderBlockFunction
 } from '../types/editor'
 import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
@@ -40,18 +42,26 @@ type Props = {
   onPaste?: OnPasteFn
   placeholderText?: string
   readOnly?: boolean
-  renderBlock?: (
+  renderAnnotation?: (
     value: PortableTextBlock,
     type: SchemaType,
-    ref: React.RefObject<HTMLDivElement>,
-    attributes: {focused: boolean; selected: boolean},
-    defaultRender: (block: PortableTextBlock) => JSX.Element
+    ref: React.RefObject<HTMLSpanElement>,
+    attributes: RenderAttributes,
+    defaultRender: () => JSX.Element
   ) => JSX.Element
+  renderDecorator?: (
+    value: string,
+    type: {title: string},
+    ref: React.RefObject<HTMLSpanElement>,
+    attributes: RenderAttributes,
+    defaultRender: () => JSX.Element
+  ) => JSX.Element
+  renderBlock?: RenderBlockFunction
   renderChild?: (
     value: PortableTextChild,
     type: SchemaType,
     ref: React.RefObject<HTMLSpanElement>,
-    attributes: {focused: boolean; selected: boolean},
+    attributes: RenderAttributes,
     defaultRender: (child: PortableTextChild) => JSX.Element
   ) => JSX.Element
   renderEditor?: (editor: JSX.Element) => JSX.Element
@@ -65,6 +75,7 @@ type State = {
   invalidValueResolution: InvalidValueResolution
 }
 
+// TODO: try to break this component in parts, as it's getting pretty big.
 export class PortableTextEditor extends React.Component<Props, State> {
   static focus = (editor: PortableTextEditor): void => {
     debug('Host requesting focus')
@@ -277,8 +288,10 @@ export class PortableTextEditor extends React.Component<Props, State> {
           placeholderText={value === undefined ? placeholderText : undefined}
           portableTextFeatures={this.portableTextFeatures}
           readOnly={readOnly}
+          renderAnnotation={this.props.renderAnnotation}
           renderBlock={this.props.renderBlock}
           renderChild={this.props.renderChild}
+          renderDecorator={this.props.renderDecorator}
           selection={selection}
           spellCheck={spellCheck}
           value={value}

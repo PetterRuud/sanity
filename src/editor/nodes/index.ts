@@ -1,41 +1,4 @@
 import styled from 'styled-components'
-import TextComponent from './Text'
-
-// Text components
-export const Text = TextComponent
-
-export const TextBlock = styled.div`
-  font-size: 1em;
-  font-weight: 400;
-  width: 100%;
-  line-height: 1.5em;
-  padding-bottom: 0.5em;
-`
-
-export const TextNormal = styled.div`
-  font-size: inherit;
-`
-export const TextHeader = styled.div`
-  line-height: 1.2em;
-  padding-bottom: ${({headerStyle}) => getHeaderPaddingSize(headerStyle)};
-  padding-top: ${({headerStyle}) => getHeaderPaddingSize(headerStyle)};
-  font-size: ${({headerStyle}) => getHeaderSize(headerStyle)};
-`
-
-export const TextStrong = styled.span`
-  font-weight: 700;
-`
-export const TextEmphasis = styled.span`
-  font-style: italic;
-`
-export const TextCode = styled.code``
-
-export const TextUnderline = styled.span`
-  text-decoration: underline;
-`
-export const TextStrikeThrough = styled.span`
-  text-decoration: line-through;
-`
 
 export const DraggableBlockWrappper = styled.div`
   border-top: ${props => {
@@ -72,75 +35,64 @@ export const InlineObject = styled.span`
   }};
 `
 
-// List items
+export const ListItem = styled.div`
+  &.root {
+    width: auto;
+    position: relative;
+    display: block;
 
-const bullets = ['●', '○', '■']
-
-export const TextListItem = styled.div`
-  font-size: inherit;
-  word-break: inherit;
-`
-
-export const TextListItemInner = styled.div`
-  font-size: inherit;
-  position: relative;
-  left: ${props => getLeftPositionForListLevel(props.level)};
-  display: flex;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  line-height: 1.5rem;
-  &:before {
-    content: '${props => getContentForListLevelAndStyle(props.level, props.listStyle)}';
-    font-size: 0.4375rem;
-    line-height: 1.5rem;
+    /* Important 'transform' in order to force refresh the ::before and ::after rules
+      in Webkit: https://stackoverflow.com/a/21947628/831480
+    */
+    transform: translateZ(0);
+    left: ${props => getLeftPositionForListLevel(props.listLevel)};
+  }
+  &.root > .item {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    &:before {
+      justify-content: flex-start;
+      vertical-align: top;
+    }
+  }
+  &.root > .item > * {
+    word-break: break-word; /* Break long words to fit sheet */
+    margin-right: 1.5rem;
+  }
+  &.bullet > .item:before {
+      content: '${props => getContentForListLevelAndStyle(props.listLevel, props.listStyle)}';
+      font-size: 0.4375rem; /* 7px */
+      line-height: 1.5rem; /* Same as body text */
+      /* Optical alignment */
+      position: relative;
+      top: 1px;
+    }
+  }
+  &.bullet > .item {
+    &:before {
+      min-width: 1.5rem; /* Make sure space between bullet and text never shrinks */
+    }
+  }
+  &.number {
+    counter-increment: ${props => getCounterIncrementForListLevel(props.listLevel)};
+    counter-rest: ${props => getCounterResetForListLevel(props.listLevel)};
+  }
+  & + :not(.number) {
+    counter-reset: listItemNumber;
+  }
+  &.number > .item:before {
+    content: ${props => getCounterContentForListLevel(props.listLevel)};
+    min-width: 1.5rem; /* Make sure space between number and text never shrinks */
+    line-height: 1.5rem; /* Same as body text */
+    /* Optical alignment */
     position: relative;
     top: 1px;
-    justify-content: flex-start;
-    vertical-align: top;
-    margin-right: 1em;
-    margin-left: 1em;
   }
 `
 
-function getHeaderSize(style: string) {
-  switch (style) {
-    case 'h1':
-      return '2.625rem'
-    case 'h2':
-      return '2rem'
-    case 'h3':
-      return '1.75rem'
-    case 'h4':
-      return '1.25rem'
-    case 'h5':
-      return '1rem'
-    case 'h6':
-      return '0.875rem'
-    default:
-      return `1rem`
-  }
-}
-
-function getHeaderPaddingSize(style: string) {
-  switch (style) {
-    case 'h1':
-    case 'h2':
-    case 'h3':
-    case 'h4':
-      return '1rem'
-    default:
-      return `0.5rem`
-  }
-}
-
-function getContentForListLevelAndStyle(level, style) {
-  const normalizedLevel = (level - 1) % 3
-  if (style === 'bullet') {
-    return bullets[normalizedLevel]
-  }
-  return '*'
-}
+export const ListItemInner = styled.div``
 
 function getLeftPositionForListLevel(level: number) {
   switch (Number(level)) {
@@ -166,5 +118,90 @@ function getLeftPositionForListLevel(level: number) {
       return '15em'
     default:
       return '0em'
+  }
+}
+
+const bullets = ['●', '○', '■']
+
+function getContentForListLevelAndStyle(level, style) {
+  const normalizedLevel = (level - 1) % 3
+  if (style === 'bullet') {
+    return bullets[normalizedLevel]
+  }
+  return '*'
+}
+
+function getCounterIncrementForListLevel(level) {
+  switch (level) {
+    case 1:
+      return 'listItemNumber'
+    case 2:
+      return 'listItemAlpha'
+    case 3:
+      return 'listItemRoman'
+    case 4:
+      return 'listItemNumberNext'
+    case 5:
+      return 'listItemLetterNext'
+    case 6:
+      return 'listItemRomanNext'
+    case 7:
+      return 'listItemNumberNextNext'
+    case 8:
+      return 'listItemAlphaNextNext'
+    case 9:
+      return 'listItemRomanNextNext'
+    default:
+      return 'listItemNumberNextNextNext'
+  }
+}
+
+function getCounterResetForListLevel(level) {
+  switch (level) {
+    case 1:
+      return 'listItemAlpha'
+    case 2:
+      return 'listItemRoman'
+    case 3:
+      return 'listItemNumberNext'
+    case 4:
+      return 'listItemLetterNext'
+    case 5:
+      return 'listItemRomanNext'
+    case 6:
+      return 'listItemNumberNextNext'
+    case 7:
+      return 'listItemAlphaNextNext'
+    case 8:
+      return 'listItemRomanNextNext'
+    case 9:
+      return 'listItemNumberNextNextNext'
+    default:
+      return 'listItemNumberNextNextNext'
+  }
+}
+
+function getCounterContentForListLevel(level) {
+  switch (level) {
+    case 1:
+      return `counter(listItemNumber) '. '`
+    case 2:
+      return `counter(listItemAlpha, lower-alpha) '. '`
+    case 3:
+      return `counter(listItemRoman, lower-roman) '. '`
+    case 4:
+      return `counter(listItemNumberNext) '. '`
+    case 5:
+      return `counter(listItemLetterNext, lower-alpha) '. '`
+    case 6:
+      return `counter(listItemRomanNext, lower-roman) '. '`
+    case 7:
+      return `counter(listItemNumberNextNext) '. '`
+    case 8:
+      return `counter(listItemAlphaNextNext, lower-alpha) '. '`
+    case 9:
+      return `counter(listItemRomanNextNext, lower-roman) '. '`
+    default:
+      return `counter(listItemNumberNextNextNext) '. '`
   }
 }

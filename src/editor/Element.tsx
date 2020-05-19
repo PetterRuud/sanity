@@ -1,18 +1,19 @@
 import React, {ReactElement, FunctionComponent, useRef} from 'react'
 import {Element as SlateElement, Editor, Range} from 'slate'
 import {useSelected, useEditor, ReactEditor} from '@sanity/slate-react'
-import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
+import {PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import TextBlock from './nodes/TextBlock'
 import Object from './nodes/DefaultObject'
 import {BlockObject as BlockObjectContainer} from './nodes/index'
 import {Type as SchemaType} from '../types/schema'
-import {RenderAttributes} from '../types/editor'
+import {RenderAttributes, RenderBlockFunction} from '../types/editor'
 import {Path} from '../types/path'
 import {fromSlateValue} from '../utils/values'
 import {keyGenerator} from './PortableTextEditor'
 import {debugWithName} from '../utils/debug'
 import {DraggableBlock} from './DraggableBlock'
 import {DraggableChild} from './DraggableChild'
+import {ListItem, ListItemInner} from './nodes'
 
 const debug = debugWithName('components:Element')
 const debugRenders = false
@@ -23,13 +24,7 @@ type ElementProps = {
   element: SlateElement
   portableTextFeatures: PortableTextFeatures
   readOnly: boolean
-  renderBlock?: (
-    value: PortableTextBlock,
-    type: SchemaType,
-    ref: React.RefObject<HTMLDivElement>,
-    attributes: RenderAttributes,
-    defaultRender: (block: PortableTextBlock) => JSX.Element
-  ) => JSX.Element
+  renderBlock?: RenderBlockFunction
   renderChild?: (
     value: PortableTextChild,
     type: SchemaType,
@@ -57,6 +52,15 @@ export const Element: FunctionComponent<ElementProps> = ({
   const blockObjectRef = useRef(null)
   const inlineBlockObjectRef = useRef(null)
   const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
+
+  if (typeof element._type !== 'string') {
+    throw new Error(`Expected element to have a _type property`)
+  }
+
+  if (typeof element._key !== 'string') {
+    throw new Error(`Expected element to have a _key property`)
+  }
+
   // Test for inline objects first
   if (editor.isInline(element)) {
     const path = ReactEditor.findPath(editor, element)
@@ -96,14 +100,14 @@ export const Element: FunctionComponent<ElementProps> = ({
       throw new Error('Block not found!')
     }
   }
+
   // If not inline, it's either a block (text) or a block object (non-text)
   // NOTE: text blocks aren't draggable with DraggableBlock (yet?)
   switch (element._type) {
     case portableTextFeatures.types.block.name:
       debugRenders && debug(`Render ${element._key} (text block)`)
-      return (
+      const textBlock = (
         <TextBlock
-          attributes={attributes}
           element={element}
           portableTextFeatures={portableTextFeatures}
           readOnly={readOnly}
@@ -111,15 +115,46 @@ export const Element: FunctionComponent<ElementProps> = ({
           {children}
         </TextBlock>
       )
+      const renderedBlock =
+        renderBlock &&
+        renderBlock(
+          fromSlateValue([element], element._type)[0],
+          portableTextFeatures.types.block,
+          () => textBlock,
+          {
+            focused,
+            selected,
+            path: [{_key: element._key}]
+          },
+          blockObjectRef
+        )
+      return (
+        <>
+          {renderBlock && !element.listItem && (
+            <div ref={blockObjectRef} {...attributes}>
+              {renderedBlock}
+            </div>
+          )}
+          {renderBlock && element.listItem && (
+            <ListItem
+              ref={blockObjectRef}
+              className={['root', element.listItem].join(' ')}
+              listStyle={element.listItem}
+              listLevel={element.level}
+              {...attributes}
+            >
+              <ListItemInner className="item">{renderedBlock}</ListItemInner>
+            </ListItem>
+          )}
+          {!renderBlock && <div {...attributes}>{textBlock}</div>}
+        </>
+      )
     default:
       const type = portableTextFeatures.types.blockObjects.find(type => type.name === element._type)
       if (!type) {
-        throw new Error(`Could not find type for block element of _type ${element._type}`)
+        throw new Error(`Could not find schema type for block element of _type ${element._type}`)
       }
-      if (typeof element._key !== 'string') {
-        throw new Error(`Expected element to have a _key property`)
-      }
-      debugRenders && debug(`Render ${element._key} (block)`)
+      debugRenders && debug(`Render ${element._key} (object block)`)
       return (
         <div {...attributes} contentEditable={false}>
           <DraggableBlock element={element} readOnly={readOnly}>
@@ -129,9 +164,13 @@ export const Element: FunctionComponent<ElementProps> = ({
                   {renderBlock(
                     fromSlateValue([element], portableTextFeatures.types.block.name)[0],
                     type,
-                    blockObjectRef,
-                    {focused, selected, path: [{_key: element._key}]},
-                    defaultRender
+                    defaultRender,
+                    {
+                      focused,
+                      selected,
+                      path: [{_key: element._key}]
+                    },
+                    blockObjectRef
                   )}
                 </div>
               )}

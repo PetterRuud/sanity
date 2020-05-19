@@ -20,7 +20,8 @@ import {
   OnPasteFn,
   OnCopyFn,
   PatchObservable,
-  EditableAPI
+  EditableAPI,
+  RenderBlockFunction
 } from '../types/editor'
 import {HotkeyOptions} from '../types/options'
 import {toSlateValue, fromSlateValue, isEqualToEmptyEditor} from '../utils/values'
@@ -50,19 +51,27 @@ type Props = {
   placeholderText?: string
   portableTextFeatures: PortableTextFeatures
   readOnly?: boolean
-  renderBlock?: (
+  renderAnnotation?: (
     value: PortableTextBlock,
     type: SchemaType,
-    ref: React.RefObject<HTMLDivElement>,
+    ref: React.RefObject<HTMLSpanElement>,
     attributes: RenderAttributes,
-    defaultRender: (block: PortableTextBlock) => JSX.Element
+    defaultRender: () => JSX.Element
   ) => JSX.Element
+  renderBlock?: RenderBlockFunction
   renderChild?: (
     value: PortableTextChild,
     type: SchemaType,
     ref: React.RefObject<HTMLSpanElement>,
     attributes: RenderAttributes,
     defaultRender: (child: PortableTextChild) => JSX.Element
+  ) => JSX.Element
+  renderDecorator?: (
+    value: string,
+    type: {title: string},
+    ref: React.RefObject<HTMLSpanElement>,
+    attributes: RenderAttributes,
+    defaultRender: () => JSX.Element
   ) => JSX.Element
   searchAndReplace?: boolean
   selection?: EditorSelection
@@ -456,7 +465,9 @@ export const Editable = (props: Props) => {
         <Leaf
           {...lProps}
           portableTextFeatures={portableTextFeatures}
+          renderAnnotation={props.renderAnnotation}
           renderChild={props.renderChild}
+          renderDecorator={props.renderDecorator}
           readOnly={readOnly}
         />
       )
