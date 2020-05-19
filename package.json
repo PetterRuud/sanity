@@ -98,10 +98,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanity-io/sanity.git"
+    "url": "git+https://github.com/sanity-io/portable-text-editor.git"
   },
   "bugs": {
-    "url": "https://github.com/sanity-io/sanity/issues"
+    "url": "https://github.com/sanity-io/portable-text-editor/issues"
   },
   "homepage": "https://www.sanity.io/"
 }
