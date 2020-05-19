@@ -1,7 +1,7 @@
 {
   "name": "@sanity/portable-text-editor",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.2",
+  "description": "Portable Text Editor made in React",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "author": "Sanity.io <hello@sanity.io>",
@@ -20,7 +20,7 @@
     "gen-doc": "typedoc --out docs src"
   },
   "files": [
-    "lib/**/*.css"
+    "lib/**/*"
   ],
   "keywords": [
     "sanity",
