@@ -4,14 +4,13 @@ import {PortableTextFeatures} from '../../types/portableText'
 import {DraggableBlock} from '../DraggableBlock'
 
 type Props = {
-  attributes?: {}
   element: Element
   portableTextFeatures: PortableTextFeatures
   readOnly: boolean
 }
 export default class TextBlock extends React.Component<Props> {
   render() {
-    const {attributes, portableTextFeatures, children, element, readOnly} = this.props
+    const {portableTextFeatures, children, element, readOnly} = this.props
     const style = typeof element.style === 'string' ? element.style : 'normal'
     // Should we render a custom style?
     let CustomStyle
@@ -24,14 +23,12 @@ export default class TextBlock extends React.Component<Props> {
       CustomStyle = blockStyle.blockEditor && blockStyle.blockEditor.render
     }
     return (
-      <div {...attributes}>
-        <DraggableBlock element={element} readOnly={readOnly}>
-          <>
-            {!CustomStyle && children}
-            {CustomStyle && <CustomStyle style={style}>{children}</CustomStyle>}
-          </>
-        </DraggableBlock>
-      </div>
+      <DraggableBlock element={element} readOnly={readOnly}>
+        <>
+          {!CustomStyle && children}
+          {CustomStyle && <CustomStyle style={style}>{children}</CustomStyle>}
+        </>
+      </DraggableBlock>
     )
   }
 }

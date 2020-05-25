@@ -36,8 +36,8 @@ export const InlineObject = styled.span`
 `
 
 export const ListItem = styled.div`
-  &.root {
-    width: auto;
+  &.pt-list-item {
+    width: fit-content;
     position: relative;
     display: block;
 
@@ -45,23 +45,18 @@ export const ListItem = styled.div`
       in Webkit: https://stackoverflow.com/a/21947628/831480
     */
     transform: translateZ(0);
-    left: ${props => getLeftPositionForListLevel(props.listLevel)};
+    margin-left: ${props => getLeftPositionForListLevel(props.listLevel)};
   }
-  &.root > .item {
+  &.pt-list-item > .pt-list-item-inner {
     display: flex;
     margin: 0;
     padding: 0;
-    width: 100%;
     &:before {
       justify-content: flex-start;
       vertical-align: top;
     }
   }
-  &.root > .item > * {
-    word-break: break-word; /* Break long words to fit sheet */
-    margin-right: 1.5rem;
-  }
-  &.bullet > .item:before {
+  &.pt-list-item-bullet > .pt-list-item-inner:before {
       content: '${props => getContentForListLevelAndStyle(props.listLevel, props.listStyle)}';
       font-size: 0.4375rem; /* 7px */
       line-height: 1.5rem; /* Same as body text */
@@ -70,19 +65,19 @@ export const ListItem = styled.div`
       top: 1px;
     }
   }
-  &.bullet > .item {
+  &.pt-list-item-bullet > .pt-list-item-inner {
     &:before {
       min-width: 1.5rem; /* Make sure space between bullet and text never shrinks */
     }
   }
-  &.number {
+  &.pt-list-item-number {
     counter-increment: ${props => getCounterIncrementForListLevel(props.listLevel)};
     counter-rest: ${props => getCounterResetForListLevel(props.listLevel)};
   }
-  & + :not(.number) {
+  & + :not(.pt-list-item-number) {
     counter-reset: listItemNumber;
   }
-  &.number > .item:before {
+  &.pt-list-item-number > .pt-list-item-inner:before {
     content: ${props => getCounterContentForListLevel(props.listLevel)};
     min-width: 1.5rem; /* Make sure space between number and text never shrinks */
     line-height: 1.5rem; /* Same as body text */

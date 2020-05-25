@@ -9,7 +9,6 @@ import {Type as SchemaType} from '../types/schema'
 import {RenderAttributes, RenderBlockFunction} from '../types/editor'
 import {Path} from '../types/path'
 import {fromSlateValue} from '../utils/values'
-import {keyGenerator} from './PortableTextEditor'
 import {debugWithName} from '../utils/debug'
 import {DraggableBlock} from './DraggableBlock'
 import {DraggableChild} from './DraggableChild'
@@ -128,25 +127,33 @@ export const Element: FunctionComponent<ElementProps> = ({
           },
           blockObjectRef
         )
+      let className = `pt-block pt-text-block pt-text-block-style-${element.style}`
+      if (element.listItem) {
+        className += ` pt-list-item pt-list-item-${element.listItem}`
+      }
       return (
         <>
           {renderBlock && !element.listItem && (
-            <div ref={blockObjectRef} {...attributes}>
+            <div ref={blockObjectRef} {...attributes} className={className}>
               {renderedBlock}
             </div>
           )}
           {renderBlock && element.listItem && (
             <ListItem
               ref={blockObjectRef}
-              className={['root', element.listItem].join(' ')}
+              className={className}
               listStyle={element.listItem}
               listLevel={element.level}
               {...attributes}
             >
-              <ListItemInner className="item">{renderedBlock}</ListItemInner>
+              <ListItemInner className="pt-list-item-inner">{renderedBlock}</ListItemInner>
             </ListItem>
           )}
-          {!renderBlock && <div {...attributes}>{textBlock}</div>}
+          {!renderBlock && (
+            <div {...attributes} className={className}>
+              {textBlock}
+            </div>
+          )}
         </>
       )
     default:
@@ -154,13 +161,14 @@ export const Element: FunctionComponent<ElementProps> = ({
       if (!type) {
         throw new Error(`Could not find schema type for block element of _type ${element._type}`)
       }
+      className = 'pt-block pt-object-block'
       debugRenders && debug(`Render ${element._key} (object block)`)
       return (
-        <div {...attributes} contentEditable={false}>
+        <div {...attributes} contentEditable={false} className={className}>
           <DraggableBlock element={element} readOnly={readOnly}>
             <>
               {renderBlock && (
-                <div ref={blockObjectRef} key={keyGenerator()}>
+                <div ref={blockObjectRef}>
                   {renderBlock(
                     fromSlateValue([element], portableTextFeatures.types.block.name)[0],
                     type,
@@ -175,7 +183,7 @@ export const Element: FunctionComponent<ElementProps> = ({
                 </div>
               )}
               {!renderBlock && (
-                <BlockObjectContainer selected={selected}>
+                <BlockObjectContainer selected={selected} className={className}>
                   {defaultRender(
                     fromSlateValue([element], portableTextFeatures.types.block.name)[0]
                   )}
