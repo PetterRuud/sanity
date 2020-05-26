@@ -1,8 +1,10 @@
-import {Editor, Transforms, Path} from 'slate'
+import {Editor, Transforms, Path, Range} from 'slate'
 import isHotkey from 'is-hotkey'
 import {PortableTextSlateEditor} from '../../types/editor'
 import {HotkeyOptions} from '../../types/options'
 import {debugWithName} from '../../utils/debug'
+import {toSlateValue} from '../../utils/values'
+import {PortableTextFeatures} from 'src/types/portableText'
 
 const debug = debugWithName('plugin:withHotKeys')
 
@@ -21,12 +23,15 @@ const DEFAULT_HOTKEYS: HotkeyOptions = {
  * TODO: move a lot of these out the their respective plugins
  *
  */
-export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
+export function createWithHotkeys(
+  portableTextFeatures: PortableTextFeatures,
+  keyGenerator: () => string,
+  hotkeysFromOptions?: HotkeyOptions
+) {
   const reservedHotkeys = ['enter', 'tab', 'shift', 'delete', 'end']
   const activeHotkeys = hotkeysFromOptions || DEFAULT_HOTKEYS // TODO: Merge where possible? A union?
   return function withHotKeys(editor: PortableTextSlateEditor) {
-    let backspaceCount = 0
-    editor.pteWithHotKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    editor.pteWithHotKeys = (event: React.KeyboardEvent<HTMLDivElement>): void | boolean => {
       // Wire up custom marks hotkeys
       Object.keys(activeHotkeys).forEach(cat => {
         if (cat === 'marks') {
@@ -67,11 +72,17 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
       const isShiftEnter = isHotkey('shift+enter', event.nativeEvent)
       const isShiftTab = isHotkey('shift+tab', event.nativeEvent)
       const isBackspace = isHotkey('backspace', event.nativeEvent)
+      const isDelete = isHotkey('delete', event.nativeEvent)
 
-      // Disallow deleting void blocks by backspace from another line unless pressed twice.
+      // Disallow deleting void blocks by backspace from another line.
       // Otherwise it's so easy to delete the void block above when trying to delete text on
-      // the line below
-      if (isBackspace && editor.selection && editor.selection.focus.path[0] > 0) {
+      // the line below or above
+      if (
+        isBackspace &&
+        editor.selection &&
+        editor.selection.focus.path[0] > 0 &&
+        Range.isCollapsed(editor.selection)
+      ) {
         const [prevBlock, prevPath] = Editor.node(
           editor,
           Path.previous(editor.selection.focus.path.slice(0, 1))
@@ -82,17 +93,31 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
           focusBlock &&
           Editor.isVoid(editor, prevBlock) &&
           editor.selection &&
-          editor.selection.focus.offset === 0 &&
-          backspaceCount < 1
+          editor.selection.focus.offset === 0
         ) {
           event.preventDefault()
-          Editor.deleteForward(editor)
+          event.stopPropagation()
+          Transforms.removeNodes(editor, {match: n => n === focusBlock})
           Transforms.select(editor, prevPath)
-          backspaceCount++
-        } else if (backspaceCount >= 1) {
-          backspaceCount = 0
+          return true
         }
-        return
+      }
+      if (isDelete && editor.selection) {
+        const [nextBlock] = Editor.node(editor, Path.next(editor.selection.focus.path.slice(0, 1)))
+        const [focusBlock, focusBlockPath] = Editor.node(editor, editor.selection.focus, {depth: 1})
+        if (
+          nextBlock &&
+          focusBlock &&
+          Editor.isVoid(editor, nextBlock) &&
+          editor.selection &&
+          editor.selection.focus.offset === 0
+        ) {
+          event.preventDefault()
+          event.stopPropagation()
+          Transforms.removeNodes(editor, {match: n => n === focusBlock})
+          Transforms.select(editor, focusBlockPath)
+          return true
+        }
       }
 
       // Deal with tab for lists
@@ -101,16 +126,42 @@ export function createWithHotkeys(hotkeysFromOptions?: HotkeyOptions) {
         event.preventDefault()
       }
 
-      // Deal with list item enter key
+      // Deal with enter key
       if (isEnter && !isShiftEnter && editor.selection) {
         let focusBlock
         try {
-          [focusBlock] = Editor.node(editor, editor.selection.focus, {depth: 1})
+          ;[focusBlock] = Editor.node(editor, editor.selection.focus, {depth: 1})
         } catch (err) {}
-        if (focusBlock) {
+        // Deal with list item enter key
+        if (focusBlock && focusBlock.listItem) {
           editor.pteEndList() && event.preventDefault()
+          return
         }
-        return
+        // Deal with block object enter key
+        if (focusBlock && Editor.isVoid(editor, focusBlock)) {
+          const block = toSlateValue(
+            [
+              {
+                _type: portableTextFeatures.types.block.name,
+                _key: keyGenerator(),
+                style: 'normal',
+                markDefs: [],
+                children: [
+                  {
+                    _type: 'span',
+                    _key: keyGenerator(),
+                    text: '',
+                    marks: []
+                  }
+                ]
+              }
+            ],
+            portableTextFeatures.types.block.name
+          )[0]
+          Editor.insertNode(editor, block)
+          event.preventDefault()
+          return
+        }
       }
 
       // Deal with soft line breaks

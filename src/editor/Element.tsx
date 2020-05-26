@@ -73,13 +73,13 @@ export const Element: FunctionComponent<ElementProps> = ({
       debugRenders && debug(`Render ${element._key} (inline object)`)
       const inlineBlockStyle = {display: 'inline-block'}
       return (
-        <span {...attributes} contentEditable={false} style={inlineBlockStyle}>
+        <span {...attributes} style={inlineBlockStyle}>
           <DraggableChild
             element={element}
             readOnly={readOnly}
             spanType={portableTextFeatures.types.span.name}
           >
-            <span ref={inlineBlockObjectRef} key={element._key} style={inlineBlockStyle}>
+            <span ref={inlineBlockObjectRef} key={element._key} style={inlineBlockStyle} contentEditable={false}>
               {renderChild &&
                 renderChild(
                   fromSlateValue([element], portableTextFeatures.types.block.name)[0],
@@ -164,11 +164,11 @@ export const Element: FunctionComponent<ElementProps> = ({
       className = 'pt-block pt-object-block'
       debugRenders && debug(`Render ${element._key} (object block)`)
       return (
-        <div {...attributes} contentEditable={false} className={className}>
+        <div {...attributes} className={className}>
           <DraggableBlock element={element} readOnly={readOnly}>
             <>
               {renderBlock && (
-                <div ref={blockObjectRef}>
+                <div ref={blockObjectRef} contentEditable={false}>
                   {renderBlock(
                     fromSlateValue([element], portableTextFeatures.types.block.name)[0],
                     type,

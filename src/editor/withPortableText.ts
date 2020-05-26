@@ -51,7 +51,7 @@ export const withPortableText = <T extends Editor>(
 
   const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : disablePlugin('withMaxBlocks')
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures, change$)
-  const withHotkeys = createWithHotkeys(options.hotkeys)
+  const withHotkeys = createWithHotkeys(portableTextFeatures, keyGenerator, options.hotkeys)
   const withUndoRedo = readOnly
     ? disablePlugin('withUndoRedo')
     : createWithUndoRedo(incomingPatche$)
