@@ -62,7 +62,6 @@ export const ListItem = styled.div`
       line-height: 1.5rem; /* Same as body text */
       /* Optical alignment */
       position: relative;
-      top: 1px;
     }
   }
   &.pt-list-item-bullet > .pt-list-item-inner {
@@ -80,7 +79,6 @@ export const ListItem = styled.div`
   &.pt-list-item-number > .pt-list-item-inner:before {
     content: ${props => getCounterContentForListLevel(props.listLevel)};
     min-width: 1.5rem; /* Make sure space between number and text never shrinks */
-    line-height: 1.5rem; /* Same as body text */
     /* Optical alignment */
     position: relative;
     top: 1px;
