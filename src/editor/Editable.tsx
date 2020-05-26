@@ -26,7 +26,7 @@ import {
 import {HotkeyOptions} from '../types/options'
 import {toSlateValue, fromSlateValue, isEqualToEmptyEditor} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
-import {createWithInsertData} from './plugins'
+import {createWithInsertData, createWithHotkeys} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {withPortableText} from './withPortableText'
@@ -112,24 +112,26 @@ export const Editable = (props: Props) => {
   })
 
   const withInsertData = createWithInsertData(change$, portableTextFeatures, keyGenerator)
+  const withHotKeys = createWithHotkeys(portableTextFeatures, keyGenerator, hotkeys)
 
   // Init Editor
   const editor = useMemo(
     () =>
-      withInsertData(
-        withReact(
-          withPortableText(createEditor(), {
-            portableTextFeatures,
-            keyGenerator,
-            change$,
-            maxBlocks,
-            hotkeys,
-            incomingPatche$,
-            readOnly: props.readOnly || false
-          })
+      withHotKeys(
+        withInsertData(
+          withReact(
+            withPortableText(createEditor(), {
+              portableTextFeatures,
+              keyGenerator,
+              change$,
+              maxBlocks,
+              incomingPatche$,
+              readOnly: props.readOnly || false
+            })
+          )
         )
       ),
-    []
+      []
   )
 
   // Track editor value
@@ -583,6 +585,19 @@ export const Editable = (props: Props) => {
     }
   }
 
+  // There's a bug in Slate atm regarding void nodes not being deleted. Seems related
+  // to 'hanging: true' and 'voids: false'. 2020/05/26
+  const handleCut = (event: React.ClipboardEvent<HTMLDivElement>): void | ReactEditor => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (editor.selection) {
+      ReactEditor.setFragmentData(editor, event.clipboardData)
+      Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
+      editor.onChange()
+    }
+    return editor
+  }
+
   return (
     <Slate
       onChange={handleChange}
@@ -594,6 +609,7 @@ export const Editable = (props: Props) => {
         autoFocus={false}
         decorate={decorate}
         onCopy={handleCopy}
+        onCut={handleCut}
         onFocus={() => change$.next({type: 'focus'})}
         onBlur={() => change$.next({type: 'blur'})}
         onKeyDown={editor.pteWithHotKeys}

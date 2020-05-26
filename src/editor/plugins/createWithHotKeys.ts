@@ -5,6 +5,7 @@ import {HotkeyOptions} from '../../types/options'
 import {debugWithName} from '../../utils/debug'
 import {toSlateValue} from '../../utils/values'
 import {PortableTextFeatures} from 'src/types/portableText'
+import { ReactEditor } from '@sanity/slate-react'
 
 const debug = debugWithName('plugin:withHotKeys')
 
@@ -30,7 +31,7 @@ export function createWithHotkeys(
 ) {
   const reservedHotkeys = ['enter', 'tab', 'shift', 'delete', 'end']
   const activeHotkeys = hotkeysFromOptions || DEFAULT_HOTKEYS // TODO: Merge where possible? A union?
-  return function withHotKeys(editor: PortableTextSlateEditor) {
+  return function withHotKeys(editor: PortableTextSlateEditor & ReactEditor) {
     editor.pteWithHotKeys = (event: React.KeyboardEvent<HTMLDivElement>): void | boolean => {
       // Wire up custom marks hotkeys
       Object.keys(activeHotkeys).forEach(cat => {
@@ -92,32 +93,54 @@ export function createWithHotkeys(
           prevBlock &&
           focusBlock &&
           Editor.isVoid(editor, prevBlock) &&
-          editor.selection &&
           editor.selection.focus.offset === 0
         ) {
+          debug('Preventing deleting void block above')
           event.preventDefault()
           event.stopPropagation()
           Transforms.removeNodes(editor, {match: n => n === focusBlock})
           Transforms.select(editor, prevPath)
+          editor.onChange()
           return true
         }
       }
-      if (isDelete && editor.selection) {
+      if (
+        isDelete &&
+        editor.selection &&
+        editor.selection.focus.offset === 0 &&
+        Range.isCollapsed(editor.selection) &&
+        editor.children[editor.selection.focus.path[0] + 1]
+      ) {
         const [nextBlock] = Editor.node(editor, Path.next(editor.selection.focus.path.slice(0, 1)))
         const [focusBlock, focusBlockPath] = Editor.node(editor, editor.selection.focus, {depth: 1})
         if (
           nextBlock &&
           focusBlock &&
-          Editor.isVoid(editor, nextBlock) &&
-          editor.selection &&
-          editor.selection.focus.offset === 0
+          !Editor.isVoid(editor, focusBlock) &&
+          Editor.isVoid(editor, nextBlock)
         ) {
+          debug('Preventing deleting void block below')
           event.preventDefault()
           event.stopPropagation()
           Transforms.removeNodes(editor, {match: n => n === focusBlock})
           Transforms.select(editor, focusBlockPath)
+          editor.onChange()
           return true
         }
+      }
+
+      // There's a bug in Slate atm regarding void nodes not being deleted. Seems related
+      // to 'hanging: true'. 2020/05/26
+      if (
+        (isDelete || isBackspace) &&
+        editor.selection &&
+        Range.isExpanded(editor.selection)
+      ) {
+        event.preventDefault()
+        event.stopPropagation()
+        Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
+        editor.onChange()
+        return true
       }
 
       // Deal with tab for lists

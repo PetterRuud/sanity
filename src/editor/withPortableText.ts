@@ -6,7 +6,6 @@ import {
   createWithPatches,
   createWithMaxBlocks,
   createWithPortableTextLists,
-  createWithHotkeys,
   createWithUndoRedo,
   createWithPortableTextBlockStyle,
   createWithUtils
@@ -51,7 +50,6 @@ export const withPortableText = <T extends Editor>(
 
   const withMaxBlocks = maxBlocks ? createWithMaxBlocks(maxBlocks) : disablePlugin('withMaxBlocks')
   const withPortableTextLists = createWithPortableTextLists(portableTextFeatures, change$)
-  const withHotkeys = createWithHotkeys(portableTextFeatures, keyGenerator, options.hotkeys)
   const withUndoRedo = readOnly
     ? disablePlugin('withUndoRedo')
     : createWithUndoRedo(incomingPatche$)
@@ -61,12 +59,10 @@ export const withPortableText = <T extends Editor>(
 
   return withPatches(
     withUndoRedo(
-      withHotkeys(
-        withUtils(
-          withPortableTextBlockStyle(
-            withPortableTextLists(
-              withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(e))))
-            )
+      withUtils(
+        withPortableTextBlockStyle(
+          withPortableTextLists(
+            withPortableTextMarkModel(withObjectKeys(withScemaTypes(withMaxBlocks(e))))
           )
         )
       )
