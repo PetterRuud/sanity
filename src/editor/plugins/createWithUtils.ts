@@ -29,7 +29,7 @@ export function createWithUtils(portableTextFeatures: PortableTextFeatures) {
           .reverse()
           .findIndex(str => isEmpty(str))
         const newStartOffset =
-          whiteSpaceBeforeIndex > -1 ? charsBefore.length - whiteSpaceBeforeIndex : -1
+          whiteSpaceBeforeIndex > -1 ? charsBefore.length - whiteSpaceBeforeIndex : 0
         const whiteSpaceAfterIndex = charsAfter.split('').findIndex(obj => isEmpty(obj))
         const newEndOffset =
           charsBefore.length +
