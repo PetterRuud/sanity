@@ -100,6 +100,8 @@ export const Element: FunctionComponent<ElementProps> = ({
     }
   }
 
+  let className = ''
+
   // If not inline, it's either a block (text) or a block object (non-text)
   // NOTE: text blocks aren't draggable with DraggableBlock (yet?)
   switch (element._type) {
@@ -127,7 +129,7 @@ export const Element: FunctionComponent<ElementProps> = ({
           },
           blockObjectRef
         )
-      let className = `pt-block pt-text-block pt-text-block-style-${element.style}`
+      className = `pt-block pt-text-block pt-text-block-style-${element.style}`
       if (element.listItem) {
         className += ` pt-list-item pt-list-item-${element.listItem}`
       }
