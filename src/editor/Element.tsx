@@ -134,7 +134,7 @@ export const Element: FunctionComponent<ElementProps> = ({
       return (
         <>
           {renderBlock && !element.listItem && (
-            <div ref={blockObjectRef} {...attributes} className={className}>
+            <div ref={blockObjectRef} {...attributes} className={className} key={element._key}>
               {renderedBlock}
             </div>
           )}
@@ -145,6 +145,7 @@ export const Element: FunctionComponent<ElementProps> = ({
               listStyle={element.listItem}
               listLevel={element.level}
               {...attributes}
+              key={element._key}
             >
               <ListItemInner className="pt-list-item-inner">{renderedBlock}</ListItemInner>
             </ListItem>
@@ -164,7 +165,7 @@ export const Element: FunctionComponent<ElementProps> = ({
       className = 'pt-block pt-object-block'
       debugRenders && debug(`Render ${element._key} (object block)`)
       return (
-        <div {...attributes} className={className}>
+        <div {...attributes} className={className} key={element._key}>
           <DraggableBlock element={element} readOnly={readOnly}>
             <>
               {renderBlock && (

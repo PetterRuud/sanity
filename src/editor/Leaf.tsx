@@ -57,7 +57,6 @@ export const Leaf = (props: LeafProps) => {
     )
     marks.map(mark => {
       const type = portableTextFeatures.decorators.find(dec => dec.value === mark)
-      const defaultRender = () => <>{returnedChildren}</>
       if (type) {
         // TODO: look into this API!
         if (type?.blockEditor?.render) {
@@ -70,7 +69,7 @@ export const Leaf = (props: LeafProps) => {
             type,
             spanRef,
             {focused, selected, path},
-            defaultRender
+            () => <>{returnedChildren}</>
           )
         }
       }
@@ -101,7 +100,9 @@ export const Leaf = (props: LeafProps) => {
         const defaultRender = (): JSX.Element =>
           // TODO: annotation should be an own prop here, keeping for backward compability (2020/05/18).
           CustomComponent ? (
-            <CustomComponent {...annotation} attributes={attributes}>{returnedChildren}</CustomComponent>
+            <CustomComponent {...annotation} attributes={attributes}>
+              {returnedChildren}
+            </CustomComponent>
           ) : (
             <>{returnedChildren}</>
           )
@@ -133,12 +134,14 @@ export const Leaf = (props: LeafProps) => {
     }
   }
   debugRenders && debug(`Render ${leaf._key} (span)`)
+  const key = leaf._key as string || keyGenerator()
   // TODO: remove hightlight stuff as test for decorations
   return (
     <span
       {...attributes}
       style={{backgroundColor: leaf.__highlight ? '#ff0' : 'inherit'}}
       ref={spanRef}
+      key={key}
     >
       <DraggableChild
         element={leaf}
