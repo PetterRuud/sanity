@@ -131,7 +131,7 @@ export const Editable = (props: Props) => {
           )
         )
       ),
-      []
+    []
   )
 
   // Track editor value
@@ -214,7 +214,12 @@ export const Editable = (props: Props) => {
           })
         )[0]
         if (node && !Editor.isBlock(editor, node)) {
-          return fromSlateValue([node], portableTextFeatures.types.block.name)[0]
+          const pseudoBlock = {
+            _key: 'pseudo',
+            _type: portableTextFeatures.types.block.name,
+            children: [node]
+          }
+          return fromSlateValue([pseudoBlock], portableTextFeatures.types.block.name)[0].children[0]
         }
       }
       return undefined
