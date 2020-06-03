@@ -177,6 +177,7 @@ export const Editable = (props: Props) => {
     redo: (): void => editor.redo(),
     select: (selection: EditorSelection): void => {
       if (!props.value || selection === null) {
+        debug('No value or selection is null, deselecting')
         Transforms.deselect(editor)
         return
       }
@@ -224,8 +225,19 @@ export const Editable = (props: Props) => {
       }
       return undefined
     }, [selection]),
-    insertChild: (type: Type, value?: {[prop: string]: any}): void => {
-      // TODO: test selection if inline is applicable
+    insertChild: (type: Type, value?: {[prop: string]: any}): Path => {
+      if (!editor.selection) {
+        throw new Error('The editor has no selection')
+      }
+      const [focusBlock] = Array.from(
+        Editor.nodes(editor, {at: editor.selection.focus, match: n => Editor.isBlock(editor, n)})
+      )[0]
+      if (!focusBlock) {
+        throw new Error('No focus block')
+      }
+      if (focusBlock && Editor.isVoid(editor, focusBlock)) {
+        throw new Error("Can't insert childs into block objects")
+      }
       const block = toSlateValue(
         [
           {
@@ -245,8 +257,12 @@ export const Editable = (props: Props) => {
       const child = block.children[0]
       Editor.insertNode(editor, child)
       editor.onChange()
+      return toPortableTextRange(editor)?.focus.path || []
     },
-    insertBlock: (type: Type, value?: {[prop: string]: any}): void => {
+    insertBlock: (type: Type, value?: {[prop: string]: any}): Path => {
+      if (!editor.selection) {
+        throw new Error('The editor has no selection')
+      }
       const block = toSlateValue(
         [
           {
@@ -259,6 +275,7 @@ export const Editable = (props: Props) => {
       )[0]
       Editor.insertNode(editor, block)
       editor.onChange()
+      return toPortableTextRange(editor)?.focus.path || []
     },
     hasBlockStyle: useCallback(
       (style: string): boolean => {
@@ -492,9 +509,10 @@ export const Editable = (props: Props) => {
     if (editor.selection !== selection) {
       setSelection(editor.selection)
       // debug('Updated state selection', mustAdjustSelection)
-    } else {
-      // debug('Not updating selection because it is not changed')
     }
+    // else {
+    //   debug('Not updating selection because it is not changed')
+    // }
   }
 
   // Test Slate decorations. Highlight the word 'w00t'
@@ -569,7 +587,7 @@ export const Editable = (props: Props) => {
       change$.next({type: 'selection', selection: newSelection})
       // debug('Set new selection state', JSON.stringify(newSelection))
     } catch (err) {
-      debug('Invalid selection', editor.selection)
+      debug('Invalid selection', editor.selection, err)
     }
   }, [selection])
 
