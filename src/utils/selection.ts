@@ -27,7 +27,10 @@ export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): 
     return []
   }
   const [block, blockPath] = Array.from(
-    Editor.nodes(editor, {at: [], match: n => n._key === point.path[0]['_key']})
+    Editor.nodes(editor, {
+      at: [],
+      match: n => typeof point.path[0] === 'object' && n._key === point.path[0]._key
+    })
   )[0]
   if (!block || !Element.isElement(block)) {
     return []
