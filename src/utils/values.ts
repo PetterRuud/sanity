@@ -91,7 +91,7 @@ export function isEqualToEmptyEditor(children, portableTextFeatures) {
 
 export function findBlockAndIndexFromPath(
   firstPathSegment: PathSegment,
-  children: Node[]
+  children: (Node | Partial<Node>)[]
 ): [Element | undefined, number | undefined] {
   let blockIndex = -1
   const isNumber = Number.isInteger(Number(firstPathSegment))
