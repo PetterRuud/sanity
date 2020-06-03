@@ -2,7 +2,7 @@ import * as DMP from 'diff-match-patch'
 import {debounce, isEqual} from 'lodash'
 import {Subject} from 'rxjs'
 import {setIfMissing} from '../../patch/PatchEvent'
-import {Editor, Operation, Transforms, Path} from 'slate'
+import {Editor, Operation, Transforms, Path, Node} from 'slate'
 import {Patch} from '../../types/patch'
 // import {applyAll} from '../../patch/applyPatch'
 import {unset} from './../../patch/PatchEvent'
@@ -44,11 +44,11 @@ export function createWithPatches(
   portableTextFeatures: PortableTextFeatures,
   incomingPatche$?: PatchObservable
 ) {
-  let previousChildren
+  let previousChildren: (Node | Partial<Node>)[]
   let lastKnownEditorSelection: EditorSelection = null
 
   return function withPatches(editor: PortableTextSlateEditor) {
-    previousChildren = editor.children̈́
+    previousChildren = editor.children̈́ as Node[]
 
     // This will cancel the throttle when the user is not producing anything for a short time
     const cancelThrottle = debounce(() => {
@@ -185,7 +185,12 @@ export function createWithPatches(
   }
 }
 
-function adjustSelection(editor: Editor, patch: Patch, previousChildren, lastKnownEditorSelection) {
+function adjustSelection(
+  editor: Editor,
+  patch: Patch,
+  previousChildren: (Node | Partial<Node>)[],
+  lastKnownEditorSelection: EditorSelection
+) {
   let selection = editor.selection
   if (selection === null) {
     debug('No selection, not adjusting selection')
@@ -266,25 +271,28 @@ function adjustSelection(editor: Editor, patch: Patch, previousChildren, lastKno
       return
     }
     if (selection.focus.path[0] === blockIndex) {
-      const prevText = block.children.slice(-1)[0].text as Text
+      const [, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
+      const prevIndexOrLastIndex =
+        childIndex === -1 || block.children.length === 1 ? block.children.length - 1 : childIndex
+      const prevText = block.children[prevIndexOrLastIndex].text as Text
       const newSelection = {...selection}
-      if (Path.isAfter(selection.anchor.path, [blockIndex])) {
+      if (Path.isAfter(selection.anchor.path, [blockIndex, prevIndexOrLastIndex])) {
         newSelection.anchor = {...selection.anchor}
         newSelection.anchor.path = newSelection.anchor.path = [
-          newSelection.anchor.path[0] - 1,
-          block.children.length - 1
+          newSelection.anchor.path[0],
+          prevIndexOrLastIndex
         ]
         newSelection.anchor.offset = selection.anchor.offset + prevText.length
       }
-      if (Path.isAfter(selection.focus.path, [blockIndex])) {
-        newSelection.focus = {...selection.focus}
-        newSelection.focus.path = newSelection.focus.path = [
-          newSelection.focus.path[0] - 1,
-          block.children.length - 1
+      if (Path.isAfter(selection.focus.path, [blockIndex, prevIndexOrLastIndex])) {
+        newSelection.focus = {...selection.anchor}
+        newSelection.focus.path = newSelection.anchor.path = [
+          newSelection.anchor.path[0],
+          prevIndexOrLastIndex
         ]
-        newSelection.focus.offset = selection.focus.offset + prevText.length
+        newSelection.anchor.offset = selection.anchor.offset + prevText.length
       }
-      debug('adjusting selection for unset block child')
+      debug('adjusting selection for unset block child', newSelection)
       Transforms.select(editor, newSelection)
     }
   }
