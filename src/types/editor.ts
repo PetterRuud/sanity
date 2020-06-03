@@ -19,8 +19,8 @@ export interface EditableAPI {
   getSelection: () => EditorSelection
   hasBlockStyle: (style: string) => boolean
   insert: (items: PortableTextChild[] | PortableTextBlock[], selection?: EditorSelection) => void
-  insertBlock: (type: Type, value?: {[prop: string]: any}) => void
-  insertChild: (type: Type, value?: {[prop: string]: any}) => void
+  insertBlock: (type: Type, value?: {[prop: string]: any}) => Path
+  insertChild: (type: Type, value?: {[prop: string]: any}) => Path
   isDragging: () => boolean
   isMarkActive: (mark: string) => boolean
   isVoid: (element: PortableTextBlock | PortableTextChild) => boolean

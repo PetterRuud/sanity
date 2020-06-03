@@ -111,11 +111,19 @@ export class PortableTextEditor extends React.Component<Props, State> {
   static marks = (editor: PortableTextEditor) => {
     return editor.editable?.marks()
   }
-  static insertChild = (editor: PortableTextEditor, type: Type, value?: {[prop: string]: any}) => {
+  static insertChild = (
+    editor: PortableTextEditor,
+    type: Type,
+    value?: {[prop: string]: any}
+  ): Path | undefined => {
     debug(`Host inserting child`)
     return editor.editable?.insertChild(type, value)
   }
-  static insertBlock = (editor: PortableTextEditor, type: Type, value?: {[prop: string]: any}) => {
+  static insertBlock = (
+    editor: PortableTextEditor,
+    type: Type,
+    value?: {[prop: string]: any}
+  ): Path | undefined => {
     return editor.editable?.insertBlock(type, value)
   }
   static toggleList = (editor: PortableTextEditor, listStyle: string): void => {
