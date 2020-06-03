@@ -54,10 +54,19 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     const height = elementRect.height
     var Y = event.pageY
     var loc = Math.abs(offset - Y)
-    if (loc < height / 2) {
-      IS_DRAGGING_BLOCK_TARGET_POSITION.set(editor, 'top')
+    let position
+    if (element === editor.children[0]) {
+      position = 'top'
+    } else if (loc < height / 2) {
+      position = 'top'
+      IS_DRAGGING_BLOCK_TARGET_POSITION.set(editor, position)
     } else {
-      IS_DRAGGING_BLOCK_TARGET_POSITION.set(editor, 'bottom')
+      position = 'bottom'
+      IS_DRAGGING_BLOCK_TARGET_POSITION.set(editor, position)
+    }
+    if (isMyDragOver === element) {
+      event.dataTransfer.dropEffect = 'none'
+      return
     }
     forceUpdate()
     setIsDragOver(true)
@@ -85,6 +94,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
       let targetPath = ReactEditor.findPath(editor, targetBlock)
       const myPath = ReactEditor.findPath(editor, element)
       const isBefore = Path.isBefore(myPath, targetPath)
+      console.log(dragPosition)
       if (dragPosition === 'bottom' && !isBefore) {
         // If it is already at the bottom, don't do anything.
         if (targetPath[0] >= editor.children.length - 1) {
@@ -156,7 +166,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     debug('Drag start')
     IS_DRAGGING.set(editor, true)
     event.dataTransfer.setData('application/portable-text', 'something')
-    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.effectAllowed = 'move none'
 
     // Specify dragImage so that single elements in the preview will not be the drag image,
     // but always the whole block preview itself.
