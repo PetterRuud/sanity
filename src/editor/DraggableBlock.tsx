@@ -86,6 +86,11 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
       const myPath = ReactEditor.findPath(editor, element)
       const isBefore = Path.isBefore(myPath, targetPath)
       if (dragPosition === 'bottom' && !isBefore) {
+        // If it is already at the bottom, don't do anything.
+        if (targetPath[0] >= editor.children.length - 1) {
+          debug('target is already at the bottom, not moving')
+          return
+        }
         const originalPath = targetPath
         targetPath = Path.next(targetPath)
         debug(
