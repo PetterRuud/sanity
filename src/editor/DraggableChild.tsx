@@ -3,6 +3,7 @@ import {Element as SlateElement, Transforms, Editor} from 'slate'
 import {ReactEditor, useEditor} from '@sanity/slate-react'
 import {debugWithName} from '../utils/debug'
 import {IS_DRAGGING, IS_DRAGGING_ELEMENT_RANGE, IS_DRAGGING_CHILD_ELEMENT} from '../utils/weakMaps'
+import {keyGenerator} from './PortableTextEditor'
 
 const debug = debugWithName('components:DraggableChild')
 const debugRenders = false
@@ -81,10 +82,15 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
       document.body.removeChild(dragGhostRef.current)
     }
     const range = IS_DRAGGING_ELEMENT_RANGE.get(editor)
-    const myPath = ReactEditor.findPath(editor, element)
-    if (range && editor.selection && editor.selection.focus.offset > 0) {
-      Transforms.insertNodes(editor, element, {at: range, select: true})
-      Transforms.removeNodes(editor, {at: myPath, match: n => n === element})
+    if (range && editor.selection) {
+      debug('Removing and inserting')
+      const dupedElement = {...element, _key: keyGenerator()}
+      Transforms.insertNodes(editor, dupedElement, {at: range, select: true})
+      Transforms.removeNodes(editor, {
+        at: [],
+        match: n => n._key === element._key,
+        mode: 'lowest'
+      })
       editor.onChange()
     }
     IS_DRAGGING_ELEMENT_RANGE.delete(editor)
@@ -131,12 +137,20 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
     return <span onDragOver={handleDragOver}>{children}</span>
   }
 
+  const stopEventIfVoid = event => {
+    if (isVoid) {
+      event.stopPropagation()
+      event.preventDefault()
+    }
+  }
+
   return (
     <span
       draggable={isVoid}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDrop={stopEventIfVoid}
     >
       {children}
     </span>
