@@ -103,13 +103,20 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       if (Editor.isBlock(editor, block) && typeof block._key === 'string') {
         const child = block.children[operation.path[1]]
         if (child && typeof child._key === 'string') {
-          return [
-            set({...child, ...operation.newProperties}, [
-              {_key: block._key},
-              'children',
-              {_key: child._key}
-            ])
-          ]
+          const blockKey = block._key
+          const childKey = child._key
+          const patches: Patch[] = []
+          Object.keys(operation.newProperties).forEach(key => {
+            patches.push(
+              set(operation.newProperties[key], [
+                {_key: blockKey},
+                'children',
+                {_key: childKey},
+                key
+              ])
+            )
+          })
+          return patches
         }
         throw new Error('Could not find a valid child')
       }
