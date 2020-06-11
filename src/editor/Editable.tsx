@@ -508,7 +508,7 @@ export const Editable = (props: Props) => {
     }
     if (editor.selection !== selection) {
       setSelection(editor.selection)
-      // debug('Updated state selection', mustAdjustSelection)
+      debug('Updated state selection', JSON.stringify(editor.selection))
     }
     // else {
     //   debug('Not updating selection because it is not changed')
@@ -551,10 +551,10 @@ export const Editable = (props: Props) => {
       return
     }
     debug('Setting value from props')
-    // TODO: figure out what is changed and only update that?
     const slateValueFromProps = toSlateValue(props.value, portableTextFeatures.types.block.name)
     setStateValue(slateValueFromProps)
-  }, [props.value, props.isThrottling])
+    change$.next({type: 'value', value: props.value})
+  }, [props.value])
 
   // Restore selection from props
   useEffect(() => {
@@ -627,7 +627,7 @@ export const Editable = (props: Props) => {
       editor={editor}
       selection={selection}
       value={getValue(stateValue, [createPlaceHolderBlock()])}
-    >
+    > 
       <SlateEditable
         autoFocus={false}
         decorate={decorate}
