@@ -17,7 +17,7 @@ export function createWithObjectKeys(
         operation.properties = {...operation.properties, _key: keyGenerator()}
       }
       if (operation.type === 'insert_node') {
-        operation.node = {...operation.node, _key: keyGenerator()}
+        operation.node = {...operation.node, _key: operation.node._key || keyGenerator()}
       }
       apply(operation)
     }
