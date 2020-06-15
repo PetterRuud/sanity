@@ -27,7 +27,17 @@ export function createWithInsertData(
     editor.getFragment = () => {
       debug('Get fragment data')
       if (editor.selection) {
-        return Node.fragment(editor, editor.selection)
+        return Node.fragment(editor, editor.selection).map(node => {
+          // Ensure the copy has new keys
+          const nodeWithNewKeys = {...node, _key: keyGenerator()} as Node
+          if (Array.isArray(nodeWithNewKeys.children)) {
+            nodeWithNewKeys.children = nodeWithNewKeys.children.map(child => ({
+              ...child,
+              _key: keyGenerator()
+            }))
+          }
+          return nodeWithNewKeys
+        })
       }
       return []
     }
@@ -50,7 +60,7 @@ export function createWithInsertData(
         const pText = fromSlateValue(parsed, portableTextFeatures.types.block.name)
         const validation = validateValue(pText, portableTextFeatures, keyGenerator)
         if (validation.valid) {
-          debug('inserting editor fragment')
+          debug('inserting editor fragment', parsed)
           Transforms.insertFragment(editor, parsed)
           editor.onChange()
           change$.next({type: 'loading', isLoading: false})
