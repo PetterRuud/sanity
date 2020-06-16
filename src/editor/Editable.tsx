@@ -195,32 +195,40 @@ export const Editable = (props: Props) => {
     },
     focusBlock: useCallback((): PortableTextBlock | undefined => {
       if (editor.selection) {
-        const [block] = Array.from(
-          Editor.nodes(editor, {at: editor.selection.focus, match: n => Editor.isBlock(editor, n)})
-        )[0]
-        if (block) {
-          return fromSlateValue([block], portableTextFeatures.types.block.name)[0]
+        try {
+          const [block] = Array.from(
+            Editor.nodes(editor, {at: editor.selection.focus, match: n => Editor.isBlock(editor, n)})
+          )[0]
+          if (block) {
+            return fromSlateValue([block], portableTextFeatures.types.block.name)[0]
+          }
+        } catch (err) {
+          return undefined
         }
       }
       return undefined
     }, [selection]),
     focusChild: useCallback((): PortableTextChild | undefined => {
       if (editor.selection) {
-        const [node] = Array.from(
-          Editor.nodes(editor, {
-            mode: 'lowest',
-            at: editor.selection.focus,
-            match: n => n._type !== undefined,
-            voids: true
-          })
-        )[0]
-        if (node && !Editor.isBlock(editor, node)) {
-          const pseudoBlock = {
-            _key: 'pseudo',
-            _type: portableTextFeatures.types.block.name,
-            children: [node]
+        try {
+          const [node] = Array.from(
+            Editor.nodes(editor, {
+              mode: 'lowest',
+              at: editor.selection.focus,
+              match: n => n._type !== undefined,
+              voids: true
+            })
+          )[0]
+          if (node && !Editor.isBlock(editor, node)) {
+            const pseudoBlock = {
+              _key: 'pseudo',
+              _type: portableTextFeatures.types.block.name,
+              children: [node]
+            }
+            return fromSlateValue([pseudoBlock], portableTextFeatures.types.block.name)[0].children[0]
           }
-          return fromSlateValue([pseudoBlock], portableTextFeatures.types.block.name)[0].children[0]
+        } catch (err) {
+          return undefined
         }
       }
       return undefined
@@ -508,7 +516,7 @@ export const Editable = (props: Props) => {
     }
     if (editor.selection !== selection) {
       setSelection(editor.selection)
-      debug('Updated state selection', JSON.stringify(editor.selection))
+      // debug('Updated state selection', JSON.stringify(editor.selection))
     }
     // else {
     //   debug('Not updating selection because it is not changed')
