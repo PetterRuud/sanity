@@ -14,12 +14,14 @@ import {
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PatchObservable, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
+import {createPatchToOperations} from '../../utils/patchToOperations'
+import {PATCHING, withoutPatching, isPatching} from '../../utils/withoutPatching'
 
 const debug = debugWithName('plugin:withPatches')
 
 const dmp = new DMP.diff_match_patch()
 
-const THROTTLE_EDITOR_MS = 600
+const THROTTLE_EDITOR_MS = 500
 
 export function createWithPatches(
   {
@@ -36,46 +38,49 @@ export function createWithPatches(
   portableTextFeatures: PortableTextFeatures,
   incomingPatche$?: PatchObservable
 ) {
+  const patchToOperations = createPatchToOperations(portableTextFeatures)
   let previousChildren: (Node | Partial<Node>)[]
-  const patchesToAdjust: Patch[] = []
-
+  let isThrottling = false
   return function withPatches(editor: PortableTextSlateEditor) {
+    PATCHING.set(editor, true)
     previousChildren = editor.children̈́ as Node[]
 
     // This will cancel the throttle when the user is not producing anything for a short time
     const cancelThrottle = debounce(() => {
       change$.next({type: 'throttle', throttle: false})
+      isThrottling = false
     }, THROTTLE_EDITOR_MS)
 
     // Inspect incoming patches and adjust editor selection accordingly.
     if (incomingPatche$) {
       incomingPatche$.subscribe((patch: Patch) => {
-        debug('Adding incoming patch', patch.type, patch)
-        patchesToAdjust.push(patch)
+        debug('Handling incoming patch', patch.type)
+        if (isThrottling) {
+          withoutPatching(editor, () => {
+            if (patchToOperations(editor, patch)) {
+              previousChildren = editor.children
+              editor.onChange()
+              debug('Applied patch in the throttled state', patch.type)
+            } else {
+              if (adjustSelection(editor, patch, previousChildren)) {
+                previousChildren = editor.children
+                editor.onChange()
+              }
+            }
+          })
+        } else {
+          debug('Adjusting selection for patch', patch.type)
+          if (adjustSelection(editor, patch, previousChildren)) {
+            previousChildren = editor.children
+            editor.onChange()
+          }
+        }
       })
     }
 
-    // Process pending incoming patches while editor was throttling and not adjusting to remote changes
-    change$.subscribe((change: EditorChange) => {
-      if (change.type === 'value') {
-        let adjusted = false
-        debug('Adjusting for patches after new value')
-        while (patchesToAdjust.length > 0) {
-          const patch = patchesToAdjust[0]
-          adjustSelection(editor, patch, previousChildren)
-          patchesToAdjust.shift()
-          adjusted = true
-        }
-        if (adjusted) {
-          debug('Adjusted')
-          editor.onChange()
-        }
-      }
-    })
-
     const {apply} = editor
 
-    editor.apply = (operation: Operation) => {
+    editor.apply = (operation: Operation): void | Editor => {
       let patches: Patch[] = []
 
       // The previous value is needed to figure out the _key of deleted nodes. The editor.children would no
@@ -87,6 +92,11 @@ export function createWithPatches(
 
       // Apply the operation
       apply(operation)
+
+      if (!isPatching(editor)) {
+        debug(`Editor is not producing patch for operation ${operation.type}`, operation)
+        return editor
+      }
 
       if (editorWasEmpty) {
         patches = [setIfMissing(previousChildren, [])]
@@ -164,6 +174,7 @@ export function createWithPatches(
       if (patches.length > 0) {
         // Signal throttling
         change$.next({type: 'throttle', throttle: true})
+        isThrottling = true
         // Emit all patches immediately
         patches.map(patch => {
           change$.next({
@@ -415,3 +426,4 @@ function adjustSelection(
     return editor.selection
   }
 }
+
