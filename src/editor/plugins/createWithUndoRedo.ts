@@ -17,6 +17,7 @@ import {Patch} from '../../types/patch'
 import {PatchObservable, PortableTextSlateEditor} from 'src/types/editor'
 import * as DMP from 'diff-match-patch'
 import {debugWithName} from '../../utils/debug'
+import {isPatching} from '../../utils/withoutPatching'
 
 const debug = debugWithName('plugin:withUndoRedo')
 const dmp = new DMP.diff_match_patch()
@@ -30,6 +31,9 @@ const isMerging = (editor: Editor): boolean | undefined => {
 }
 
 const isSaving = (editor: Editor): boolean | undefined => {
+  if (!isPatching(editor)) {
+    return false
+  }
   return SAVING.get(editor)
 }
 
@@ -38,12 +42,6 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
   const incomingPatches: {patch: Patch; time: Date}[] = []
   if (incomingPatche$) {
     incomingPatche$.subscribe(patch => {
-      // Ignore rebase patches, they don't have any meaningful info for us.
-      // TODO: make rebase send what actually happend
-      if (patch.origin === 'internal' &&  patch.type === 'set') {
-        debug('Ignoring rebase patch')
-        return
-      }
       incomingPatches.push({patch: patch, time: new Date()})
     })
   }
