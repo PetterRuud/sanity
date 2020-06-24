@@ -69,25 +69,25 @@ export function createWithPortableTextBlockStyle(
           debug(`Unsetting block style '${blockStyle}'`)
           Transforms.setNodes(editor, {...rest, style: undefined}, {at: path})
         } else {
+          const defaultStyle = portableTextFeatures.styles[0] && portableTextFeatures.styles[0].value
           if (blockStyle) {
             debug(`Setting style '${blockStyle}'`)
           } else {
-            debug('Setting default style', portableTextFeatures.styles[0])
+            debug('Setting default style', defaultStyle)
           }
           Transforms.setNodes(
             editor,
             {
               ...rest,
               style:
-                blockStyle ||
-                (portableTextFeatures.styles[0] && portableTextFeatures.styles[0].value)
+                blockStyle || defaultStyle
             },
             {at: path}
           )
         }
       })
       // Emit a new selection here (though it might be the same).
-      // This is for toolbars etc that listens to selection changes to update themselves.
+      // Toolbars and similar on the outside may rely on selection changes to update themselves.
       change$.next({type: 'selection', selection: toPortableTextRange(editor)})
       editor.onChange()
     }
