@@ -3,7 +3,7 @@
  * This plugin will change Slate's default marks model (every prop is a mark) with the Portable Text model (marks is an array of strings on prop .marks).
  */
 
-import {Editor, Range, Transforms, Text, Path, NodeEntry} from 'slate'
+import {Editor, Range, Transforms, Text, Path, NodeEntry, Element} from 'slate'
 import {isEqual, flatten} from 'lodash'
 import {Subject} from 'rxjs'
 
@@ -25,6 +25,10 @@ export function createWithPortableTextMarkModel(
       normalizeNode(nodeEntry)
       if (editor.operations.some(op => op.type === 'merge_node')) {
         mergeSpans(editor)
+      }
+      if (editor.operations.some(op => op.type === 'remove_node')) {
+        // Check consistency of markDefs
+        normalizeMarkDefsAfterRemoveNode(editor)
       }
       // This should not be needed? Commented out for now.
       // // Ensure that every span node has .marks
@@ -198,6 +202,36 @@ export function createWithPortableTextMarkModel(
           const nextTextNode = parent.children[nextPath[1]]
           if (nextTextNode && nextTextNode.text && isEqual(nextTextNode.marks, node.marks)) {
             Transforms.mergeNodes(editor, {at: nextPath, voids: true})
+          }
+        }
+      }
+    }
+  }
+  /**
+   * Normalize markDefs
+   *
+   * @param {Editor} editor
+   */
+  function normalizeMarkDefsAfterRemoveNode(editor: Editor) {
+    const {selection} = editor
+    if (selection) {
+      const [blockElement, path] = Editor.node(editor, selection.focus, {depth: 1})
+      if (blockElement && blockElement._type === portableTextFeatures.types.block.name) {
+        if (Array.isArray(blockElement.markDefs) && Element.isElement(blockElement)) {
+          const newMarkDefs = blockElement.markDefs.filter(def => {
+            return blockElement.children.find(child => {
+              return Array.isArray(child.marks) && child.marks.includes(def._key)
+            })
+          })
+          if (!isEqual(newMarkDefs, blockElement.markDefs)) {
+            debug('Removing markDef not in use')
+            Transforms.setNodes(
+              editor,
+              {
+                markDefs: newMarkDefs
+              },
+              {at: path}
+            )
           }
         }
       }

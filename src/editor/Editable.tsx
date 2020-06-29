@@ -362,7 +362,7 @@ export const Editable = (props: Props) => {
               editor,
               {
                 markDefs: [
-                  ...blockElement.markDefs.filter(def => def._type !== type.name),
+                  ...blockElement.markDefs,
                   {_type: type.name, _key: annotationKey, ...value}
                 ]
               },
@@ -417,20 +417,46 @@ export const Editable = (props: Props) => {
       const {selection} = editor
       if (selection) {
         const [blockElement] = Editor.node(editor, selection.focus, {depth: 1})
-        if (blockElement._type === portableTextFeatures.types.block.name) {
+        if (
+          blockElement._type === portableTextFeatures.types.block.name &&
+          SlateElement.isElement(blockElement)
+        ) {
+          const [span, spanPath] = Editor.node(editor, selection.focus.path.slice(0, 2))
+          const spanMarks = (span.marks as string[]) || []
           if (Array.isArray(blockElement.markDefs)) {
-            const annotation = blockElement.markDefs.find(def => def._type === type.name)
+            if (
+              Range.isCollapsed(selection) &&
+              Text.isText(span) &&
+              blockElement.children.slice(-1)[0] === span &&
+              selection.focus.offset === span.text.length
+            ) {
+              // Just insert an empty span
+              Transforms.insertNodes(
+                editor,
+                [{_type: 'span', text: ' ', marks: [], _key: keyGenerator()}],
+                {
+                  at: selection.focus
+                }
+              )
+              Transforms.select(editor, SlatePath.next(spanPath))
+              Transforms.collapse(editor, {edge: 'end'})
+              return
+            }
+            const annotation = blockElement.markDefs.find(def => spanMarks.includes(def._key))
             if (annotation && annotation._key) {
               Transforms.setNodes(
                 editor,
                 {
-                  markDefs: [...blockElement.markDefs.filter(def => def._type !== type.name)]
+                  markDefs: [...blockElement.markDefs.filter(def => def._key !== annotation._key)]
                 },
-                {voids: false, match: n => Array.isArray(n.markDefs)}
+                {mode: 'highest', voids: false, match: n => Array.isArray(n.markDefs)}
               )
-              editor.pteExpandToWord()
+              if (Range.isCollapsed(selection)) {
+                editor.pteExpandToWord()
+              }
               for (const [node, path] of Editor.nodes(editor, {
                 at: selection,
+                mode: 'lowest',
                 match: Text.isText
               })) {
                 if (Array.isArray(node.marks)) {
@@ -439,7 +465,7 @@ export const Editable = (props: Props) => {
                     {
                       marks: [...node.marks.filter(mark => mark !== annotation._key)]
                     },
-                    {at: path, voids: false, split: false, match: Text.isText}
+                    {at: path, voids: false, split: false}
                   )
                 }
               }
@@ -624,7 +650,7 @@ export const Editable = (props: Props) => {
     // Do this on next tick
     setTimeout(() => {
       const newSelection = toPortableTextRange(editor)
-      debug('Emitting new selection', JSON.stringify(newSelection))
+      // debug('Emitting new selection', JSON.stringify(newSelection))
       change$.next({type: 'selection', selection: newSelection})
     }, 0)
   }, [selection])
