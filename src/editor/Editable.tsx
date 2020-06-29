@@ -165,7 +165,13 @@ export const Editable = (props: Props) => {
       editor.pteToggleBlockStyle(blockStyle)
       ReactEditor.focus(editor)
     },
-    isMarkActive: (mark: string): boolean => editor.pteIsMarkActive(mark),
+    isMarkActive: (mark: string): boolean => {
+      try {
+        return editor.pteIsMarkActive(mark)
+      } catch (err) {
+        return false
+      }
+    },
     marks: (): string[] => {
       return (
         {
