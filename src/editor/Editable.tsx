@@ -8,7 +8,7 @@ import {
   Element as SlateElement
 } from 'slate'
 import {isEqual} from 'lodash'
-import React, {useCallback, useMemo, useState, useEffect, useLayoutEffect} from 'react'
+import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from '@sanity/slate-react'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
@@ -197,7 +197,10 @@ export const Editable = (props: Props) => {
       if (editor.selection) {
         try {
           const [block] = Array.from(
-            Editor.nodes(editor, {at: editor.selection.focus, match: n => Editor.isBlock(editor, n)})
+            Editor.nodes(editor, {
+              at: editor.selection.focus,
+              match: n => Editor.isBlock(editor, n)
+            })
           )[0]
           if (block) {
             return fromSlateValue([block], portableTextFeatures.types.block.name)[0]
@@ -225,7 +228,8 @@ export const Editable = (props: Props) => {
               _type: portableTextFeatures.types.block.name,
               children: [node]
             }
-            return fromSlateValue([pseudoBlock], portableTextFeatures.types.block.name)[0].children[0]
+            return fromSlateValue([pseudoBlock], portableTextFeatures.types.block.name)[0]
+              .children[0]
           }
         } catch (err) {
           return undefined
@@ -586,19 +590,6 @@ export const Editable = (props: Props) => {
     }
   }, [props.selection])
 
-  // When the selection state changes, emit that to change$
-  // Note: since the selection is coupled to DOM selections,
-  // we must useLayoutEffect for this, or the DOM selection will lag behind.
-  useLayoutEffect(() => {
-    try {
-      const newSelection = toPortableTextRange(editor)
-      change$.next({type: 'selection', selection: newSelection})
-      // debug('Set new selection state', JSON.stringify(newSelection))
-    } catch (err) {
-      debug('Invalid selection', editor.selection, err)
-    }
-  }, [selection])
-
   // Handle copy in the editor
   const handleCopy = (event: React.ClipboardEvent<HTMLDivElement>): void | ReactEditor => {
     if (props.onCopy) {
@@ -629,18 +620,28 @@ export const Editable = (props: Props) => {
     return editor
   }
 
+  const handleSelect = useCallback(() => {
+    // Do this on next tick
+    setTimeout(() => {
+      const newSelection = toPortableTextRange(editor)
+      debug('Emitting new selection', JSON.stringify(newSelection))
+      change$.next({type: 'selection', selection: newSelection})
+    }, 0)
+  }, [selection])
+
   return (
     <Slate
       onChange={handleChange}
       editor={editor}
       selection={selection}
       value={getValue(stateValue, [createPlaceHolderBlock()])}
-    > 
+    >
       <SlateEditable
         autoFocus={false}
         decorate={decorate}
         onCopy={handleCopy}
         onCut={handleCut}
+        onSelect={handleSelect}
         onFocus={() => change$.next({type: 'focus'})}
         onBlur={() => change$.next({type: 'blur'})}
         onKeyDown={editor.pteWithHotKeys}
