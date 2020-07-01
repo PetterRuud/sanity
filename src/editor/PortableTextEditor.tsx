@@ -101,6 +101,9 @@ export class PortableTextEditor extends React.Component<Props, State> {
   static isDragging = (editor: PortableTextEditor) => {
     return editor.editable?.isDragging()
   }
+  static getSelection = (editor: PortableTextEditor) => {
+    return editor.editable?.getSelection()
+  }
   static focusBlock = (editor: PortableTextEditor) => {
     return editor.editable?.focusBlock()
   }
