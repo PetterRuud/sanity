@@ -26,7 +26,10 @@ export function createWithPortableTextMarkModel(
       if (editor.operations.some(op => op.type === 'merge_node')) {
         mergeSpans(editor)
       }
-      if (editor.operations.some(op => op.type === 'remove_node')) {
+      if (
+        editor.operations.some(op => op.type === 'remove_node') ||
+        editor.operations.some(op => op.type === 'merge_node')
+      ) {
         // Check consistency of markDefs
         normalizeMarkDefsAfterRemoveNode(editor)
       }
