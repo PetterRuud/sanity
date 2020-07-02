@@ -41,7 +41,7 @@
   "dependencies": {
     "@sanity/block-tools": "^1.149.4",
     "@sanity/schema": "^0.147.6",
-    "@sanity/slate-react": "0.58.3-rc2.1",
+    "@sanity/slate-react": "0.58.4-rc2.0",
     "debug": "^4.1.1",
     "get-random-values": "^1.2.0",
     "is-hotkey": "^0.1.6",
