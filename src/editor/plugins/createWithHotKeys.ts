@@ -129,8 +129,8 @@ export function createWithHotkeys(
         }
       }
 
-      // There's a bug in Slate atm regarding void nodes not being deleted. Seems related
-      // to 'hanging: true'. 2020/05/26
+      // There's a bug in Slate atm regarding void nodes not being deleted if it is the last block.
+      // Seems related to 'hanging: true'. 2020/05/26
       if (
         (isDelete || isBackspace) &&
         editor.selection &&
@@ -139,6 +139,7 @@ export function createWithHotkeys(
         event.preventDefault()
         event.stopPropagation()
         Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
+        Transforms.collapse(editor)
         editor.onChange()
         return true
       }

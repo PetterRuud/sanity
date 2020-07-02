@@ -660,6 +660,7 @@ export const Editable = (props: Props) => {
     if (editor.selection) {
       ReactEditor.setFragmentData(editor, event.clipboardData)
       Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
+      Transforms.collapse(editor)
       editor.onChange()
     }
     return editor
