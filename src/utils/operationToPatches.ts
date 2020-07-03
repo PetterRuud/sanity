@@ -13,7 +13,7 @@ import {
   MergeNodeOperation
 } from 'slate'
 import {omitBy, isUndefined} from 'lodash'
-import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
+import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {fromSlateValue} from './values'
 import {debugWithName} from './debug'
 
@@ -310,9 +310,33 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     operation: MoveNodeOperation,
     beforeValue: PortableTextBlock[]
   ) {
-    // TODO: implement this if we need to use wrapNodes/unwrapNodes transformations.
-    // So far it's not needed 2020-05-10
-    throw new Error('Not implemented')
+    const patches: Patch[] = []
+    const block = beforeValue[operation.path[0]]
+    const targetBlock = beforeValue[operation.newPath[0]]
+    if (operation.path.length === 1) {
+      const position = operation.newPath[0] === 0 ? 'before' : 'after'
+      patches.push(unset([{_key: block._key}]))
+      patches.push(
+        insert([fromSlateValue([block], portableTextFeatures.types.block.name)[0]], position, [
+          {_key: targetBlock._key}
+        ])
+      )
+    } else if (operation.path.length === 2) {
+      const child = block.children[operation.path[1]] as PortableTextChild
+      const targetChild = targetBlock.children[operation.newPath[1]] as PortableTextChild
+      const position = operation.newPath[1] === targetBlock.children.length ? 'after' : 'before'
+      const childToInsert = fromSlateValue([block], portableTextFeatures.types.block.name)[0]
+        .children[operation.path[1]]
+      patches.push(unset([{_key: block._key}, 'children', {_key: child._key}]))
+      patches.push(
+        insert([childToInsert], position, [
+          {_key: targetBlock._key},
+          'children',
+          {_key: targetChild._key}
+        ])
+      )
+    }
+    return patches
   }
 
   return {
