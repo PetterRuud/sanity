@@ -127,8 +127,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
           targetPath
         )} (${dragPosition})`
       )
-      Transforms.removeNodes(editor, {at: myPath, match: n => n === element})
-      Transforms.insertNodes(editor, element, {at: targetPath, select: true})
+      Transforms.moveNodes(editor, {at: myPath, to: targetPath})
       editor.onChange()
       return
     }
