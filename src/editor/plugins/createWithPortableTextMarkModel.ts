@@ -10,7 +10,7 @@ import {Subject} from 'rxjs'
 import {debugWithName} from '../../utils/debug'
 import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {toPortableTextRange} from '../../utils/selection'
-import {PortableTextFeatures} from 'src/types/portableText'
+import {PortableTextFeatures} from '../../types/portableText'
 
 const debug = debugWithName('plugin:withPortableTextMarkModel')
 
@@ -26,11 +26,12 @@ export function createWithPortableTextMarkModel(
       if (editor.operations.some(op => op.type === 'merge_node')) {
         mergeSpans(editor)
       }
+      // Check consistency of markDefs
       if (
-        editor.operations.some(op => op.type === 'remove_node') ||
-        editor.operations.some(op => op.type === 'merge_node')
+        editor.operations.some(op =>
+          ['remove_node', 'merge_node', 'set_selection'].includes(op.type)
+        )
       ) {
-        // Check consistency of markDefs
         normalizeMarkDefsAfterRemoveNode(editor)
       }
       // This should not be needed? Commented out for now.
