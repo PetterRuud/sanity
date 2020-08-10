@@ -3,7 +3,6 @@ import {Element as SlateElement, Transforms, Editor} from 'slate'
 import {ReactEditor, useEditor} from '@sanity/slate-react'
 import {debugWithName} from '../utils/debug'
 import {IS_DRAGGING, IS_DRAGGING_ELEMENT_RANGE, IS_DRAGGING_CHILD_ELEMENT} from '../utils/weakMaps'
-import {keyGenerator} from './PortableTextEditor'
 
 const debug = debugWithName('components:DraggableChild')
 const debugRenders = false
@@ -13,13 +12,15 @@ type ElementProps = {
   element: SlateElement
   readOnly: boolean
   spanType: string
+  keyGenerator: () => string
 }
 
 export const DraggableChild: FunctionComponent<ElementProps> = ({
   children,
   element,
   readOnly,
-  spanType
+  spanType,
+  keyGenerator
 }) => {
   const editor = useEditor()
   const dragGhostRef: React.MutableRefObject<undefined | HTMLElement> = useRef()

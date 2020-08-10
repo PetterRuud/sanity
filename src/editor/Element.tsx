@@ -1,12 +1,11 @@
 import React, {ReactElement, FunctionComponent, useRef} from 'react'
 import {Element as SlateElement, Editor, Range} from 'slate'
 import {useSelected, useEditor, ReactEditor} from '@sanity/slate-react'
-import {PortableTextFeatures, PortableTextChild} from '../types/portableText'
+import {PortableTextFeatures} from '../types/portableText'
 import TextBlock from './nodes/TextBlock'
 import Object from './nodes/DefaultObject'
 import {BlockObject as BlockObjectContainer} from './nodes/index'
-import {Type as SchemaType} from '../types/schema'
-import {RenderAttributes, RenderBlockFunction} from '../types/editor'
+import {RenderBlockFunction, RenderChildFunction} from '../types/editor'
 import {Path} from '../types/path'
 import {fromSlateValue} from '../utils/values'
 import {debugWithName} from '../utils/debug'
@@ -21,16 +20,11 @@ type ElementProps = {
   attributes: string
   children: ReactElement
   element: SlateElement
+  keyGenerator: () => string
   portableTextFeatures: PortableTextFeatures
   readOnly: boolean
   renderBlock?: RenderBlockFunction
-  renderChild?: (
-    value: PortableTextChild,
-    type: SchemaType,
-    ref: React.RefObject<HTMLSpanElement>,
-    attributes: RenderAttributes,
-    defaultRender: (child: PortableTextChild) => JSX.Element
-  ) => JSX.Element
+  renderChild?: RenderChildFunction
 }
 
 const defaultRender = value => {
@@ -41,6 +35,7 @@ export const Element: FunctionComponent<ElementProps> = ({
   attributes,
   children,
   element,
+  keyGenerator,
   portableTextFeatures,
   readOnly,
   renderBlock,
@@ -78,15 +73,16 @@ export const Element: FunctionComponent<ElementProps> = ({
             element={element}
             readOnly={readOnly}
             spanType={portableTextFeatures.types.span.name}
+            keyGenerator={keyGenerator}
           >
             <span ref={inlineBlockObjectRef} key={element._key} style={inlineBlockStyle} contentEditable={false}>
               {renderChild &&
                 renderChild(
                   fromSlateValue([element], portableTextFeatures.types.block.name)[0],
                   type,
-                  inlineBlockObjectRef,
                   {focused, selected, path},
-                  defaultRender
+                  defaultRender,
+                  inlineBlockObjectRef
                 )}
               {!renderChild &&
                 defaultRender(fromSlateValue([element], portableTextFeatures.types.block.name)[0])}
@@ -121,12 +117,12 @@ export const Element: FunctionComponent<ElementProps> = ({
         renderBlock(
           fromSlateValue([element], element._type)[0],
           portableTextFeatures.types.block,
-          () => textBlock,
           {
             focused,
             selected,
             path: [{_key: element._key}]
           },
+          () => textBlock,
           blockObjectRef
         )
       className = `pt-block pt-text-block pt-text-block-style-${element.style}`
@@ -175,12 +171,12 @@ export const Element: FunctionComponent<ElementProps> = ({
                   {renderBlock(
                     fromSlateValue([element], portableTextFeatures.types.block.name)[0],
                     type,
-                    defaultRender,
                     {
                       focused,
                       selected,
                       path: [{_key: element._key}]
                     },
+                    defaultRender,
                     blockObjectRef
                   )}
                 </div>

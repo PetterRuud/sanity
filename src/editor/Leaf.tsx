@@ -3,10 +3,12 @@ import {Element, Range} from 'slate'
 import {useSelected, useEditor} from '@sanity/slate-react'
 import {uniq} from 'lodash'
 import {DefaultAnnotation} from './nodes/DefaultAnnotation'
-import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
-import {Type as SchemaType} from '../types/schema'
-import {keyGenerator} from './PortableTextEditor'
-import {RenderAttributes} from '../types/editor'
+import {PortableTextFeatures} from '../types/portableText'
+import {
+  RenderChildFunction,
+  RenderDecoratorFunction,
+  RenderAnnotationFunction
+} from '../types/editor'
 import {debugWithName} from '../utils/debug'
 import {DraggableChild} from './DraggableChild'
 const debug = debugWithName('components:Leaf')
@@ -15,36 +17,19 @@ const debugRenders = false
 type LeafProps = {
   attributes: string
   children: ReactElement
+  keyGenerator: () => string
   leaf: Element
   portableTextFeatures: PortableTextFeatures
-  renderAnnotation?: (
-    value: PortableTextBlock,
-    type: SchemaType,
-    ref: React.RefObject<HTMLSpanElement>,
-    attributes: RenderAttributes,
-    defaultRender: () => JSX.Element
-  ) => JSX.Element
-  renderChild?: (
-    value: PortableTextChild,
-    type: SchemaType,
-    ref: React.RefObject<HTMLSpanElement>,
-    attributes: RenderAttributes,
-    defaultRender: (child: PortableTextChild) => JSX.Element
-  ) => JSX.Element
-  renderDecorator?: (
-    value: string,
-    type: {title: string},
-    ref: React.RefObject<HTMLSpanElement>,
-    attributes: RenderAttributes,
-    defaultRender: () => JSX.Element
-  ) => JSX.Element
+  renderAnnotation?: RenderAnnotationFunction
+  renderChild?: RenderChildFunction
+  renderDecorator?: RenderDecoratorFunction
   readOnly: boolean
 }
 
 export const Leaf = (props: LeafProps) => {
   const editor = useEditor()
   const selected = useSelected()
-  const {attributes, children, leaf, portableTextFeatures} = props
+  const {attributes, children, leaf, portableTextFeatures, keyGenerator} = props
   const spanRef = React.useRef(null)
   let returnedChildren = children
   const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
@@ -67,9 +52,9 @@ export const Leaf = (props: LeafProps) => {
           returnedChildren = props.renderDecorator(
             mark,
             type,
-            spanRef,
             {focused, selected, path},
-            () => <>{returnedChildren}</>
+            () => <>{returnedChildren}</>,
+            spanRef
           )
         }
       }
@@ -122,9 +107,9 @@ export const Leaf = (props: LeafProps) => {
                 {props.renderAnnotation(
                   annotation,
                   type,
-                  spanRef,
                   {focused, selected, path, annotations},
-                  defaultRender
+                  defaultRender,
+                  spanRef
                 )}
               </span>
             )
@@ -134,7 +119,7 @@ export const Leaf = (props: LeafProps) => {
     }
   }
   debugRenders && debug(`Render ${leaf._key} (span)`)
-  const key = leaf._key as string || keyGenerator()
+  const key = (leaf._key as string) || keyGenerator()
   // TODO: remove hightlight stuff as test for decorations
   return (
     <span
@@ -147,6 +132,7 @@ export const Leaf = (props: LeafProps) => {
         element={leaf}
         readOnly={props.readOnly}
         spanType={portableTextFeatures.types.span.name}
+        keyGenerator={props.keyGenerator}
       >
         {returnedChildren}
       </DraggableChild>
