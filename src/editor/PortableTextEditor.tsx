@@ -1,78 +1,45 @@
 import React from 'react'
 import {randomKey} from '../utils/randomKey'
-import {Editable} from './Editable'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
 import {Patch} from '../types/patch'
-import {HotkeyOptions} from '../types/options'
 import {Path} from '../types/path'
 import {
   EditorSelection,
   EditorChange,
-  OnPasteFn,
-  OnCopyFn,
   EditorChanges,
-  PatchObservable,
   EditableAPI,
-  InvalidValueResolution,
-  RenderAttributes,
-  RenderBlockFunction
+  InvalidValueResolution
 } from '../types/editor'
 import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
+import {PortableTextEditorContext} from './hooks/usePortableTextEditor'
+import {PortableTextEditorSelectionContext} from './hooks/usePortableTextEditorSelection'
+import {PortableTextEditorValueContext} from './hooks/usePortableTextEditorValue'
 import {compactPatches} from '../utils/patches'
 import {validateValue} from '../utils/validateValue'
-import {Type as SchemaType} from '../types/schema'
+import {RawType as RawSchemaType} from '../types/schema'
 import {debugWithName} from '../utils/debug'
-import {ErrorBoundary} from './ErrorBoundary'
 
-export const keyGenerator = () => randomKey(12)
+export const defaultKeyGenerator = () => randomKey(12)
 
 const debug = debugWithName('component:PortableTextEditor')
 
 type Props = {
-  hotkeys?: HotkeyOptions
-  incomingPatche$?: PatchObservable
   keyGenerator?: () => string
   maxBlocks?: number | string
   onChange: (change: EditorChange) => void
-  onCopy?: OnCopyFn
-  onPaste?: OnPasteFn
-  placeholderText?: string
   readOnly?: boolean
-  renderAnnotation?: (
-    value: PortableTextBlock,
-    type: SchemaType,
-    ref: React.RefObject<HTMLSpanElement>,
-    attributes: RenderAttributes,
-    defaultRender: () => JSX.Element
-  ) => JSX.Element
-  renderDecorator?: (
-    value: string,
-    type: {title: string},
-    ref: React.RefObject<HTMLSpanElement>,
-    attributes: RenderAttributes,
-    defaultRender: () => JSX.Element
-  ) => JSX.Element
-  renderBlock?: RenderBlockFunction
-  renderChild?: (
-    value: PortableTextChild,
-    type: SchemaType,
-    ref: React.RefObject<HTMLSpanElement>,
-    attributes: RenderAttributes,
-    defaultRender: (child: PortableTextChild) => JSX.Element
-  ) => JSX.Element
-  renderEditor?: (editor: JSX.Element) => JSX.Element
   selection?: EditorSelection
-  spellCheck?: boolean
-  type: Type
+  type: Type | RawSchemaType
   value: PortableTextBlock[] | undefined
 }
 
 type State = {
   invalidValueResolution: InvalidValueResolution
+  selection: EditorSelection
 }
 
 // TODO: try to break this component in parts, as it's getting pretty big.
@@ -97,9 +64,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
   }
   static getPortableTextFeatures = (editor: PortableTextEditor) => {
     return editor.portableTextFeatures
-  }
-  static isDragging = (editor: PortableTextEditor) => {
-    return editor.editable?.isDragging()
   }
   static getSelection = (editor: PortableTextEditor) => {
     return editor.editable?.getSelection()
@@ -149,7 +113,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
     return editor.editable?.findDOMNode(element)
   }
   static findByPath = (editor: PortableTextEditor, path: Path) => {
-    debug(`Host is finding by path`)
     return editor.editable?.findByPath(path)
   }
   static activeAnnotations = (editor: PortableTextEditor): PortableTextBlock[] => {
@@ -168,13 +131,17 @@ export class PortableTextEditor extends React.Component<Props, State> {
     options?: {mode?: 'block' | 'children'}
   ) => editor.editable?.remove(selection, options)
 
-  private portableTextFeatures: PortableTextFeatures
-  private editable?: EditableAPI
-  private change$: EditorChanges = new Subject()
   private changeSubscription: Subscription
-  private isThrottling = false
   private pendingPatches: Patch[] = []
-  private type: Type
+
+  public type: Type | RawSchemaType
+  public portableTextFeatures: PortableTextFeatures
+  public change$: EditorChanges = new Subject()
+  public isThrottling = false
+  public editable?: EditableAPI
+  public keyGenerator: () => string
+  public maxBlocks: number | undefined
+  public readOnly: boolean
 
   constructor(props: Props) {
     super(props)
@@ -192,24 +159,28 @@ export class PortableTextEditor extends React.Component<Props, State> {
     // Subscribe to (distinct) changes
     this.changeSubscription = this.change$.pipe(distinctUntilChanged()).subscribe(this.onChange)
 
+    // Setup keyGenerator (either from props, or default)
+    this.keyGenerator = props.keyGenerator || defaultKeyGenerator
+
     // Validate the Portable Text value
-    let invalidValue
-    const validation = validateValue(
-      props.value,
-      this.portableTextFeatures,
-      this.props.keyGenerator || keyGenerator
-    )
+    let state: State = {selection: null, invalidValueResolution: null}
+    const validation = validateValue(props.value, this.portableTextFeatures, this.keyGenerator)
+
     if (props.value && !validation.valid) {
       this.change$.next({type: 'loading', isLoading: false})
-      invalidValue = {
+      this.change$.next({
         type: 'invalidValue',
         resolution: validation.resolution,
         value: props.value
-      }
-      this.change$.next(invalidValue)
-      this.state = {invalidValueResolution: validation.resolution}
+      })
+      state = {...state, invalidValueResolution: validation.resolution}
     }
-    this.state = this.state || {}
+    this.maxBlocks =
+      typeof props.maxBlocks === 'undefined'
+        ? undefined
+        : parseInt(props.maxBlocks.toString(), 10) || undefined
+    this.readOnly = props.readOnly || false
+    this.state = state
   }
 
   componentWillUnmount() {
@@ -219,8 +190,11 @@ export class PortableTextEditor extends React.Component<Props, State> {
   componentDidMount() {
     if (!this.state.invalidValueResolution) {
       this.change$.next({type: 'ready'})
-      this.change$.next({type: 'selection', selection: this.props.selection || null})
     }
+  }
+
+  public setEditable = editable => {
+    this.editable = {...this.editable, ...editable}
   }
 
   private onChange = (next: EditorChange): void => {
@@ -251,6 +225,8 @@ export class PortableTextEditor extends React.Component<Props, State> {
           }
         }
         break
+      case 'selection':
+        this.setState({selection: next.selection})
       case 'undo':
       case 'redo':
         flush()
@@ -262,56 +238,18 @@ export class PortableTextEditor extends React.Component<Props, State> {
     }
   }
 
-  handleEditableError = error => {
-    debug('Catched error', error)
-    console.error(error)
-  }
-
   render() {
-    const {
-      hotkeys,
-      maxBlocks,
-      incomingPatche$,
-      onCopy,
-      onPaste,
-      placeholderText,
-      readOnly,
-      renderEditor,
-      selection,
-      spellCheck,
-      value
-    } = this.props
     if (this.state.invalidValueResolution) {
       return this.state.invalidValueResolution.description
     }
-    const editable = (
-      <ErrorBoundary onError={this.handleEditableError}>
-        <Editable
-          change$={this.change$}
-          editable={editable => (this.editable = editable)}
-          hotkeys={hotkeys}
-          incomingPatche$={incomingPatche$}
-          isThrottling={this.isThrottling}
-          keyGenerator={this.props.keyGenerator || keyGenerator}
-          maxBlocks={maxBlocks ? Number(maxBlocks) || undefined : undefined}
-          onPaste={onPaste}
-          onCopy={onCopy}
-          placeholderText={value === undefined ? placeholderText : undefined}
-          portableTextFeatures={this.portableTextFeatures}
-          readOnly={readOnly}
-          renderAnnotation={this.props.renderAnnotation}
-          renderBlock={this.props.renderBlock}
-          renderChild={this.props.renderChild}
-          renderDecorator={this.props.renderDecorator}
-          selection={selection}
-          spellCheck={spellCheck}
-          value={value}
-        />
-      </ErrorBoundary>
+    return (
+      <PortableTextEditorContext.Provider value={this}>
+        <PortableTextEditorValueContext.Provider value={this.props.value}>
+          <PortableTextEditorSelectionContext.Provider value={this.state.selection}>
+            {this.props.children}
+          </PortableTextEditorSelectionContext.Provider>
+        </PortableTextEditorValueContext.Provider>
+      </PortableTextEditorContext.Provider>
     )
-    if (renderEditor) {
-      return renderEditor(editable)
-    }
-    return editable
   }
 }

@@ -18,3 +18,15 @@ export type PortableTextType = Type & {
   }
   styles?: {title: string, value: string}[]
 }
+
+export type RawType = {
+  type: string
+  name: string
+  title?: string
+  description?: string
+  readOnly?: boolean
+  of?: Type[] | RawType[]
+  options?: Record<string, any> | null
+  fields?: Type[] | RawType[]
+  [prop: string]: any
+}

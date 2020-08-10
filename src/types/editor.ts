@@ -12,16 +12,14 @@ export interface EditableAPI {
   ) => {spanPath: Path; markDefPath: Path} | undefined
   blur: () => void
   findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
-  findDOMNode: (element: PortableTextBlock | PortableTextChild) => HTMLElement
+  findDOMNode: (element: PortableTextBlock | PortableTextChild) => Node
   focus: () => void
   focusBlock: () => PortableTextBlock | undefined
   focusChild: () => PortableTextChild | undefined
-  getSelection: () => EditorSelection
+  getSelection: () => EditorSelection | undefined
   hasBlockStyle: (style: string) => boolean
-  insert: (items: PortableTextChild[] | PortableTextBlock[], selection?: EditorSelection) => void
   insertBlock: (type: Type, value?: {[prop: string]: any}) => Path
   insertChild: (type: Type, value?: {[prop: string]: any}) => Path
-  isDragging: () => boolean
   isMarkActive: (mark: string) => boolean
   isVoid: (element: PortableTextBlock | PortableTextChild) => boolean
   marks: () => string[]
@@ -53,6 +51,7 @@ export interface History {
 export type EditorSelectionPoint = {path: Path; offset: number}
 export type EditorSelection = {anchor: EditorSelectionPoint; focus: EditorSelectionPoint} | null
 export interface PortableTextSlateEditor extends SlateEditor {
+  editable: EditableAPI
   history: History
   /**
    * Increments selected list items levels, or decrements them if @reverse is true.
@@ -241,12 +240,34 @@ export type RenderAttributes = {
   listItem?: string
 }
 
-export type RenderBlockArgs = [
-  PortableTextBlock,
-  Type,
-  (block: PortableTextBlock) => JSX.Element,
-  RenderAttributes,
-  React.RefObject<HTMLDivElement>
-]
+export type RenderBlockFunction = (
+  value: PortableTextBlock,
+  type: Type,
+  attributes: RenderAttributes,
+  defaultRender: (value: PortableTextBlock) => JSX.Element,
+  ref: React.RefObject<HTMLDivElement>
+) => JSX.Element
 
-export type RenderBlockFunction = (...args: RenderBlockArgs) => JSX.Element
+export type RenderChildFunction = (
+  value: PortableTextChild,
+  type: Type,
+  attributes: RenderAttributes,
+  defaultRender: (value: PortableTextChild) => JSX.Element,
+  ref: React.RefObject<HTMLSpanElement>
+) => JSX.Element
+
+export type RenderAnnotationFunction = (
+  value: PortableTextBlock,
+  type: Type,
+  attributes: RenderAttributes,
+  defaultRender: () => JSX.Element,
+  ref: React.RefObject<HTMLSpanElement>
+) => JSX.Element
+
+export type RenderDecoratorFunction = (
+  value: string,
+  type: {title: string},
+  attributes: RenderAttributes,
+  defaultRender: () => JSX.Element,
+  ref: React.RefObject<HTMLSpanElement>
+) => JSX.Element
