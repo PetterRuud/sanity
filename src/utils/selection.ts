@@ -1,11 +1,16 @@
-import {Editor, Point, Path as SlatePath, Range, Element} from 'slate'
+import {Editor, Point, Path as SlatePath, Range, Element, Node} from 'slate'
 import {EditorSelection, EditorSelectionPoint} from '../types/editor'
 import {PortableTextBlock} from 'src/types/portableText'
 import {isEqual} from 'lodash'
 
 export function createKeyedPath(point: Point, editor: Editor) {
   let blockPath = [point.path[0]]
-  const [block] = Editor.node(editor, blockPath, {depth: 1})
+  let block: Node
+  try {
+    ;[block] = Editor.node(editor, blockPath, {depth: 1})
+  } catch (err) {
+    return null
+  }
   if (!block || !Element.isElement(block)) {
     return null
   }
@@ -14,9 +19,14 @@ export function createKeyedPath(point: Point, editor: Editor) {
     return keyedBlockPath
   }
   let keyedChildPath
+  let child: Node
   const childPath = point.path.slice(0, 2)
-  if (childPath) {
-    const [child] = Editor.node(editor, childPath, {depth: 2})
+  if (childPath.length === 2) {
+    try {
+      ;[child] = Editor.node(editor, childPath, {depth: 2})
+    } catch (err) {
+      return null
+    }
     keyedChildPath = ['children', {_key: child._key}]
   }
   return keyedChildPath ? [...keyedBlockPath, ...keyedChildPath] : keyedBlockPath
@@ -70,7 +80,7 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
     if (child) {
       newPath.push('children')
       newPath.push({_key: child._key})
-      newOffset = child.text && child.text.length >= point.offset ? point.offset : child.text.length
+      newOffset = child.text && child.text.length >= point.offset ? point.offset : child.text && child.text.length || 0
     } else {
       return null
     }
