@@ -1,5 +1,5 @@
 import {set, insert, unset, diffMatchPatch, setIfMissing} from '../patch/PatchEvent'
-import {Patch} from '../types/patch'
+import {Patch, InsertPosition} from '../types/patch'
 import {Path} from '../types/path'
 import {
   Editor,
@@ -314,7 +314,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     const block = beforeValue[operation.path[0]]
     const targetBlock = beforeValue[operation.newPath[0]]
     if (operation.path.length === 1) {
-      const position = operation.newPath[0] === 0 ? 'before' : 'after'
+      const position: InsertPosition = operation.path[0] > operation.newPath[0] ? 'before' : 'after'
       patches.push(unset([{_key: block._key}]))
       patches.push(
         insert([fromSlateValue([block], portableTextFeatures.types.block.name)[0]], position, [
