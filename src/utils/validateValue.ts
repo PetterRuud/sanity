@@ -60,7 +60,7 @@ export function validateValue(
       if (!blk._type || validBlockTypes.includes(blk._type) === false) {
         resolution = {
           patches: [unset([{_key: blk._key}])],
-          description: `Block with _key '${blk._key}' has invalid _type (${blk._type}).`,
+          description: `Block with _key '${blk._key}' has invalid _type '${blk._type}'`,
           action: 'Remove the block',
           item: blk
         }
@@ -110,7 +110,7 @@ export function validateValue(
             if (!child._type || validChildTypes.includes(child._type) === false) {
               resolution = {
                 patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
-                description: `Child with _key '${child._key}' in block with key '${blk._key}' has invalid '_type' property (${blk._type}).`,
+                description: `Child with _key '${child._key}' in block with key '${blk._key}' has invalid '_type' property (${child._type}).`,
                 action: 'Remove the object',
                 item: blk
               }
