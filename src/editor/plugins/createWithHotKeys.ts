@@ -5,7 +5,7 @@ import {HotkeyOptions} from '../../types/options'
 import {debugWithName} from '../../utils/debug'
 import {toSlateValue} from '../../utils/values'
 import {PortableTextFeatures} from 'src/types/portableText'
-import { ReactEditor } from '@sanity/slate-react'
+import {ReactEditor} from '@sanity/slate-react'
 
 const debug = debugWithName('plugin:withHotKeys')
 
@@ -75,6 +75,21 @@ export function createWithHotkeys(
       const isBackspace = isHotkey('backspace', event.nativeEvent)
       const isDelete = isHotkey('delete', event.nativeEvent)
 
+      // Handle inline objects delete and backspace (not implemented in Slate)
+      // TODO: implement cut for inline objects (preferably in Slate)
+      if (
+        (isDelete || isBackspace) &&
+        editor.selection &&
+        Range.isCollapsed(editor.selection)
+      ) {
+        const [focusChild] = Editor.node(editor, editor.selection.focus, {depth: 2})
+        if (Editor.isVoid(editor, focusChild) && Editor.isInline(editor, focusChild)) {
+          Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
+          Transforms.collapse(editor)
+          editor.onChange()
+        }
+      }
+
       // Disallow deleting void blocks by backspace from another line.
       // Otherwise it's so easy to delete the void block above when trying to delete text on
       // the line below or above
@@ -131,11 +146,7 @@ export function createWithHotkeys(
 
       // There's a bug in Slate atm regarding void nodes not being deleted if it is the last block.
       // Seems related to 'hanging: true'. 2020/05/26
-      if (
-        (isDelete || isBackspace) &&
-        editor.selection &&
-        Range.isExpanded(editor.selection)
-      ) {
+      if ((isDelete || isBackspace) && editor.selection && Range.isExpanded(editor.selection)) {
         event.preventDefault()
         event.stopPropagation()
         Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
@@ -144,24 +155,24 @@ export function createWithHotkeys(
         return true
       }
 
-      // Deal with tab for lists
+      // Tab for lists
       if (isTab || isShiftTab) {
         editor.pteIncrementBlockLevels(isShiftTab) && event.preventDefault()
         event.preventDefault()
       }
 
-      // Deal with enter key
+      // Deal with enter key combos
       if (isEnter && !isShiftEnter && editor.selection) {
         let focusBlock
         try {
           ;[focusBlock] = Editor.node(editor, editor.selection.focus, {depth: 1})
         } catch (err) {}
-        // Deal with list item enter key
+        // List item enter key
         if (focusBlock && focusBlock.listItem) {
           editor.pteEndList() && event.preventDefault()
           return
         }
-        // Deal with block object enter key
+        // Block object enter key
         if (focusBlock && Editor.isVoid(editor, focusBlock)) {
           const block = toSlateValue(
             [
@@ -188,14 +199,14 @@ export function createWithHotkeys(
         }
       }
 
-      // Deal with soft line breaks
+      // Soft line breaks
       if (isShiftEnter) {
         event.preventDefault()
         editor.insertText('\n')
         return
       }
 
-      // Deal with undo/redo
+      // Undo/redo
       if (isHotkey('mod+z', event.nativeEvent)) {
         event.preventDefault()
         editor.undo()
