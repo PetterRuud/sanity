@@ -27,9 +27,29 @@ export function createWithInsertData(
     editor.getFragment = () => {
       debug('Get fragment data')
       if (editor.selection) {
-        return Node.fragment(editor, editor.selection).map(node => {
+        const fragment = Node.fragment(editor, editor.selection).map(node => {
+          const newNode = {...node}
           // Ensure the copy has new keys
-          const nodeWithNewKeys = {...node, _key: keyGenerator()} as Node
+          if (newNode.markDefs && Array.isArray(newNode.markDefs)) {
+            newNode.markDefs = newNode.markDefs.map(def => {
+              const oldKey = def._key
+              const newKey = keyGenerator()
+              if (Array.isArray(newNode.children)) {
+                newNode.children = newNode.children.map(child =>
+                  child._type === portableTextFeatures.types.span.name
+                    ? {
+                        ...child,
+                        marks: child.marks.includes(oldKey)
+                          ? [...child.marks].filter(mark => mark !== oldKey).concat(newKey)
+                          : child.marks
+                      }
+                    : child
+                )
+              }
+              return {...def, _key: newKey}
+            })
+          }
+          const nodeWithNewKeys = {...newNode, _key: keyGenerator()} as Node
           if (Array.isArray(nodeWithNewKeys.children)) {
             nodeWithNewKeys.children = nodeWithNewKeys.children.map(child => ({
               ...child,
@@ -38,6 +58,7 @@ export function createWithInsertData(
           }
           return nodeWithNewKeys
         })
+        return fragment
       }
       return []
     }
@@ -56,12 +77,27 @@ export function createWithInsertData(
       // }
       if (slateFragment) {
         const decoded = decodeURIComponent(window.atob(slateFragment))
-        const parsed = JSON.parse(decoded) as Node[]
-        const pText = fromSlateValue(parsed, portableTextFeatures.types.block.name)
+        const fragment = JSON.parse(decoded) as Node[]
+        const pText = fromSlateValue(fragment, portableTextFeatures.types.block.name)
         const validation = validateValue(pText, portableTextFeatures, keyGenerator)
         if (validation.valid) {
-          debug('inserting editor fragment', parsed)
-          Transforms.insertFragment(editor, parsed)
+          debug('inserting editor fragment', fragment)
+          if (fragment.length === 1 && editor.selection) {
+            const [block] = Editor.node(editor, editor.selection, {depth: 1})
+            Transforms.insertFragment(editor, fragment)
+            Transforms.setNodes(
+              editor,
+              {
+                markDefs: [
+                  ...(Array.isArray(block.markDefs) ? block.markDefs : []),
+                  ...(Array.isArray(fragment[0].markDefs) ? fragment[0].markDefs : [])
+                ]
+              },
+              {at: editor.selection?.focus.path.slice(0, 1)}
+            )
+          } else {
+            Transforms.insertNodes(editor, fragment, {at: editor.selection?.focus.path.slice(0, 1)})
+          }
           editor.onChange()
           change$.next({type: 'loading', isLoading: false})
           return
@@ -93,7 +129,16 @@ export function createWithInsertData(
             Transforms.splitNodes(editor)
           }
         }
-        Transforms.insertFragment(editor, fragment)
+        if (fragment.length === 1) {
+          Transforms.insertFragment(editor, fragment)
+          Transforms.setNodes(
+            editor,
+            {markDefs: fragment[0].markDefs},
+            {at: editor.selection?.focus.path.slice(0, 1)}
+          )
+        } else {
+          Transforms.insertNodes(editor, fragment, {at: editor.selection?.focus.path.slice(0, 1)})
+        }
         editor.onChange()
         change$.next({type: 'loading', isLoading: false})
         return
