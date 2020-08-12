@@ -43,7 +43,7 @@ export function createWithPatches(
   let isThrottling = false
   return function withPatches(editor: PortableTextSlateEditor) {
     PATCHING.set(editor, true)
-    previousChildren = editor.children̈́ as Node[]
+    previousChildren = editor.children as Node[]
 
     // This will cancel the throttle when the user is not producing anything for a short time
     const cancelThrottle = debounce(() => {
@@ -54,26 +54,19 @@ export function createWithPatches(
     // Inspect incoming patches and adjust editor selection accordingly.
     if (incomingPatche$) {
       incomingPatche$.subscribe((patch: Patch) => {
+        previousChildren = editor.children as Node[]
         debug('Handling incoming patch', patch.type)
         if (isThrottling) {
           withoutPatching(editor, () => {
             if (patchToOperations(editor, patch)) {
-              previousChildren = editor.children
-              editor.onChange()
               debug('Applied patch in the throttled state', patch.type)
             } else {
-              if (adjustSelection(editor, patch, previousChildren)) {
-                previousChildren = editor.children
-                editor.onChange()
-              }
+              adjustSelection(editor, patch, previousChildren)
             }
           })
         } else {
           debug('Adjusting selection for patch', patch.type)
-          if (adjustSelection(editor, patch, previousChildren)) {
-            previousChildren = editor.children
-            editor.onChange()
-          }
+          adjustSelection(editor, patch, previousChildren)
         }
       })
     }
@@ -263,6 +256,7 @@ function adjustSelection(
   if (patch.type === 'unset' && patch.path.length === 3) {
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], previousChildren)
     if (!block) {
+      debug('No block found trying to adjust for unset child')
       return
     }
     if (selection.focus.path[0] === blockIndex) {
@@ -275,7 +269,7 @@ function adjustSelection(
         newSelection.anchor = {...selection.anchor}
         newSelection.anchor.path = newSelection.anchor.path = [
           newSelection.anchor.path[0],
-          prevIndexOrLastIndex - 1
+          Math.max(0, prevIndexOrLastIndex - 1)
         ]
         const textBefore = ((block.children[prevIndexOrLastIndex - 1] &&
           block.children[prevIndexOrLastIndex - 1].text) ||
@@ -286,10 +280,10 @@ function adjustSelection(
         newSelection.focus = {...selection.focus}
         newSelection.focus.path = newSelection.anchor.path = [
           newSelection.focus.path[0],
-          prevIndexOrLastIndex - 1
+          Math.max(0, prevIndexOrLastIndex - 1)
         ]
         const textBefore = ((block.children[prevIndexOrLastIndex - 1] &&
-          block.children[prevIndexOrLastIndex - 1].text) ||
+          block.children[Math.max(0, prevIndexOrLastIndex - 1)].text) ||
           '') as Text
         newSelection.focus.offset = textBefore.length + prevText.length
       }
@@ -320,22 +314,22 @@ function adjustSelection(
   if (patch.type === 'unset' && patch.path.length === 1) {
     let [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], previousChildren)
     if (!block || typeof blockIndex === 'undefined') {
-      debug('no block found in editor trying to adjust selection')
+      debug('no block found in editor trying to adjust selection for unset block')
       // Naively try to adjust as the block above us have been removed.
-      blockIndex = selection.focus.path[0] - 1 || 0
+      blockIndex = Math.max(0, selection.focus.path[0] - 1)
     }
     const newSelection = {...selection}
     if (Path.isAfter(selection.anchor.path, [blockIndex])) {
       newSelection.anchor = {...selection.anchor}
       newSelection.anchor.path = newSelection.anchor.path = [
-        newSelection.anchor.path[0] - 1,
+        Math.max(0, newSelection.anchor.path[0] - 1),
         ...newSelection.anchor.path.slice(1)
       ]
     }
     if (Path.isAfter(selection.focus.path, [blockIndex])) {
       newSelection.focus = {...selection.focus}
       newSelection.focus.path = newSelection.focus.path = [
-        newSelection.focus.path[0] - 1 || 0,
+        Math.max(0, newSelection.focus.path[0] - 1),
         ...newSelection.focus.path.slice(1)
       ]
     }
