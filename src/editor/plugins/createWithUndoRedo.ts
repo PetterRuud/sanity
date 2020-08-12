@@ -126,7 +126,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                   try {
                     editor.apply(op)
                   } catch (err) {
-                    console.warn('Could not perform undo step', err)
+                    debug('Could not perform undo step', err)
                     editor.history.redos.push(step)
                     editor.history.undos.pop()
                     return
@@ -160,7 +160,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                 try {
                   editor.apply(op)
                 } catch (err) {
-                  console.warn('Could not perform redo step', err)
+                  debug('Could not perform redo step', err)
                   editor.history.undos.push(step)
                   editor.history.redos.pop()
                   return
