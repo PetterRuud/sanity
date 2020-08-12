@@ -11,7 +11,8 @@ import {
   EditorChange,
   EditorChanges,
   EditableAPI,
-  InvalidValueResolution
+  InvalidValueResolution,
+  PatchObservable
 } from '../types/editor'
 import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
@@ -31,6 +32,7 @@ type Props = {
   keyGenerator?: () => string
   maxBlocks?: number | string
   onChange: (change: EditorChange) => void
+  incomingPatche$?: PatchObservable
   readOnly?: boolean
   selection?: EditorSelection
   type: Type | RawSchemaType
@@ -42,25 +44,43 @@ type State = {
   selection: EditorSelection
 }
 
-// TODO: try to break this component in parts, as it's getting pretty big.
+// The PT editor's public API
 export class PortableTextEditor extends React.Component<Props, State> {
-  static focus = (editor: PortableTextEditor): void => {
-    debug('Host requesting focus')
-    editor.editable?.focus()
+  static activeAnnotations = (editor: PortableTextEditor): PortableTextBlock[] => {
+    return editor && editor.editable ? editor.editable.activeAnnotations() : []
   }
+  static addAnnotation = (
+    editor: PortableTextEditor,
+    type: Type,
+    value?: {[prop: string]: any}
+  ): {spanPath: Path; markDefPath: Path} | undefined => editor.editable?.addAnnotation(type, value)
   static blur = (editor: PortableTextEditor): void => {
     debug('Host blurred')
     editor.editable?.blur()
   }
-  static toggleMark = (editor: PortableTextEditor, mark: string): void => {
-    debug(`Host toggling mark`, mark)
-    editor.editable?.toggleMark(mark)
+  static delete = (
+    editor: PortableTextEditor,
+    selection: EditorSelection,
+    options?: {mode?: 'block' | 'children'}
+  ) => editor.editable?.delete(selection, options)
+  static findDOMNode = (
+    editor: PortableTextEditor,
+    element: PortableTextBlock | PortableTextChild
+  ) => {
+    return editor.editable?.findDOMNode(element)
   }
-  static isMarkActive = (editor: PortableTextEditor, mark: string) =>
-    editor.editable?.isMarkActive(mark)
-  static select = (editor: PortableTextEditor, selection: EditorSelection | null) => {
-    debug(`Host setting selection`, selection)
-    editor.editable?.select(selection)
+  static findByPath = (editor: PortableTextEditor, path: Path) => {
+    return editor.editable?.findByPath(path)
+  }
+  static focus = (editor: PortableTextEditor): void => {
+    debug('Host requesting focus')
+    editor.editable?.focus()
+  }
+  static focusBlock = (editor: PortableTextEditor) => {
+    return editor.editable?.focusBlock()
+  }
+  static focusChild = (editor: PortableTextEditor): PortableTextChild | undefined => {
+    return editor.editable?.focusChild()
   }
   static getPortableTextFeatures = (editor: PortableTextEditor) => {
     return editor.portableTextFeatures
@@ -68,16 +88,14 @@ export class PortableTextEditor extends React.Component<Props, State> {
   static getSelection = (editor: PortableTextEditor) => {
     return editor.editable?.getSelection()
   }
-  static focusBlock = (editor: PortableTextEditor) => {
-    return editor.editable?.focusBlock()
+  static getValue = (editor: PortableTextEditor) => {
+    return editor.editable?.getValue()
   }
-  // Query what is the focus child?
-  static focusChild = (editor: PortableTextEditor): PortableTextChild | undefined => {
-    return editor.editable?.focusChild()
+  static hasBlockStyle = (editor: PortableTextEditor, blockStyle: string) => {
+    return editor.editable?.hasBlockStyle(blockStyle)
   }
-  static marks = (editor: PortableTextEditor) => {
-    return editor.editable?.marks()
-  }
+  static isMarkActive = (editor: PortableTextEditor, mark: string) =>
+    editor.editable?.isMarkActive(mark)
   static insertChild = (
     editor: PortableTextEditor,
     type: Type,
@@ -93,43 +111,29 @@ export class PortableTextEditor extends React.Component<Props, State> {
   ): Path | undefined => {
     return editor.editable?.insertBlock(type, value)
   }
-  static toggleList = (editor: PortableTextEditor, listStyle: string): void => {
-    return editor.editable?.toggleList(listStyle)
+  static isVoid = (editor: PortableTextEditor, element: PortableTextBlock | PortableTextChild) => {
+    return editor.editable?.isVoid(element)
   }
-  static hasBlockStyle = (editor: PortableTextEditor, blockStyle: string) => {
-    return editor.editable?.hasBlockStyle(blockStyle)
+  static marks = (editor: PortableTextEditor) => {
+    return editor.editable?.marks()
   }
+  static select = (editor: PortableTextEditor, selection: EditorSelection | null) => {
+    debug(`Host setting selection`, selection)
+    editor.editable?.select(selection)
+  }
+  static removeAnnotation = (editor: PortableTextEditor, type: Type) =>
+    editor.editable?.removeAnnotation(type)
   static toggleBlockStyle = (editor: PortableTextEditor, blockStyle: string) => {
     debug(`Host is toggling block style`)
     return editor.editable?.toggleBlockStyle(blockStyle)
   }
-  static isVoid = (editor: PortableTextEditor, element: PortableTextBlock | PortableTextChild) => {
-    return editor.editable?.isVoid(element)
+  static toggleList = (editor: PortableTextEditor, listStyle: string): void => {
+    return editor.editable?.toggleList(listStyle)
   }
-  static findDOMNode = (
-    editor: PortableTextEditor,
-    element: PortableTextBlock | PortableTextChild
-  ) => {
-    return editor.editable?.findDOMNode(element)
+  static toggleMark = (editor: PortableTextEditor, mark: string): void => {
+    debug(`Host toggling mark`, mark)
+    editor.editable?.toggleMark(mark)
   }
-  static findByPath = (editor: PortableTextEditor, path: Path) => {
-    return editor.editable?.findByPath(path)
-  }
-  static activeAnnotations = (editor: PortableTextEditor): PortableTextBlock[] => {
-    return editor && editor.editable ? editor.editable.activeAnnotations() : []
-  }
-  static addAnnotation = (
-    editor: PortableTextEditor,
-    type: Type,
-    value?: {[prop: string]: any}
-  ): {spanPath: Path; markDefPath: Path} | undefined => editor.editable?.addAnnotation(type, value)
-  static removeAnnotation = (editor: PortableTextEditor, type: Type) =>
-    editor.editable?.removeAnnotation(type)
-  static remove = (
-    editor: PortableTextEditor,
-    selection: EditorSelection,
-    options?: {mode?: 'block' | 'children'}
-  ) => editor.editable?.remove(selection, options)
 
   private changeSubscription: Subscription
   private pendingPatches: Patch[] = []
@@ -142,6 +146,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
   public keyGenerator: () => string
   public maxBlocks: number | undefined
   public readOnly: boolean
+  public incomingPatche$?: PatchObservable
 
   constructor(props: Props) {
     super(props)
@@ -157,7 +162,9 @@ export class PortableTextEditor extends React.Component<Props, State> {
     this.portableTextFeatures = getPortableTextFeatures(this.type)
 
     // Subscribe to (distinct) changes
-    this.changeSubscription = this.change$.pipe(distinctUntilChanged()).subscribe(this.onChange)
+    this.changeSubscription = this.change$
+      .pipe(distinctUntilChanged())
+      .subscribe(this.onEditorChange)
 
     // Setup keyGenerator (either from props, or default)
     this.keyGenerator = props.keyGenerator || defaultKeyGenerator
@@ -175,6 +182,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
       })
       state = {...state, invalidValueResolution: validation.resolution}
     }
+    this.incomingPatche$ = props.incomingPatche$
     this.maxBlocks =
       typeof props.maxBlocks === 'undefined'
         ? undefined
@@ -184,33 +192,29 @@ export class PortableTextEditor extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
+    this.flush()
     this.changeSubscription.unsubscribe()
-  }
-
-  componentDidMount() {
-    if (!this.state.invalidValueResolution) {
-      this.change$.next({type: 'ready'})
-    }
   }
 
   public setEditable = editable => {
     this.editable = {...this.editable, ...editable}
+    this.change$.next({type: 'ready'})
+  }
+  private flush = () => {
+    const {onChange} = this.props
+    const finalPatches = compactPatches(this.pendingPatches)
+    if (finalPatches.length) {
+      onChange({type: 'mutation', patches: finalPatches})
+    }
+    this.pendingPatches = []
   }
 
-  private onChange = (next: EditorChange): void => {
+  private onEditorChange = (next: EditorChange): void => {
     const {onChange} = this.props
-    const flush = () => {
-      this.isThrottling = false
-      const finalPatches = compactPatches(this.pendingPatches)
-      if (finalPatches.length) {
-        onChange({type: 'mutation', patches: finalPatches})
-      }
-      this.pendingPatches = []
-    }
     switch (next.type) {
       case 'mutation':
         if (!this.isThrottling) {
-          flush()
+          this.flush()
         } else {
           this.pendingPatches = [...this.pendingPatches, ...next.patches]
         }
@@ -221,15 +225,16 @@ export class PortableTextEditor extends React.Component<Props, State> {
         } else {
           this.isThrottling = false
           if (this.pendingPatches.length > 0) {
-            flush()
+            this.flush()
           }
         }
         break
       case 'selection':
         this.setState({selection: next.selection})
+        break
       case 'undo':
       case 'redo':
-        flush()
+        this.flush()
         onChange(next)
         break
       case 'unset':

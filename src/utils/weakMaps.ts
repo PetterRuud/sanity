@@ -1,5 +1,4 @@
 import {Editor, Element, Range} from 'slate'
-import {EditorSelection} from '../types/editor'
 
 /**
  * Dragging
@@ -15,5 +14,3 @@ export const IS_DRAGGING_ELEMENT_TARGET: WeakMap<Editor, Element> = new WeakMap(
 export const IS_DRAGGING_ELEMENT_RANGE: WeakMap<Editor, Range> = new WeakMap()
 // Target position for dragging over a block
 export const IS_DRAGGING_BLOCK_TARGET_POSITION: WeakMap<Editor, 'top' | 'bottom'> = new WeakMap()
-
-export const PTE_SELECTION: WeakMap<Editor, EditorSelection> = new WeakMap()

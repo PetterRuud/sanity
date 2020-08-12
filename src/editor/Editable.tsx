@@ -7,13 +7,7 @@ import {
   RenderAnnotationFunction,
   RenderDecoratorFunction
 } from '../types/editor'
-import {
-  EditorSelection,
-  OnPasteFn,
-  OnCopyFn,
-  PatchObservable,
-  RenderBlockFunction
-} from '../types/editor'
+import {EditorSelection, OnPasteFn, OnCopyFn, RenderBlockFunction} from '../types/editor'
 import {createWithEditableAPI} from './plugins/createWithEditableAPI'
 import {HotkeyOptions} from '../types/options'
 import {toSlateValue, isEqualToEmptyEditor} from '../utils/values'
@@ -26,12 +20,12 @@ import {normalizeSelection, toPortableTextRange, toSlateRange} from '../utils/se
 import {debugWithName} from '../utils/debug'
 import {usePortableTextEditor} from './hooks/usePortableTextEditor'
 import {usePortableTextEditorValue} from './hooks/usePortableTextEditorValue'
+import {PortableTextEditor} from './PortableTextEditor'
 
 const debug = debugWithName('component:Editable')
 
 type Props = {
   hotkeys?: HotkeyOptions
-  incomingPatche$: PatchObservable
   onPaste?: OnPasteFn
   onCopy?: OnCopyFn
   placeholderText?: string
@@ -46,7 +40,7 @@ type Props = {
 const SELECT_TOP_DOCUMENT = {anchor: {path: [0, 0], offset: 0}, focus: {path: [0, 0], offset: 0}}
 
 export const PortableTextEditable = (props: Props) => {
-  const {hotkeys, incomingPatche$, placeholderText, spellCheck} = props
+  const {hotkeys, placeholderText, spellCheck} = props
 
   const portableTextEditor = usePortableTextEditor()
   const value = usePortableTextEditorValue()
@@ -57,6 +51,7 @@ export const PortableTextEditable = (props: Props) => {
   const {
     change$,
     isThrottling,
+    incomingPatche$,
     keyGenerator,
     maxBlocks,
     portableTextFeatures,
@@ -107,7 +102,7 @@ export const PortableTextEditable = (props: Props) => {
                 change$,
                 maxBlocks,
                 incomingPatche$,
-                readOnly: readOnly
+                readOnly
               })
             )
           )
@@ -265,47 +260,67 @@ export const PortableTextEditable = (props: Props) => {
     return editor
   }
 
+  // Set initial selection from props
+  useEffect(() => {
+    if (props.selection) {
+      PortableTextEditor.select(portableTextEditor, props.selection)
+    }
+  }, [])
+
+  const emitSelection = () => {
+    try {
+      const newSelection = toPortableTextRange(editor)
+      debug('Emitting new selection', JSON.stringify(newSelection))
+      change$.next({type: 'selection', selection: newSelection})
+    } catch (err) {
+      change$.next({type: 'selection', selection: null})
+    }
+  }
+
   const handleSelect = () => {
     if (isThrottling) {
       return
     }
-    // Do this on next tick
-    setTimeout(() => {
-      try {
-        const newSelection = toPortableTextRange(editor)
-        // debug('Emitting new selection', JSON.stringify(newSelection))
-        change$.next({type: 'selection', selection: newSelection})
-      } catch (err) {
-        change$.next({type: 'selection', selection: null})
-      }
-    }, 0)
+    emitSelection()
   }
 
-  return (
-    <Slate
-      onChange={handleChange}
-      editor={editor}
-      selection={selection}
-      value={getValueOrIntitialValue(stateValue, [createPlaceHolderBlock()])}
-    >
-      <SlateEditable
-        className={'pt-editable'}
-        autoFocus={false}
-        decorate={decorate}
-        onCopy={handleCopy}
-        onCut={handleCut}
-        onSelect={handleSelect}
-        onFocus={() => change$.next({type: 'focus'})}
-        onBlur={() => change$.next({type: 'blur'})}
-        onKeyDown={editor.pteWithHotKeys}
-        placeholder={placeholderText}
-        readOnly={readOnly}
-        renderElement={renderElement}
-        renderLeaf={renderLeaf}
-        spellCheck={spellCheck}
-      />
-    </Slate>
+  useEffect(() => {
+    if (isThrottling) {
+      return
+    }
+    emitSelection()
+  }, [isThrottling])
+
+  const slateEditable = useMemo(
+    () => (
+      <Slate
+        onChange={handleChange}
+        editor={editor}
+        selection={selection}
+        value={getValueOrIntitialValue(stateValue, [createPlaceHolderBlock()])}
+      >
+        <SlateEditable
+          className={'pt-editable'}
+          autoFocus={false}
+          decorate={decorate}
+          onCopy={handleCopy}
+          onCut={handleCut}
+          onSelect={handleSelect}
+          onFocus={() => change$.next({type: 'focus'})}
+          onBlur={() => change$.next({type: 'blur'})}
+          onKeyDown={editor.pteWithHotKeys}
+          placeholder={placeholderText}
+          readOnly={readOnly}
+          renderElement={renderElement}
+          renderLeaf={renderLeaf}
+          spellCheck={spellCheck}
+        />
+      </Slate>
+    ),
+    [placeholderText, readOnly, spellCheck, stateValue, selection]
   )
+
+  return slateEditable
 }
 
 function getValueOrIntitialValue(value, initialValue) {

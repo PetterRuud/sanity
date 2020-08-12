@@ -19,7 +19,6 @@ import {PortableTextEditor} from '../PortableTextEditor'
 
 import {debugWithName} from '../../utils/debug'
 import {DOMNode} from '@sanity/slate-react/dist/utils/dom'
-import {PTE_SELECTION} from '../../utils/weakMaps'
 
 const debug = debugWithName('API:editable')
 
@@ -35,9 +34,6 @@ export function createWithEditableAPI(
     // or we may be out of sync between selection and value
     editor.apply = (operation: Operation) => {
       apply(operation)
-      if (operation.type === 'set_selection') {
-        PTE_SELECTION.set(editor, toPortableTextRange(editor))
-      }
     }
     portableTextEditor.setEditable({
       focus: (): void => {
@@ -197,7 +193,8 @@ export function createWithEditableAPI(
         try {
           return editor.pteHasBlockStyle(style)
         } catch (err) {
-          debug(err)
+          // This is fine.
+          // debug(err)
           return false
         }
       },
@@ -330,7 +327,7 @@ export function createWithEditableAPI(
         }
         return undefined
       },
-      remove: (selection?: EditorSelection, options?: {mode?: 'block' | 'children'}): void => {
+      delete: (selection?: EditorSelection, options?: {mode?: 'block' | 'children'}): void => {
         if (selection) {
           const range = toSlateRange(selection, editor)
           if (range) {
@@ -428,7 +425,10 @@ export function createWithEditableAPI(
         }
       },
       getSelection: () => {
-        return PTE_SELECTION.get(editor)
+        return toPortableTextRange(editor)
+      },
+      getValue: () => {
+        return fromSlateValue(editor.children, portableTextFeatures.types.block.name)
       }
     })
     return editor

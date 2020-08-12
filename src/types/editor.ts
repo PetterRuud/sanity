@@ -11,12 +11,14 @@ export interface EditableAPI {
     value?: {[prop: string]: any}
   ) => {spanPath: Path; markDefPath: Path} | undefined
   blur: () => void
+  delete: (selection?: EditorSelection, options?: {mode?: 'block' | 'children'}) => void
   findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
   findDOMNode: (element: PortableTextBlock | PortableTextChild) => Node
   focus: () => void
   focusBlock: () => PortableTextBlock | undefined
   focusChild: () => PortableTextChild | undefined
   getSelection: () => EditorSelection | undefined
+  getValue: () => PortableTextBlock | undefined
   hasBlockStyle: (style: string) => boolean
   insertBlock: (type: Type, value?: {[prop: string]: any}) => Path
   insertChild: (type: Type, value?: {[prop: string]: any}) => Path
@@ -24,7 +26,6 @@ export interface EditableAPI {
   isVoid: (element: PortableTextBlock | PortableTextChild) => boolean
   marks: () => string[]
   redo: () => void
-  remove: (selection?: EditorSelection, options?: {mode?: 'block' | 'children'}) => void
   removeAnnotation: (type: Type) => void
   select: (selection: EditorSelection) => void
   toggleBlockStyle: (blockStyle: string) => void
