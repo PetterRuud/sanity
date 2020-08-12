@@ -231,7 +231,7 @@ export function createWithEditableAPI(
       },
       findDOMNode: (element: PortableTextBlock | PortableTextChild): DOMNode => {
         const [item] = Array.from(
-          Editor.nodes(editor, {at: [], match: n => n._key === element._key})
+          Editor.nodes(editor, {at: [], match: n => n._key === element._key}) || []
         )[0]
         let node
         try {
@@ -387,7 +387,7 @@ export function createWithEditableAPI(
                       Transforms.setNodes(
                         editor,
                         {
-                          marks: [...node.marks.filter(mark => mark !== annotation._key)]
+                          marks: [...(node.marks || []).filter(mark => mark !== annotation._key)]
                         },
                         {at: path, voids: false, split: false}
                       )
