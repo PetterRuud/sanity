@@ -44,8 +44,10 @@ export function createPatchToOperations(portableTextFeatures: PortableTextFeatur
       let index = editor.children.findIndex((node, indx) =>
         lastKey ? node._key === lastKey : indx === patch.path[0]
       )
-      Transforms.removeNodes(editor, {at: [index]})
-      debug(`Removing block at path [${index}]`)
+      if (index > -1) {
+        Transforms.removeNodes(editor, {at: [index]})
+        debug(`Removing block at path [${index}]`)
+      }
       return true
     }
     return false
