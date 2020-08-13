@@ -1,5 +1,6 @@
-import {Text, Range, Transforms, createEditor} from 'slate'
+import {Transforms, createEditor} from 'slate'
 import {isEqual} from 'lodash'
+import isHotkey from 'is-hotkey'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from '@sanity/slate-react'
 import {
@@ -122,6 +123,7 @@ export const PortableTextEditable = (props: Props) => {
 
   // Track selection state
   const [selection, setSelection] = useState(editor.selection)
+  const [isSelecting, setIsSelecting] = useState(false)
 
   const renderElement = useCallback(
     eProps => {
@@ -171,34 +173,41 @@ export const PortableTextEditable = (props: Props) => {
     }
   }
 
-  // Test Slate decorations. Highlight the word 'w00t'
-  // TODO: remove this and make something useful.
-  const woot = 'w00t'
-  const decorate = useCallback(
-    ([node, path]) => {
-      const ranges: Range[] = []
+  // // Test Slate decorations. Highlight the word 'w00t'
+  // // TODO: remove this and make something useful.
+  // const woot = 'w00t'
+  // const decorate = useCallback(
+  //   ([node, path]) => {
+  //     const ranges: Range[] = []
 
-      if (woot && Text.isText(node)) {
-        const {text} = node
-        const parts = text.split(woot)
-        let offset = 0
+  //     if (woot && Text.isText(node)) {
+  //       const {text} = node
+  //       const parts = text.split(woot)
+  //       let offset = 0
 
-        parts.forEach((part, i) => {
-          if (i !== 0) {
-            ranges.push({
-              anchor: {path, offset: offset - woot.length},
-              focus: {path, offset},
-              __highlight: true
-            })
-          }
+  //       parts.forEach((part, i) => {
+  //         if (i !== 0) {
+  //           ranges.push({
+  //             anchor: {path, offset: offset - woot.length},
+  //             focus: {path, offset},
+  //             __highlight: true
+  //           })
+  //         }
 
-          offset = offset + part.length + woot.length
-        })
-      }
-      return ranges
-    },
-    [woot]
-  )
+  //         offset = offset + part.length + woot.length
+  //       })
+  //     }
+  //     return ranges
+  //   },
+  //   [woot]
+  // )
+
+  const setValueFromProps = () => {
+    debug('Setting value from props')
+    const slateValueFromProps = toSlateValue(value, portableTextFeatures.types.block.name)
+    setStateValue(slateValueFromProps)
+    change$.next({type: 'value', value: value})
+  }
 
   // Restore value from props
   useEffect(() => {
@@ -206,11 +215,12 @@ export const PortableTextEditable = (props: Props) => {
       debug('Not setting value from props (throttling)')
       return
     }
-    debug('Setting value from props')
-    const slateValueFromProps = toSlateValue(value, portableTextFeatures.types.block.name)
-    setStateValue(slateValueFromProps)
-    change$.next({type: 'value', value: value})
-  }, [value])
+    if (isSelecting) {
+      debug('Not setting value from props (is selecting)')
+      return
+    }
+    setValueFromProps()
+  }, [value, isSelecting])
 
   // Restore selection from props
   useEffect(() => {
@@ -267,23 +277,22 @@ export const PortableTextEditable = (props: Props) => {
     }
   }, [])
 
+  // Emit selection after a selection is made
   const emitSelection = () => {
     try {
       const newSelection = toPortableTextRange(editor)
-      debug('Emitting new selection', JSON.stringify(newSelection))
+      // debug('Emitting new selection', JSON.stringify(newSelection))
       change$.next({type: 'selection', selection: newSelection})
     } catch (err) {
       change$.next({type: 'selection', selection: null})
     }
   }
-
   const handleSelect = () => {
     if (isThrottling) {
       return
     }
     emitSelection()
   }
-
   useEffect(() => {
     if (isThrottling) {
       return
@@ -291,6 +300,57 @@ export const PortableTextEditable = (props: Props) => {
     emitSelection()
   }, [isThrottling])
 
+  // Make sure that when the user is selecting something, we don't update the editor or selections will be broken
+  let _isSelecting = false
+  const onSelectStart = (event: any) => {
+    if (ReactEditor.hasDOMNode(editor, event.target)) {
+      debug('Start selecting')
+      _isSelecting = true
+      setTimeout(() => setIsSelecting(true))
+    }
+  }
+  const onSelectEnd = (event: any) => {
+    if (_isSelecting) {
+      debug('Done selecting')
+      setTimeout(() => setIsSelecting(false))
+    }
+  }
+  const isSelectKeys = (event: KeyboardEvent) =>
+    isHotkey('shift+down', event) ||
+    isHotkey('shift+up', event) ||
+    isHotkey('shift+left', event) ||
+    isHotkey('shift+right', event) ||
+    isHotkey('shift+end', event) ||
+    isHotkey('shift+home', event) ||
+    isHotkey('shift+pageDown', event) ||
+    isHotkey('shift+pageUp', event)
+  let isSelectingWithKeys = false
+  const onSelectStartWithKeys = (event: KeyboardEvent) => {
+    if (isSelectKeys(event)) {
+      isSelectingWithKeys = true
+      onSelectStart(event)
+    }
+  }
+  const onSelectEndWithKeys = event => {
+    if (isSelectingWithKeys && event.key === 'Shift') {
+      onSelectEnd(event)
+      isSelectingWithKeys = false
+    }
+  }
+  useEffect(() => {
+    document.addEventListener('keydown', onSelectStartWithKeys, false)
+    document.addEventListener('keyup', onSelectEndWithKeys, false)
+    document.addEventListener('selectstart', onSelectStart, false)
+    document.addEventListener('mouseup', onSelectEnd)
+    return () => {
+      document.removeEventListener('keydown', onSelectStartWithKeys, false)
+      document.removeEventListener('keyup', onSelectEndWithKeys, false)
+      document.removeEventListener('selectstart', onSelectStart, false)
+      document.removeEventListener('mouseup', onSelectEnd, false)
+    }
+  }, [])
+
+  // The editor
   const slateEditable = useMemo(
     () => (
       <Slate
@@ -302,7 +362,7 @@ export const PortableTextEditable = (props: Props) => {
         <SlateEditable
           className={'pt-editable'}
           autoFocus={false}
-          decorate={decorate}
+          // decorate={decorate}
           onCopy={handleCopy}
           onCut={handleCut}
           onSelect={handleSelect}
@@ -317,9 +377,8 @@ export const PortableTextEditable = (props: Props) => {
         />
       </Slate>
     ),
-    [placeholderText, readOnly, spellCheck, stateValue, selection]
+    [placeholderText, readOnly, spellCheck, stateValue, selection, isSelecting]
   )
-
   return slateEditable
 }
 
