@@ -278,7 +278,7 @@ function adjustSelection(
       }
       if (Path.endsAt(selection.focus.path, [blockIndex, prevIndexOrLastIndex])) {
         newSelection.focus = {...selection.focus}
-        newSelection.focus.path = newSelection.anchor.path = [
+        newSelection.focus.path = [
           newSelection.focus.path[0],
           Math.max(0, prevIndexOrLastIndex - 1)
         ]
