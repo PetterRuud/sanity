@@ -29,7 +29,9 @@ export function createWithPortableTextMarkModel(
       // Check consistency of markDefs
       if (
         editor.operations.some(op =>
-          ['remove_node', 'merge_node', 'set_selection'].includes(op.type)
+          ['split_node', 'remove_node', 'remove_text', 'merge_node', 'set_selection'].includes(
+            op.type
+          )
         )
       ) {
         normalizeMarkDefsAfterRemoveNode(editor)
@@ -227,12 +229,16 @@ export function createWithPortableTextMarkModel(
               return Array.isArray(child.marks) && child.marks.includes(def._key)
             })
           })
-          if (!isEqual(newMarkDefs, blockElement.markDefs)) {
+          const isEmptySingleChild =
+            blockElement.markDefs.length > 0 &&
+            blockElement.children.length === 1 &&
+            blockElement.children[0].text === ''
+          if (!isEqual(newMarkDefs, blockElement.markDefs) || isEmptySingleChild) {
             debug('Removing markDef not in use')
             Transforms.setNodes(
               editor,
               {
-                markDefs: newMarkDefs
+                markDefs: isEmptySingleChild ? [] : newMarkDefs
               },
               {at: path}
             )
