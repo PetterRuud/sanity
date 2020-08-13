@@ -19,14 +19,9 @@ export function createPatchToOperations(portableTextFeatures: PortableTextFeatur
       let index = editor.children.findIndex((node, indx) => {
         return posKey ? node._key === posKey : indx === patch.path[0]
       })
-      if (position === 'before') {
-        index = index > 0 ? index-- : index
-      }
-      if (position === 'after') {
-        index++
-      }
-      debug(`Inserting blocks at path [${index}]`)
-      Transforms.insertNodes(editor, blocksToInsert, {at: [index]})
+      const normalizedIdx = position === 'after' ? index + 1 : index
+      debug(`Inserting blocks at path [${normalizedIdx}]`)
+      Transforms.insertNodes(editor, blocksToInsert, {at: [normalizedIdx]})
       return true
     }
     return false
