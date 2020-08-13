@@ -41,7 +41,7 @@ export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): 
       at: [],
       match: n => typeof point.path[0] === 'object' && n._key === point.path[0]._key
     })
-  )[0]
+  )[0] || [undefined, undefined]
   if (!block || !Element.isElement(block)) {
     return []
   }
@@ -80,7 +80,10 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
     if (child) {
       newPath.push('children')
       newPath.push({_key: child._key})
-      newOffset = child.text && child.text.length >= point.offset ? point.offset : child.text && child.text.length || 0
+      newOffset =
+        child.text && child.text.length >= point.offset
+          ? point.offset
+          : (child.text && child.text.length) || 0
     } else {
       return null
     }
