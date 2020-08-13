@@ -17,7 +17,8 @@ export function createWithObjectKeys(
         operation.properties = {...operation.properties, _key: keyGenerator()}
       }
       if (operation.type === 'insert_node') {
-        operation.node = {...operation.node, _key: operation.node._key || keyGenerator()}
+        // Must be given a new key or adding/removing marks while typing gets in trouble (duped keys)!
+        operation.node = {...operation.node, _key: keyGenerator()}
       }
       apply(operation)
     }
