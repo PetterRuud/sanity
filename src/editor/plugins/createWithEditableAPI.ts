@@ -101,7 +101,7 @@ export function createWithEditableAPI(
                 at: editor.selection.focus,
                 match: n => Editor.isBlock(editor, n)
               })
-            )[0]
+            )[0] || [undefined]
             if (block) {
               return fromSlateValue([block], portableTextFeatures.types.block.name)[0]
             }
@@ -121,7 +121,7 @@ export function createWithEditableAPI(
                 match: n => n._type !== undefined,
                 voids: true
               })
-            )[0]
+            )[0] || [undefined]
             if (node && !Editor.isBlock(editor, node)) {
               const pseudoBlock = {
                 _key: 'pseudo',
@@ -142,8 +142,11 @@ export function createWithEditableAPI(
           throw new Error('The editor has no selection')
         }
         const [focusBlock] = Array.from(
-          Editor.nodes(editor, {at: editor.selection.focus, match: n => Editor.isBlock(editor, n)})
-        )[0]
+          Editor.nodes(editor, {
+            at: editor.selection.focus,
+            match: n => Editor.isBlock(editor, n)
+          })
+        )[0] || [undefined]
         if (!focusBlock) {
           throw new Error('No focus block')
         }
@@ -230,11 +233,11 @@ export function createWithEditableAPI(
         return [undefined, undefined]
       },
       findDOMNode: (element: PortableTextBlock | PortableTextChild): DOMNode => {
-        const [item] = Array.from(
-          Editor.nodes(editor, {at: [], match: n => n._key === element._key}) || []
-        )[0]
         let node
         try {
+          const [item] = Array.from(
+            Editor.nodes(editor, {at: [], match: n => n._key === element._key}) || []
+          )[0] || [undefined]
           node = ReactEditor.toDOMNode(editor, item)
         } catch (err) {
           // Nothing

@@ -140,7 +140,7 @@ export function createWithPortableTextMarkModel(
       } else {
         const {anchor} = editor.selection
         const {path} = anchor
-        let [node] = Array.from(Editor.nodes(editor, {at: path}))[0]
+        let [node] = Array.from(Editor.nodes(editor, {at: path}))[0] || [undefined]
 
         if (anchor.offset === 0) {
           const prev = Editor.previous(editor, {at: path, match: Text.isText})
