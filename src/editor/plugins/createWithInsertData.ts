@@ -1,7 +1,7 @@
 import {htmlToBlocks} from '@sanity/block-tools'
-import {PortableTextFeatures} from '../../types/portableText'
+import {PortableTextFeatures, PortableTextBlock} from '../../types/portableText'
 import {EditorChanges, PortableTextSlateEditor} from '../../types/editor'
-import {Transforms, Node, Editor} from 'slate'
+import {Transforms, Node, Editor, Range} from 'slate'
 import {ReactEditor} from '@sanity/slate-react'
 import {fromSlateValue, toSlateValue, isEqualToEmptyEditor} from '../../utils/values'
 import {validateValue} from '../../utils/validateValue'
@@ -62,12 +62,21 @@ export function createWithInsertData(
       }
       return []
     }
+
     editor.insertData = data => {
-      change$.next({type: 'loading', isLoading: true})
+      if (!editor.selection) {
+        debug('No selection, not inserting')
+        return
+      }
+
+      change$.next({type: 'loading', isLoading: true}) // This could potenitally take some time
+
       const html = data.getData('text/html')
       const slateFragment = data.getData('application/x-slate-fragment')
-      // const portableText = data.getData('application/x-portable-text')
       const text = data.getData('text/plain')
+
+      // TODO: support application/x-portable-text ?
+      // const portableText = data.getData('application/x-portable-text')
       // if (portableText) {
       //   const parsed = JSON.parse(portableText)
       //   if (Array.isArray(parsed) && parsed.length > 0) {
@@ -75,87 +84,115 @@ export function createWithInsertData(
       //     return true
       //   }
       // }
-      if (slateFragment) {
-        const decoded = decodeURIComponent(window.atob(slateFragment))
-        const fragment = JSON.parse(decoded) as Node[]
-        const pText = fromSlateValue(fragment, portableTextFeatures.types.block.name)
-        const validation = validateValue(pText, portableTextFeatures, keyGenerator)
-        if (validation.valid) {
-          debug('inserting editor fragment', fragment)
-          if (fragment.length === 1 && editor.selection) {
-            const [block] = Editor.node(editor, editor.selection, {depth: 1})
-            Transforms.insertFragment(editor, fragment)
-            Transforms.setNodes(
-              editor,
-              {
-                markDefs: [
-                  ...(Array.isArray(block.markDefs) ? block.markDefs : []),
-                  ...(Array.isArray(fragment[0].markDefs) ? fragment[0].markDefs : [])
-                ]
-              },
-              {at: editor.selection?.focus.path.slice(0, 1)}
-            )
-          } else {
-            Transforms.insertNodes(editor, fragment, {at: editor.selection?.focus.path.slice(0, 1)})
-          }
-          editor.onChange()
-          change$.next({type: 'loading', isLoading: false})
-          return
-        }
-        debug('Invalid fragment', slateFragment)
-      }
 
-      if (html) {
-        const portableText = htmlToBlocks(html, portableTextFeatures.types.portableText)
-        const fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
-        debug('Inserting HTML')
-        if (fragment.length === 0) {
-          debug('Empty fragment')
-          return
-        }
-        // debug('portableText', portableText)
-        // debug('fragment', fragment)
-        if (editor.selection) {
-          // If the text is empty, use the block style from the fragment.
-          const [block] = Editor.node(editor, editor.selection, {depth: 1})
-          const isEmptyText = isEqualToEmptyEditor([block], portableTextFeatures)
-          if (isEmptyText) {
-            Transforms.setNodes(
-              editor,
-              {style: fragment[0].style},
-              {at: editor.selection?.focus.path.slice(0, 1)}
-            )
-          } else {
-            Transforms.splitNodes(editor)
-          }
-        }
-        if (fragment.length === 1) {
-          Transforms.insertFragment(editor, fragment)
-          Transforms.setNodes(
-            editor,
-            {markDefs: fragment[0].markDefs},
-            {at: editor.selection?.focus.path.slice(0, 1)}
-          )
+      const originalSelection = {...editor.selection}
+      const isBackward = Range.isBackward(editor.selection)
+
+      if (slateFragment || html || text) {
+        let portableText: PortableTextBlock[]
+        let fragment
+        let insertedType
+
+        if (slateFragment) {
+          // Slate fragments
+          const decoded = decodeURIComponent(window.atob(slateFragment))
+          fragment = JSON.parse(decoded) as Node[]
+          portableText = fromSlateValue(fragment, portableTextFeatures.types.block.name)
+          insertedType = 'Slate Fragment'
+        } else if (html) {
+          // HTML
+          portableText = htmlToBlocks(html, portableTextFeatures.types.portableText)
+          fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
+          insertedType = 'HTML'
         } else {
-          Transforms.insertNodes(editor, fragment, {at: editor.selection?.focus.path.slice(0, 1)})
+          // plain text
+          const blocks = text
+            .split(/\n{2,}/)
+            .map(line => (line ? `<p>${line.replace(/(?:\r\n|\r|\n)/g, '<br/>')}</p>` : '<p></p>'))
+            .join('')
+          const textToHtml = `<html><body>${blocks}</body></html>`
+          portableText = htmlToBlocks(textToHtml, portableTextFeatures.types.portableText)
+          fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
+          insertedType = 'text'
         }
-        editor.onChange()
-        change$.next({type: 'loading', isLoading: false})
-        return
-      }
 
-      if (text) {
-        debug('Inserting plain text')
-        const lines = text.split(/\n\n/)
-        let split = false
+        // Validate the result
+        const validation = validateValue(portableText, portableTextFeatures, keyGenerator)
 
-        for (const line of lines) {
-          if (split) {
-            Transforms.splitNodes(editor, {always: true})
+        // Bail out if it's not valid
+        if (!validation.valid) {
+          console.warn(
+            `Unsupported data. ${
+              validation.resolution?.description
+            }.\nTry to insert as plain text (shift-paste) instead\n\n${JSON.stringify(
+              validation,
+              null,
+              2
+            )}`
+          )
+          debug(validation)
+          return
+        }
+
+        let insertAtPath = editor.selection[isBackward ? 'focus' : 'anchor'].path.slice(0, 1)
+        debug(`Inserting ${insertedType} fragment at ${JSON.stringify(insertAtPath)}`)
+        const [focusBlock] = Editor.node(editor, editor.selection, {depth: 1})
+        const focusIsVoid = Editor.isVoid(editor, focusBlock)
+        if (focusIsVoid) {
+          // Insert at path below the void block as we can't insert *into* it.
+          insertAtPath = [insertAtPath[0] + 1]
+        }
+        fragment.forEach(blk => {
+          const {markDefs} = blk
+          if ((fragment.length === 1 || fragment[0] === blk) && !focusIsVoid) {
+            Transforms.insertFragment(editor, [blk])
+            if (!focusIsVoid) {
+              // As the first block will be inserted into another block (potentially), mix those markDefs
+              Transforms.setNodes(
+                editor,
+                {
+                  markDefs: [
+                    ...(Array.isArray(focusBlock.markDefs) ? focusBlock.markDefs : []),
+                    ...(Array.isArray(markDefs) ? markDefs : [])
+                  ]
+                },
+                {at: insertAtPath}
+              )
+            }
+            // If the focus block is not empty, use the style from the block.
+            const isEmptyText = isEqualToEmptyEditor([focusBlock], portableTextFeatures)
+            if (
+              isEmptyText ||
+              (originalSelection.anchor.path[0] === 0 &&
+                originalSelection.anchor.path[1] === 0 &&
+                originalSelection.anchor.offset === 0)
+            ) {
+              Transforms.setNodes(editor, {style: blk.style}, {at: insertAtPath})
+            } else {
+              Transforms.setNodes(editor, {style: focusBlock.style}, {at: insertAtPath})
+            }
+          } else {
+            Transforms.insertNodes(editor, [blk], {at: insertAtPath})
           }
-          Transforms.insertText(editor, line)
-          split = true
+          insertAtPath = [insertAtPath[0] + 1]
+        })
+        if (fragment.length > 1) {
+          const lastBlock = fragment[fragment.length - 1]
+          const childIndex = lastBlock.children.length - 1
+          const lastChild = lastBlock.children[childIndex]
+          const offset = lastChild.text.length
+          const selection = {
+            anchor: originalSelection.anchor,
+            focus: {
+              path: [insertAtPath[0] - 1, childIndex],
+              offset
+            }
+          }
+          Transforms.setSelection(editor, selection)
+          debug('New selection', selection)
         }
+        change$.next({type: 'loading', isLoading: false})
+        editor.onChange()
         return
       }
       change$.next({type: 'loading', isLoading: false})
