@@ -141,11 +141,26 @@ export function createWithInsertData(
           // Insert at path below the void block as we can't insert *into* it.
           insertAtPath = [insertAtPath[0] + 1]
         }
-        fragment.forEach(blk => {
+        fragment.forEach((blk, blkIndex) => {
           const {markDefs} = blk
-          if ((fragment.length === 1 || fragment[0] === blk) && !focusIsVoid) {
-            Transforms.insertFragment(editor, [blk])
-            if (!focusIsVoid) {
+          if (fragment[0] === blk && !focusIsVoid) {
+            const isVoid = Editor.isVoid(editor, fragment[0])
+            const isEmptyText = isEqualToEmptyEditor([focusBlock], portableTextFeatures)
+            if (isEmptyText && isVoid) {
+              Transforms.insertFragment(editor, [blk], {
+                at: insertAtPath
+              })
+              Transforms.removeNodes(editor, {at: insertAtPath})
+              if (fragment.length === 1) {
+                Transforms.setSelection(editor, {
+                  focus: {path: insertAtPath, offset: 0},
+                  anchor: {path: insertAtPath, offset: 0}
+                })
+              }
+            } else {
+              Transforms.insertFragment(editor, [blk])
+            }
+            if (!focusIsVoid && !isVoid) {
               // As the first block will be inserted into another block (potentially), mix those markDefs
               Transforms.setNodes(
                 editor,
@@ -157,39 +172,26 @@ export function createWithInsertData(
                 },
                 {at: insertAtPath}
               )
-            }
-            // If the focus block is not empty, use the style from the block.
-            const isEmptyText = isEqualToEmptyEditor([focusBlock], portableTextFeatures)
-            if (
-              isEmptyText ||
-              (originalSelection.anchor.path[0] === 0 &&
-                originalSelection.anchor.path[1] === 0 &&
-                originalSelection.anchor.offset === 0)
-            ) {
-              Transforms.setNodes(editor, {style: blk.style}, {at: insertAtPath})
-            } else {
-              Transforms.setNodes(editor, {style: focusBlock.style}, {at: insertAtPath})
+              // If the focus block is not empty, use the style from the block.
+              if (
+                isEmptyText ||
+                (originalSelection.anchor.path[0] === 0 &&
+                  originalSelection.anchor.path[1] === 0 &&
+                  originalSelection.anchor.offset === 0)
+              ) {
+                Transforms.setNodes(editor, {style: blk.style}, {at: insertAtPath})
+              } else {
+                Transforms.setNodes(editor, {style: focusBlock.style}, {at: insertAtPath})
+              }
             }
           } else {
-            Transforms.insertNodes(editor, [blk], {at: insertAtPath})
+            if (blkIndex === 1) {
+              Transforms.splitNodes(editor)
+            }
+            Transforms.insertNodes(editor, [blk], {at: insertAtPath, select: true})
           }
           insertAtPath = [insertAtPath[0] + 1]
         })
-        if (fragment.length > 1) {
-          const lastBlock = fragment[fragment.length - 1]
-          const childIndex = lastBlock.children.length - 1
-          const lastChild = lastBlock.children[childIndex]
-          const offset = lastChild.text.length
-          const selection = {
-            anchor: originalSelection.anchor,
-            focus: {
-              path: [insertAtPath[0] - 1, childIndex],
-              offset
-            }
-          }
-          Transforms.setSelection(editor, selection)
-          debug('New selection', selection)
-        }
         change$.next({type: 'loading', isLoading: false})
         editor.onChange()
         return
