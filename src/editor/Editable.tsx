@@ -1,13 +1,17 @@
 import {Transforms, createEditor} from 'slate'
 import {isEqual} from 'lodash'
 import isHotkey from 'is-hotkey'
+import {normalizeBlock} from '@sanity/block-tools'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from '@sanity/slate-react'
 import {
+  OnPasteResult,
+  OnPasteResultOrPromise,
   RenderChildFunction,
   RenderAnnotationFunction,
   RenderDecoratorFunction
 } from '../types/editor'
+import {PortableTextBlock} from '../types/portableText'
 import {EditorSelection, OnPasteFn, OnCopyFn, RenderBlockFunction} from '../types/editor'
 import {createWithEditableAPI} from './plugins/createWithEditableAPI'
 import {HotkeyOptions} from '../types/options'
@@ -46,9 +50,6 @@ export const PortableTextEditable = (props: Props) => {
   const portableTextEditor = usePortableTextEditor()
   const value = usePortableTextEditorValue()
 
-  if (!portableTextEditor) {
-    return null
-  }
   const {
     change$,
     isThrottling,
@@ -241,8 +242,9 @@ export const PortableTextEditable = (props: Props) => {
 
   // Handle copy in the editor
   const handleCopy = (event: React.ClipboardEvent<HTMLDivElement>): void | ReactEditor => {
-    if (props.onCopy) {
-      const result = props.onCopy(event)
+    const {onCopy} = props
+    if (onCopy) {
+      const result = onCopy(event)
       // CopyFn may return something to avoid doing default stuff
       if (result !== undefined) {
         event.preventDefault()
@@ -253,6 +255,65 @@ export const PortableTextEditable = (props: Props) => {
       // Set Portable Text on the clipboard
       setFragmentData(event.clipboardData, editor, portableTextFeatures)
       return editor
+    }
+  }
+
+  // Handle pasting in the editor
+  const handlePaste = (event: React.SyntheticEvent): Promise<any> | void => {
+    event.persist() // Keep the event through the plugin chain after calling next()
+    const {onPaste} = props
+    const selection = PortableTextEditor.getSelection(portableTextEditor)
+    const type = portableTextFeatures.types.portableText
+    if (!selection) {
+      return
+    }
+    if (onPaste) {
+      const resolveOnPasteResultOrError = (): OnPasteResultOrPromise | Error => {
+        try {
+          return onPaste({event, value, path: selection.focus.path, type})
+        } catch (error) {
+          return error as Error
+        }
+      }
+      // Resolve it as promise (can be either async promise or sync return value)
+      const resolved: OnPasteResultOrPromise | Error = Promise.resolve(
+        resolveOnPasteResultOrError()
+      )
+      return resolved
+        .then((result: OnPasteResult) => {
+          debug('Custom paste function from client resolved', result)
+          change$.next({type: 'loading', isLoading: true})
+          if (!result) {
+            return
+          }
+          if (result instanceof Error) {
+            throw result
+          }
+          if (typeof result === 'object' && result.insert) {
+            event.preventDefault() // Stop the chain
+            const allowedDecorators = portableTextFeatures.decorators.map(item => item.value)
+            const blocksToInsertNormalized = result.insert.map(block =>
+              normalizeBlock(block, {allowedDecorators})
+            ) as PortableTextBlock[]
+            const dataTransfer = new DataTransfer()
+            const string = JSON.stringify(
+              toSlateValue(blocksToInsertNormalized, portableTextFeatures.types.block.name)
+            )
+            const encoded = window.btoa(encodeURIComponent(string))
+            dataTransfer.setData('application/x-slate-fragment', encoded)
+            editor.insertData(dataTransfer)
+            change$.next({type: 'loading', isLoading: false})
+            editor.onChange()
+            return result
+          }
+          console.warn('Your onPaste function returned something unexpected:', result)
+          return
+        })
+        .catch(error => {
+          change$.next({type: 'loading', isLoading: false})
+          console.error(error) // eslint-disable-line no-console
+          return error
+        })
     }
   }
 
@@ -363,6 +424,7 @@ export const PortableTextEditable = (props: Props) => {
           className={'pt-editable'}
           autoFocus={false}
           // decorate={decorate}
+          onPaste={handlePaste}
           onCopy={handleCopy}
           onCut={handleCut}
           onSelect={handleSelect}
@@ -379,6 +441,9 @@ export const PortableTextEditable = (props: Props) => {
     ),
     [placeholderText, readOnly, spellCheck, stateValue, selection, isSelecting]
   )
+  if (!portableTextEditor) {
+    return null
+  }
   return slateEditable
 }
 

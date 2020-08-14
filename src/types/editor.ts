@@ -220,25 +220,24 @@ export type EditorChange =
 
 export type EditorChanges = Subject<EditorChange>
 
-type OnPasteResult =
-  | (
-      | {
-          insert?: PortableTextBlock[]
-          path?: []
-        }
-      | Error
-    )
-  | null
-type OnPasteResultOrPromise = (OnPasteResult | Promise<OnPasteResult>) | null
+export type OnPasteResult =
+  | {
+      insert?: PortableTextBlock[]
+      path?: Path
+    }
+  | Error
+export type OnPasteResultOrPromise = OnPasteResult | Promise<OnPasteResult>
 
 export type OnPasteFn = (arg0: {
   event: React.SyntheticEvent
-  path: []
+  path: Path
   type: Type
-  value: PortableTextBlock[] | null
+  value: PortableTextBlock[] | undefined
 }) => OnPasteResultOrPromise
 
-export type OnCopyFn = (event: React.ClipboardEvent<HTMLDivElement>) => undefined | any
+export type OnCopyFn = (
+  event: React.ClipboardEvent<HTMLDivElement | HTMLSpanElement>
+) => undefined | any
 
 export type PatchObservable = Observable<Patch>
 
