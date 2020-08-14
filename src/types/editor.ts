@@ -168,6 +168,15 @@ export type ReadyChange = {
   type: 'ready'
 }
 
+// Layman error reporting back to the user (recoverable errors and warnings)
+export type ErrorChange = {
+  type: 'error'
+  name: string // short computer readable name
+  level: 'warning' | 'error'
+  description: string
+  data?: any
+}
+
 export type InvalidValueResolution = null | {
   patches: Patch[]
   description: string
@@ -194,19 +203,20 @@ export type RedoChange = {
 }
 
 export type EditorChange =
+  | BlurChange
+  | ErrorChange
+  | FocusChange
+  | InvalidValue
+  | LoadingChange
   | MutationChange
-  | ValueChange
+  | PatchChange
+  | ReadyChange
+  | RedoChange
   | SelectionChange
   | ThrottleChange
-  | FocusChange
-  | BlurChange
-  | LoadingChange
-  | InvalidValue
-  | PatchChange
   | UndoChange
-  | RedoChange
   | UnsetChange
-  | ReadyChange
+  | ValueChange
 
 export type EditorChanges = Subject<EditorChange>
 

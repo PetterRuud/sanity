@@ -106,7 +106,7 @@ export function createWithInsertData(
           insertedType = 'HTML'
         } else {
           // plain text
-          const blocks = text
+          const blocks = escapeHtml(text)
             .split(/\n{2,}/)
             .map(line => (line ? `<p>${line.replace(/(?:\r\n|\r|\n)/g, '<br/>')}</p>` : '<p></p>'))
             .join('')
@@ -121,21 +121,20 @@ export function createWithInsertData(
 
         // Bail out if it's not valid
         if (!validation.valid) {
-          console.warn(
-            `Unsupported data. ${
-              validation.resolution?.description
-            }.\nTry to insert as plain text (shift-paste) instead\n\n${JSON.stringify(
-              validation,
-              null,
-              2
-            )}`
-          )
-          debug(validation)
+          const errorDescription = `Could not validate the resulting portable text to insert.\n${validation.resolution?.description}\nTry to insert as plain text (shift-paste) instead.`
+          change$.next({
+            type: 'error',
+            level: 'warning',
+            name: 'pasteError',
+            description: errorDescription,
+            data: validation
+          })
+          debug('Invalid insert result', validation)
           return
         }
 
         let insertAtPath = editor.selection[isBackward ? 'focus' : 'anchor'].path.slice(0, 1)
-        debug(`Inserting ${insertedType} fragment at ${JSON.stringify(insertAtPath)}`)
+        debug(`Inserting ${insertedType} fragment at ${JSON.stringify(insertAtPath)}`, fragment)
         const [focusBlock] = Editor.node(editor, editor.selection, {depth: 1})
         const focusIsVoid = Editor.isVoid(editor, focusBlock)
         if (focusIsVoid) {
@@ -199,4 +198,20 @@ export function createWithInsertData(
     }
     return editor
   }
+}
+
+const entityMap = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+  '/': '&#x2F;',
+  '`': '&#x60;',
+  '=': '&#x3D;'
+}
+function escapeHtml(string) {
+  return String(string).replace(/[&<>"'`=\/]/g, function(s) {
+    return entityMap[s]
+  })
 }
