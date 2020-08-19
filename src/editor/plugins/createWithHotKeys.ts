@@ -158,7 +158,6 @@ export function createWithHotkeys(
       // Tab for lists
       if (isTab || isShiftTab) {
         editor.pteIncrementBlockLevels(isShiftTab) && event.preventDefault()
-        event.preventDefault()
       }
 
       // Deal with enter key combos
