@@ -1,4 +1,4 @@
-import {Transforms, createEditor} from 'slate'
+import {Transforms, createEditor, Node} from 'slate'
 import {isEqual} from 'lodash'
 import isHotkey from 'is-hotkey'
 import {normalizeBlock} from '@sanity/block-tools'
@@ -28,6 +28,9 @@ import {usePortableTextEditorValue} from './hooks/usePortableTextEditorValue'
 import {PortableTextEditor} from './PortableTextEditor'
 
 const debug = debugWithName('component:Editable')
+
+// Weakmap for testing if we need to update the state value from a new value coming in from props
+const VALUE_TO_SLATE_VALUE: WeakMap<PortableTextBlock[], Node[]> = new WeakMap()
 
 type Props = {
   hotkeys?: HotkeyOptions
@@ -204,10 +207,15 @@ export const PortableTextEditable = (props: Props) => {
   // )
 
   const setValueFromProps = () => {
-    debug('Setting value from props')
-    const slateValueFromProps = toSlateValue(value, portableTextFeatures.types.block.name)
-    setStateValue(slateValueFromProps)
-    change$.next({type: 'value', value: value})
+    if (VALUE_TO_SLATE_VALUE.get(value || []) !== stateValue) {
+      debug('Setting value from props')
+      const slateValueFromProps = toSlateValue(value, portableTextFeatures.types.block.name)
+      setStateValue(slateValueFromProps)
+      VALUE_TO_SLATE_VALUE.set(value || [], slateValueFromProps)
+      change$.next({type: 'value', value: value})
+    } else {
+      debug('Value in sync, not updating value from props')
+    }
   }
 
   // Restore value from props
