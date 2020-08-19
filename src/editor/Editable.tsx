@@ -411,6 +411,13 @@ export const PortableTextEditable = (props: Props) => {
     }
   }, [])
 
+  const handleOnFocus = () => {
+    change$.next({type: 'focus'})
+    if (!editor.selection) {
+      Transforms.select(editor, SELECT_TOP_DOCUMENT)
+    }
+  }
+
   // The editor
   const slateEditable = useMemo(
     () => (
@@ -428,7 +435,7 @@ export const PortableTextEditable = (props: Props) => {
           onCopy={handleCopy}
           onCut={handleCut}
           onSelect={handleSelect}
-          onFocus={() => change$.next({type: 'focus'})}
+          onFocus={handleOnFocus}
           onBlur={() => change$.next({type: 'blur'})}
           onKeyDown={editor.pteWithHotKeys}
           placeholder={placeholderText}
