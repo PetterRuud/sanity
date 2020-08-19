@@ -369,7 +369,7 @@ export const PortableTextEditable = (props: Props) => {
     emitSelection()
   }, [isThrottling])
 
-  // Make sure that when the user is selecting something, we don't update the editor or selections will be broken
+  // Make sure that when the user is actively selecting something, we don't update the editor or selections will be broken
   let _isSelecting = false
   const onSelectStart = (event: any) => {
     if (ReactEditor.hasDOMNode(editor, event.target)) {
@@ -378,7 +378,7 @@ export const PortableTextEditable = (props: Props) => {
       setTimeout(() => setIsSelecting(true))
     }
   }
-  const onSelectEnd = (event: any) => {
+  const onSelectEnd = () => {
     if (_isSelecting) {
       debug('Done selecting')
       setTimeout(() => setIsSelecting(false))
@@ -402,19 +402,19 @@ export const PortableTextEditable = (props: Props) => {
   }
   const onSelectEndWithKeys = event => {
     if (isSelectingWithKeys && event.key === 'Shift') {
-      onSelectEnd(event)
+      onSelectEnd()
       isSelectingWithKeys = false
     }
   }
   useEffect(() => {
     document.addEventListener('keydown', onSelectStartWithKeys, false)
     document.addEventListener('keyup', onSelectEndWithKeys, false)
-    document.addEventListener('selectstart', onSelectStart, false)
+    document.addEventListener('mousedown', onSelectStart, false)
     document.addEventListener('mouseup', onSelectEnd)
     return () => {
       document.removeEventListener('keydown', onSelectStartWithKeys, false)
       document.removeEventListener('keyup', onSelectEndWithKeys, false)
-      document.removeEventListener('selectstart', onSelectStart, false)
+      document.removeEventListener('mousedown', onSelectStart, false)
       document.removeEventListener('mouseup', onSelectEnd, false)
     }
   }, [])
