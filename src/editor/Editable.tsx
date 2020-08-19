@@ -426,6 +426,10 @@ export const PortableTextEditable = (props: Props) => {
     }
   }
 
+  const handleOnBlur = () => {
+    change$.next({type: 'blur'})
+  }
+
   // The editor
   const slateEditable = useMemo(
     () => (
@@ -444,7 +448,7 @@ export const PortableTextEditable = (props: Props) => {
           onCut={handleCut}
           onSelect={handleSelect}
           onFocus={handleOnFocus}
-          onBlur={() => change$.next({type: 'blur'})}
+          onBlur={handleOnBlur}
           onKeyDown={editor.pteWithHotKeys}
           placeholder={placeholderText}
           readOnly={readOnly}
