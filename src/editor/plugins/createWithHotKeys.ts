@@ -78,11 +78,7 @@ export function createWithHotkeys(
 
       // Handle inline objects delete and backspace (not implemented in Slate)
       // TODO: implement cut for inline objects (preferably in Slate)
-      if (
-        (isDelete || isBackspace) &&
-        editor.selection &&
-        Range.isCollapsed(editor.selection)
-      ) {
+      if ((isDelete || isBackspace) && editor.selection && Range.isCollapsed(editor.selection)) {
         const [focusChild] = Editor.node(editor, editor.selection.focus, {depth: 2})
         if (Editor.isVoid(editor, focusChild) && Editor.isInline(editor, focusChild)) {
           Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
