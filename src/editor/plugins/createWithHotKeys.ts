@@ -15,7 +15,7 @@ const DEFAULT_HOTKEYS: HotkeyOptions = {
     'mod+b': 'strong',
     'mod+i': 'em',
     'mod+u': 'underline',
-    'mod+`': 'code'
+    "mod+'": 'code'
   },
   custom: {}
 }
