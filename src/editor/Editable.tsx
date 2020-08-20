@@ -350,7 +350,7 @@ export const PortableTextEditable = (props: Props) => {
   const emitSelection = () => {
     try {
       const newSelection = toPortableTextRange(editor)
-      // debug('Emitting new selection', JSON.stringify(newSelection))
+      debug('Emitting new selection', JSON.stringify(newSelection))
       change$.next({type: 'selection', selection: newSelection})
     } catch (err) {
       change$.next({type: 'selection', selection: null})
@@ -368,6 +368,12 @@ export const PortableTextEditable = (props: Props) => {
     }
     emitSelection()
   }, [isThrottling])
+
+  useEffect(() => {
+    if (!isSelecting && !isThrottling) {
+      emitSelection()
+    }
+  }, [selection])
 
   // Make sure that when the user is actively selecting something, we don't update the editor or selections will be broken
   let _isSelecting = false
@@ -421,9 +427,6 @@ export const PortableTextEditable = (props: Props) => {
 
   const handleOnFocus = () => {
     change$.next({type: 'focus'})
-    if (!editor.selection) {
-      Transforms.select(editor, SELECT_TOP_DOCUMENT)
-    }
   }
 
   const handleOnBlur = () => {
@@ -458,7 +461,7 @@ export const PortableTextEditable = (props: Props) => {
         />
       </Slate>
     ),
-    [placeholderText, readOnly, spellCheck, stateValue, selection, isSelecting]
+    [placeholderText, readOnly, spellCheck, stateValue, selection]
   )
   if (!portableTextEditor) {
     return null
