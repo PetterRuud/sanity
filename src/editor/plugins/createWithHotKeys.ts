@@ -6,6 +6,7 @@ import {debugWithName} from '../../utils/debug'
 import {toSlateValue} from '../../utils/values'
 import {PortableTextFeatures} from 'src/types/portableText'
 import {ReactEditor} from '@sanity/slate-react'
+import {PortableTextEditor} from '../PortableTextEditor'
 
 const debug = debugWithName('plugin:withHotKeys')
 
@@ -27,6 +28,7 @@ const DEFAULT_HOTKEYS: HotkeyOptions = {
 export function createWithHotkeys(
   portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string,
+  portableTextEditor: PortableTextEditor,
   hotkeysFromOptions?: HotkeyOptions
 ) {
   const reservedHotkeys = ['enter', 'tab', 'shift', 'delete', 'end']
@@ -57,11 +59,10 @@ export function createWithHotkeys(
               throw new Error(`The hotkey ${hotkey} is reserved!`)
             }
             if (isHotkey(hotkey, event.nativeEvent)) {
-              event.preventDefault()
               const possibleCommand = activeHotkeys[cat]
               if (possibleCommand) {
                 const command = possibleCommand[hotkey]
-                command(event)
+                command(event, portableTextEditor)
               }
             }
           }

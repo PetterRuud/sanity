@@ -1,7 +1,7 @@
-
 import {PortableTextFeatures} from '../types/portableText'
 import {Subject} from 'rxjs'
-import {EditorChange, PatchObservable} from 'src/types/editor'
+import {EditorChange, PatchObservable} from '../types/editor'
+import {PortableTextEditor} from '../editor/PortableTextEditor'
 
 export type createEditorOptions = {
   portableTextFeatures: PortableTextFeatures
@@ -15,5 +15,5 @@ export type createEditorOptions = {
 
 export type HotkeyOptions = {
   marks?: Record<string, string>
-  custom?: Record<string, ((event: React.BaseSyntheticEvent) => void)>
+  custom?: Record<string, (event: React.BaseSyntheticEvent, editor: PortableTextEditor) => void>
 }

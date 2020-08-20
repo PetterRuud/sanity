@@ -84,7 +84,7 @@ export const PortableTextEditable = (props: Props) => {
     []
   )
   const withHotKeys = useMemo(
-    () => createWithHotkeys(portableTextFeatures, keyGenerator, hotkeys),
+    () => createWithHotkeys(portableTextFeatures, keyGenerator, portableTextEditor, hotkeys),
     []
   )
 
