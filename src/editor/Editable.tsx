@@ -371,9 +371,7 @@ export const PortableTextEditable = (props: Props) => {
   }, [isThrottling])
 
   useEffect(() => {
-    if (!isSelecting && !isThrottling) {
-      emitSelection()
-    }
+    emitSelection()
   }, [selection])
 
   // Make sure that when the user is actively selecting something, we don't update the editor or selections will be broken
