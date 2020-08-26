@@ -4,7 +4,7 @@
  */
 
 import {Editor, Range, Transforms, Text, Path, NodeEntry, Element} from 'slate'
-import {isEqual, flatten} from 'lodash'
+import {isEqual, flatten, uniq} from 'lodash'
 import {Subject} from 'rxjs'
 
 import {debugWithName} from '../../utils/debug'
@@ -129,43 +129,17 @@ export function createWithPortableTextMarkModel(
       if (!editor.selection) {
         return false
       }
-      let existingMarks
-      if (Range.isExpanded(editor.selection)) {
-        const [match] = Editor.nodes(editor, {match: Text.isText})
-
-        if (match) {
-          const [node] = match as NodeEntry<Text>
-          existingMarks = node.marks
-        } else {
-          existingMarks = []
-        }
-      } else {
-        const {anchor} = editor.selection
-        const {path} = anchor
-        let [node] = Array.from(Editor.nodes(editor, {at: path}))[0] || [undefined]
-
-        if (anchor.offset === 0) {
-          const prev = Editor.previous(editor, {at: path, match: Text.isText})
-          const block = Editor.above(editor, {
-            match: n => Editor.isBlock(editor, n)
-          })
-
-          if (prev && block) {
-            const [prevNode, prevPath] = prev
-            const [, blockPath] = block
-
-            if (Path.isAncestor(blockPath, prevPath)) {
-              node = prevNode as Text
-            }
-          }
-        }
-        existingMarks = node.marks
-      }
-      existingMarks =
+      let existingMarks =
         {
           ...(Editor.marks(editor) || {})
         }.marks || []
-      return existingMarks ? existingMarks.includes(mark) : false
+      if (Range.isExpanded(editor.selection)) {
+        Array.from(Editor.nodes(editor, {match: Text.isText, at: editor.selection})).forEach(n => {
+          const [node] = n as NodeEntry<Text>
+          existingMarks = uniq([...existingMarks, ...((node.marks as string[]) || [])])
+        })
+      }
+      return existingMarks.includes(mark)
     }
 
     // Custom editor function to toggle a mark
