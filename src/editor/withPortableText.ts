@@ -54,7 +54,11 @@ export const withPortableText = <T extends Editor>(
   const withUndoRedo = readOnly
     ? disablePlugin('withUndoRedo')
     : createWithUndoRedo(incomingPatche$)
-  const withPortableTextMarkModel = createWithPortableTextMarkModel(portableTextFeatures, change$)
+  const withPortableTextMarkModel = createWithPortableTextMarkModel(
+    portableTextFeatures,
+    keyGenerator,
+    change$
+  )
   const withPortableTextBlockStyle = createWithPortableTextBlockStyle(portableTextFeatures, change$)
   const withUtils = createWithUtils(portableTextFeatures)
 

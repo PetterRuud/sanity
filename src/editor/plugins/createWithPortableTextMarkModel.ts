@@ -16,6 +16,7 @@ const debug = debugWithName('plugin:withPortableTextMarkModel')
 
 export function createWithPortableTextMarkModel(
   portableTextFeatures: PortableTextFeatures,
+  keyGenerator: () => string,
   change$: Subject<EditorChange>
 ) {
   return function withPortableTextMarkModel(editor: PortableTextSlateEditor) {
@@ -34,7 +35,8 @@ export function createWithPortableTextMarkModel(
           )
         )
       ) {
-        normalizeMarkDefsAfterRemoveNode(editor)
+        normalizeMarkDefs(editor)
+        ensureEmptyTextAfterEndingAnnotation(editor)
       }
       // This should not be needed? Commented out for now.
       // // Ensure that every span node has .marks
@@ -158,6 +160,7 @@ export function createWithPortableTextMarkModel(
         // This is for toolbars etc that listens to selection changes to update themselves.
         change$.next({type: 'selection', selection: newSelection})
       }
+      editor.onChange()
     }
     return editor
   }
@@ -192,22 +195,57 @@ export function createWithPortableTextMarkModel(
    *
    * @param {Editor} editor
    */
-  function normalizeMarkDefsAfterRemoveNode(editor: Editor) {
+  function ensureEmptyTextAfterEndingAnnotation(editor: Editor) {
     const {selection} = editor
     if (selection) {
-      const [blockElement, path] = Editor.node(editor, selection.focus, {depth: 1})
-      if (blockElement && blockElement._type === portableTextFeatures.types.block.name) {
-        if (Array.isArray(blockElement.markDefs) && Element.isElement(blockElement)) {
-          const newMarkDefs = blockElement.markDefs.filter(def => {
-            return blockElement.children.find(child => {
+      const [block] = Editor.node(editor, selection, {depth: 1})
+      const [span] = Editor.node(editor, selection, {depth: 2})
+      if (
+        block &&
+        span &&
+        Array.isArray(block.children) &&
+        span === block.children[block.children.length - 1] &&
+        Array.isArray(span.marks) &&
+        span.marks.some(
+          mark =>
+            Array.isArray(block.markDefs) && block.markDefs.map(def => def._key).includes(mark)
+        )
+      ) {
+        debug('Inserting space after annotation')
+        Transforms.insertNodes(
+          editor,
+          [{_type: 'span', text: '​ ', marks: [], _key: keyGenerator()}],
+          {
+            at: selection.focus
+          }
+        )
+      }
+    }
+  }
+  /**
+   * Normalize markDefs
+   *
+   * @param {Editor} editor
+   */
+  function normalizeMarkDefs(editor: Editor) {
+    const {selection} = editor
+    if (selection) {
+      const blocks = Editor.nodes(editor, {
+        at: selection,
+        match: n => n._type === portableTextFeatures.types.block.name
+      })
+      for (const [block, path] of blocks) {
+        if (Array.isArray(block.markDefs) && Element.isElement(block)) {
+          const newMarkDefs = block.markDefs.filter(def => {
+            return block.children.find(child => {
               return Array.isArray(child.marks) && child.marks.includes(def._key)
             })
           })
           const isEmptySingleChild =
-            blockElement.markDefs.length > 0 &&
-            blockElement.children.length === 1 &&
-            blockElement.children[0].text === ''
-          if (!isEqual(newMarkDefs, blockElement.markDefs) || isEmptySingleChild) {
+            block.markDefs.length > 0 &&
+            block.children.length === 1 &&
+            block.children[0].text === ''
+          if (!isEqual(newMarkDefs, block.markDefs) || isEmptySingleChild) {
             debug('Removing markDef not in use')
             Transforms.setNodes(
               editor,
