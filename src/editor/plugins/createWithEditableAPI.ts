@@ -361,86 +361,80 @@ export function createWithEditableAPI(
           }
         }
       },
-      removeAnnotation: (): void => {
+      removeAnnotation: (type: Type): void => {
         let {selection} = editor
+        let changed = false
         if (selection) {
-          const [blockElement] = Editor.node(editor, selection.focus, {depth: 1})
-          if (
-            blockElement._type === portableTextFeatures.types.block.name &&
-            SlateElement.isElement(blockElement)
-          ) {
-            const [span, spanPath] = Editor.node(editor, selection.focus.path.slice(0, 2))
-            const spanMarks = (span.marks as string[]) || []
-            if (Array.isArray(blockElement.markDefs)) {
-              if (
-                Range.isCollapsed(selection) &&
-                Text.isText(span) &&
-                blockElement.children.slice(-1)[0] === span &&
-                selection.focus.offset === span.text.length
-              ) {
-                // Just insert an empty span
-                Transforms.insertNodes(
-                  editor,
-                  [{_type: 'span', text: ' ', marks: [], _key: keyGenerator()}],
-                  {
-                    at: selection.focus
+          // Select the whole annotation if collapsed
+          if (Range.isCollapsed(selection)) {
+            const [node, nodePath] = Editor.node(editor, selection, {depth: 2})
+            if (node && node.marks && typeof node.text === 'string') {
+              Transforms.select(editor, nodePath)
+              selection = editor.selection
+            }
+          }
+          if (selection && Range.isExpanded(selection)) {
+            // Split the span first
+            Transforms.setNodes(editor, {}, {match: Text.isText, split: true})
+            selection = editor.selection
+            if (!selection) {
+              return
+            }
+            // Everything in the selection which has marks
+            const spans = Editor.nodes(editor, {
+              at: selection,
+              match: node =>
+                Text.isText(node) &&
+                node.marks &&
+                Array.isArray(node.marks) &&
+                node.marks.length > 0
+            })
+            for (const [span, path] of spans) {
+              const [block] = Editor.node(editor, path, {depth: 1})
+              if (block && Array.isArray(block.markDefs)) {
+                block.markDefs.forEach(def => {
+                  if (
+                    def._type === type.name &&
+                    span.marks &&
+                    Array.isArray(span.marks) &&
+                    span.marks.includes(def._key)
+                  ) {
+                    Transforms.setNodes(
+                      editor,
+                      {
+                        marks: [...(span.marks || []).filter(mark => mark !== def._key)]
+                      },
+                      {at: path, voids: false, split: false}
+                    )
+                    changed = true
                   }
-                )
-                Transforms.select(editor, SlatePath.next(spanPath))
-                Transforms.collapse(editor, {edge: 'end'})
-                return
+                })
               }
-              const annotation = blockElement.markDefs.find(def => spanMarks.includes(def._key))
-              if (annotation && annotation._key) {
-                if (Range.isCollapsed(selection)) {
-                  editor.pteExpandToWord()
-                } else {
-                  Transforms.setNodes(editor, {}, {match: Text.isText, split: true})
-                }
-                selection = editor.selection
-                if (selection) {
-                  for (const [node, path] of Editor.nodes(editor, {
-                    at: selection,
-                    mode: 'lowest',
+              // Merge similar adjecent spans
+              if (changed) {
+                for (const [node, path] of Array.from(
+                  Editor.nodes(editor, {
+                    at: Editor.range(editor, [selection.anchor.path[0]], [selection.focus.path[0]]),
                     match: Text.isText
-                  })) {
-                    if (Array.isArray(node.marks)) {
-                      Transforms.setNodes(
-                        editor,
-                        {
-                          marks: [...(node.marks || []).filter(mark => mark !== annotation._key)]
-                        },
-                        {at: path, voids: false, split: false}
-                      )
+                  })
+                ).reverse()) {
+                  const [parent] = Editor.node(editor, SlatePath.parent(path))
+                  if (Editor.isBlock(editor, parent)) {
+                    const nextPath = [path[0], path[1] + 1]
+                    const nextTextNode = parent.children[nextPath[1]]
+                    if (
+                      nextTextNode &&
+                      typeof nextTextNode.text === 'string' &&
+                      isEqual(nextTextNode.marks, node.marks)
+                    ) {
+                      Transforms.mergeNodes(editor, {at: nextPath, voids: true})
                     }
                   }
-                  // Merge similar adjecent spans
-                  for (const [node, path] of Array.from(
-                    Editor.nodes(editor, {
-                      at: Editor.range(
-                        editor,
-                        [selection.anchor.path[0]],
-                        [selection.focus.path[0]]
-                      ),
-                      match: Text.isText
-                    })
-                  ).reverse()) {
-                    const [parent] = Editor.node(editor, SlatePath.parent(path))
-                    if (Editor.isBlock(editor, parent)) {
-                      const nextPath = [path[0], path[1] + 1]
-                      const nextTextNode = parent.children[nextPath[1]]
-                      if (
-                        nextTextNode &&
-                        nextTextNode.text &&
-                        isEqual(nextTextNode.marks, node.marks)
-                      ) {
-                        Transforms.mergeNodes(editor, {at: nextPath, voids: true})
-                      }
-                    }
-                  }
-                  editor.onChange()
                 }
               }
+            }
+            if (changed) {
+              editor.onChange()
             }
           }
         }
