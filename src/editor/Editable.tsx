@@ -351,7 +351,7 @@ export const PortableTextEditable = (props: Props) => {
   const emitSelection = () => {
     try {
       const newSelection = toPortableTextRange(editor)
-      debug('Emitting new selection', JSON.stringify(newSelection))
+      // debug('Emitting new selection', JSON.stringify(newSelection))
       change$.next({type: 'selection', selection: newSelection})
     } catch (err) {
       change$.next({type: 'selection', selection: null})
