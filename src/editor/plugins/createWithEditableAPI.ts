@@ -258,14 +258,23 @@ export function createWithEditableAPI(
           return []
         }
         try {
-          const [block] = Editor.node(editor, editor.selection.focus.path.slice(0, 1))
-          if (!Array.isArray(block.markDefs)) {
-            return []
+          const activeAnnotations: PortableTextBlock[] = []
+          const spans = Editor.nodes(editor, {
+            at: editor.selection,
+            match: node =>
+              Text.isText(node) && node.marks && Array.isArray(node.marks) && node.marks.length > 0
+          })
+          for (const [span, path] of spans) {
+            const [block] = Editor.node(editor, path, {depth: 1})
+            if (block && Array.isArray(block.markDefs)) {
+              block.markDefs.forEach(def => {
+                if (span.marks && Array.isArray(span.marks) && span.marks.includes(def._key)) {
+                  activeAnnotations.push(def)
+                }
+              })
+            }
           }
-          const [span] = Editor.node(editor, editor.selection.focus.path.slice(0, 2))
-          return block.markDefs.filter(
-            def => Array.isArray(span.marks) && span.marks.includes(def._key)
-          )
+          return activeAnnotations
         } catch (err) {
           return []
         }
