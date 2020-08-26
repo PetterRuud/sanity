@@ -201,6 +201,15 @@ export function createWithEditableAPI(
           return false
         }
       },
+      hasListStyle: (listStyle: string): boolean => {
+        try {
+          return editor.pteHasListStyle(listStyle)
+        } catch (err) {
+          // This is fine.
+          // debug(err)
+          return false
+        }
+      },
       isVoid: (element: PortableTextBlock | PortableTextChild) => {
         return ![
           portableTextFeatures.types.block.name,

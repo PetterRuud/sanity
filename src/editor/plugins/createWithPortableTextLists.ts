@@ -33,6 +33,23 @@ export function createWithPortableTextLists(
     // }
 
     editor.pteToggleListItem = (listItemStyle: string) => {
+      const isActive = editor.pteHasListStyle(listItemStyle)
+      if (isActive) {
+        debug(`Remove list item '${listItemStyle}'`)
+        editor.pteUnsetListItem(listItemStyle)
+      } else {
+        debug(`Add list item '${listItemStyle}'`)
+        editor.pteSetListItem(listItemStyle)
+      }
+      const newSelection = toPortableTextRange(editor)
+      if (newSelection !== undefined) {
+        // Emit a new selection here (though it might be the same).
+        // This is for toolbars etc that listens to selection changes to update themselves.
+        change$.next({type: 'selection', selection: newSelection})
+      }
+    }
+
+    editor.pteUnsetListItem = (listItemStyle: string) => {
       if (!editor.selection) {
         return
       }
@@ -45,23 +62,44 @@ export function createWithPortableTextLists(
       ]
       selectedBlocks.forEach(([node, path]) => {
         const {listItem, level, ...rest} = node
-        if (node.listItem === listItemStyle) {
-          debug(`Unsetting list '${listItemStyle}'`)
-          Transforms.setNodes(editor, {...rest, listItem: undefined, level: undefined}, {at: path})
-        } else {
-          debug(`Setting list '${listItemStyle}'`)
-          Transforms.setNodes(
-            editor,
-            {
-              ...rest,
-              level: 1,
-              listItem:
-                listItemStyle ||
-                (portableTextFeatures.lists[0] && portableTextFeatures.lists[0].value)
-            },
-            {at: path}
-          )
-        }
+        debug(`Unsetting list '${listItemStyle}'`)
+        Transforms.setNodes(
+          editor,
+          {...rest, listItem: undefined, level: undefined},
+          {at: path}
+        )
+      })
+      // Emit a new selection here (though it might be the same).
+      // This is for toolbars etc that listens to selection changes to update themselves.
+      change$.next({type: 'selection', selection: toPortableTextRange(editor)})
+      editor.onChange()
+    }
+
+    editor.pteSetListItem = (listItemStyle: string) => {
+      if (!editor.selection) {
+        return
+      }
+      const selectedBlocks = [
+        ...Editor.nodes(editor, {
+          at: editor.selection,
+          match: node =>
+            Element.isElement(node) && node._type === portableTextFeatures.types.block.name
+        })
+      ]
+      selectedBlocks.forEach(([node, path]) => {
+        const {listItem, level, ...rest} = node
+        debug(`Setting list '${listItemStyle}'`)
+        Transforms.setNodes(
+          editor,
+          {
+            ...rest,
+            level: 1,
+            listItem:
+              listItemStyle ||
+              (portableTextFeatures.lists[0] && portableTextFeatures.lists[0].value)
+          },
+          {at: path}
+        )
       })
       // Emit a new selection here (though it might be the same).
       // This is for toolbars etc that listens to selection changes to update themselves.
@@ -127,6 +165,22 @@ export function createWithPortableTextLists(
       editor.onChange()
       return true
     }, 100)
+
+    editor.pteHasListStyle = (listStyle: string): boolean => {
+      if (!editor.selection) {
+        return false
+      }
+      const selectedBlocks = [
+        ...Editor.nodes(editor, {
+          at: editor.selection,
+          match: node => Element.isElement(node) && node.listItem === listStyle
+        })
+      ]
+      if (selectedBlocks.length > 0) {
+        return true
+      }
+      return false
+    }
 
     return editor
   }

@@ -20,6 +20,7 @@ export interface EditableAPI {
   getSelection: () => EditorSelection | undefined
   getValue: () => PortableTextBlock | undefined
   hasBlockStyle: (style: string) => boolean
+  hasListStyle: (listStyle: string) => boolean
   insertBlock: (type: Type, value?: {[prop: string]: any}) => Path
   insertChild: (type: Type, value?: {[prop: string]: any}) => Path
   isMarkActive: (mark: string) => boolean
@@ -68,6 +69,18 @@ export interface PortableTextSlateEditor extends SlateEditor {
    */
   pteToggleListItem: (listStyle: string) => void
   /**
+   * Set block as listItem
+   *
+   * @param {string} listStyle
+   */
+  pteSetListItem: (listStyle: string) => void
+  /**
+   * Unset block as listItem
+   *
+   * @param {string} listStyle
+   */
+  pteUnsetListItem: (listStyle: string) => void
+  /**
    * Ends a list
    *
    * @returns {boolean} True if a list was ended in the selection
@@ -99,6 +112,13 @@ export interface PortableTextSlateEditor extends SlateEditor {
    *
    */
   pteHasBlockStyle: (style: string) => boolean
+  /**
+   * Test if the current selection has a certain list style
+   *
+   * @param {string} listStyle The liststyle name
+   *
+   */
+  pteHasListStyle: (style: string) => boolean
   /**
    * Try to expand the current selection to a word
    *
