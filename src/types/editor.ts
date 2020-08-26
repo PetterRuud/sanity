@@ -235,6 +235,8 @@ export type OnPasteFn = (arg0: {
   value: PortableTextBlock[] | undefined
 }) => OnPasteResultOrPromise
 
+export type OnBeforeInputFn = (event: Event) => void
+
 export type OnCopyFn = (
   event: React.ClipboardEvent<HTMLDivElement | HTMLSpanElement>
 ) => undefined | any

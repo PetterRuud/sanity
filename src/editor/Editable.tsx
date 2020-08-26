@@ -12,7 +12,7 @@ import {
   RenderDecoratorFunction
 } from '../types/editor'
 import {PortableTextBlock} from '../types/portableText'
-import {EditorSelection, OnPasteFn, OnCopyFn, RenderBlockFunction} from '../types/editor'
+import {EditorSelection, OnPasteFn, OnCopyFn, OnBeforeInputFn, RenderBlockFunction} from '../types/editor'
 import {createWithEditableAPI} from './plugins/createWithEditableAPI'
 import {HotkeyOptions} from '../types/options'
 import {toSlateValue, isEqualToEmptyEditor} from '../utils/values'
@@ -34,6 +34,7 @@ const VALUE_TO_SLATE_VALUE: WeakMap<PortableTextBlock[], Node[]> = new WeakMap()
 
 type Props = {
   hotkeys?: HotkeyOptions
+  onBeforeInput?: OnBeforeInputFn
   onPaste?: OnPasteFn
   onCopy?: OnCopyFn
   placeholderText?: string
@@ -433,6 +434,12 @@ export const PortableTextEditable = (props: Props) => {
     change$.next({type: 'blur'})
   }
 
+  const handleOnBeforeInput = (event: Event) => {
+    if (props.onBeforeInput) {
+      props.onBeforeInput(event)
+    }
+  }
+
   // The editor
   const slateEditable = useMemo(
     () => (
@@ -443,16 +450,17 @@ export const PortableTextEditable = (props: Props) => {
         value={getValueOrIntitialValue(stateValue, [createPlaceHolderBlock()])}
       >
         <SlateEditable
-          className={'pt-editable'}
           autoFocus={false}
+          className={'pt-editable'}
           // decorate={decorate}
-          onPaste={handlePaste}
+          onDOMBeforeInput={handleOnBeforeInput}
+          onBlur={handleOnBlur}
           onCopy={handleCopy}
           onCut={handleCut}
-          onSelect={handleSelect}
           onFocus={handleOnFocus}
-          onBlur={handleOnBlur}
           onKeyDown={editor.pteWithHotKeys}
+          onPaste={handlePaste}
+          onSelect={handleSelect}
           placeholder={placeholderText}
           readOnly={readOnly}
           renderElement={renderElement}
