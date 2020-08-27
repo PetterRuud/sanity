@@ -415,12 +415,14 @@ export const PortableTextEditable = (props: Props) => {
     document.addEventListener('keydown', onSelectStartWithKeys, false)
     document.addEventListener('keyup', onSelectEndWithKeys, false)
     document.addEventListener('mousedown', onSelectStart, false)
-    document.addEventListener('mouseup', onSelectEnd)
+    document.addEventListener('mouseup', onSelectEnd, false)
+    document.addEventListener('dragend', onSelectEnd, false)
     return () => {
       document.removeEventListener('keydown', onSelectStartWithKeys, false)
       document.removeEventListener('keyup', onSelectEndWithKeys, false)
       document.removeEventListener('mousedown', onSelectStart, false)
       document.removeEventListener('mouseup', onSelectEnd, false)
+      document.removeEventListener('dragend', onSelectEnd, false)
     }
   }, [])
 
