@@ -5,6 +5,7 @@ import {fromSlateValue} from '../utils/values'
 import DOMNode = globalThis.Node
 import DOMText = globalThis.Text
 import {PortableTextFeatures} from 'src/types/portableText'
+import {KEY_TO_VALUE_ELEMENT} from './weakMaps'
 
 const isDOMText = (value: any): value is DOMText => {
   return isDOMNode(value) && value.nodeType === 3
@@ -100,7 +101,8 @@ export const setFragmentData = (
 
   const fragment = fromSlateValue(
     SlateNode.fragment(editor, selection),
-    portableTextFeatures.types.block.name
+    portableTextFeatures.types.block.name,
+    KEY_TO_VALUE_ELEMENT.get(editor)
   )
   dataTransfer.setData('application/x-portable-text', JSON.stringify(fragment))
 }

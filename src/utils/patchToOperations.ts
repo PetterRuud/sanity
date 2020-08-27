@@ -4,6 +4,7 @@ import {Editor, Transforms} from 'slate'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
 import {toSlateValue} from './values'
 import {debugWithName} from './debug'
+import {KEY_TO_SLATE_ELEMENT} from './weakMaps'
 
 const debug = debugWithName('operationToPatches')
 
@@ -13,7 +14,8 @@ export function createPatchToOperations(portableTextFeatures: PortableTextFeatur
       const {items, position} = patch
       const blocksToInsert = toSlateValue(
         items as PortableTextBlock[],
-        portableTextFeatures.types.block.name
+        portableTextFeatures.types.block.name,
+        KEY_TO_SLATE_ELEMENT.get(editor)
       )
       const posKey = findLastKey(patch.path)
       let index = editor.children.findIndex((node, indx) => {

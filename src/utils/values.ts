@@ -7,9 +7,19 @@ type Partial<T> = {
   [P in keyof T]?: T[P]
 }
 
+function keepObjectEquality(object, keyMap) {
+  const value = keyMap[object._key]
+  if (value && isEqual(object, value)) {
+    return value
+  }
+  keyMap[object._key] = object
+  return object
+}
+
 export function toSlateValue(
   value: PortableTextBlock[] | undefined,
-  textBlockType: string
+  textBlockType: string,
+  keyMap: {} = {}
 ): Node[] {
   if (value && Array.isArray(value)) {
     return value.map(block => {
@@ -21,8 +31,12 @@ export function toSlateValue(
           const {_type, _key, ...rest} = child
           if (_type !== 'span') {
             hasInlines = true
-            return {_type, _key, children: [{text: ''}], value: rest, __inline: true}
+            return keepObjectEquality(
+              {_type, _key, children: [{text: ''}], value: rest, __inline: true},
+              keyMap
+            )
           } else {
+            // Original object
             return child
           }
         })
@@ -30,9 +44,9 @@ export function toSlateValue(
           // Original object
           return block
         }
-        return {_type, _key, ...rest, children}
+        return keepObjectEquality({_type, _key, ...rest, children}, keyMap)
       }
-      return {_type, _key, children: [{text: ''}], value: rest}
+      return keepObjectEquality({_type, _key, children: [{text: ''}], value: rest}, keyMap)
     })
   }
   return []
@@ -40,7 +54,8 @@ export function toSlateValue(
 
 export function fromSlateValue(
   value: (Node | Partial<Node>)[],
-  textBlockType: string
+  textBlockType: string,
+  keyMap: {} = {}
 ): PortableTextBlock[] {
   if (value && Array.isArray(value)) {
     return value.map(block => {
@@ -52,7 +67,7 @@ export function fromSlateValue(
           if (_type !== 'span' && typeof child.value === 'object') {
             hasInlines = true
             const {value, children, __inline, ...rest} = child
-            return {...rest, ...value} as PortableTextChild
+            return keepObjectEquality({...rest, ...value}, keyMap) as PortableTextChild
           } else {
             return child as PortableTextChild
           }
@@ -62,13 +77,19 @@ export function fromSlateValue(
             // Original object
             return (block as unknown) as PortableTextBlock
           }
-          return {_key: block._key, _type: block._type, ...block, children} as PortableTextBlock
+          return keepObjectEquality(
+            {_key: block._key, _type: block._type, ...block, children},
+            keyMap
+          ) as PortableTextBlock
         }
         throw new Error('Not a valid block type')
       }
       const {_key, _type} = block
       const value = block.value as PortableTextBlock
-      return {_key, _type, ...(typeof value === 'object' ? value : {})} as PortableTextBlock
+      return keepObjectEquality(
+        {_key, _type, ...(typeof value === 'object' ? value : {})},
+        keyMap
+      ) as PortableTextBlock
     })
   }
   return value

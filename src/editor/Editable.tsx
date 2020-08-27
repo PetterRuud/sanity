@@ -12,7 +12,13 @@ import {
   RenderDecoratorFunction
 } from '../types/editor'
 import {PortableTextBlock} from '../types/portableText'
-import {EditorSelection, OnPasteFn, OnCopyFn, OnBeforeInputFn, RenderBlockFunction} from '../types/editor'
+import {
+  EditorSelection,
+  OnPasteFn,
+  OnCopyFn,
+  OnBeforeInputFn,
+  RenderBlockFunction
+} from '../types/editor'
 import {createWithEditableAPI} from './plugins/createWithEditableAPI'
 import {HotkeyOptions} from '../types/options'
 import {toSlateValue, isEqualToEmptyEditor} from '../utils/values'
@@ -26,6 +32,7 @@ import {debugWithName} from '../utils/debug'
 import {usePortableTextEditor} from './hooks/usePortableTextEditor'
 import {usePortableTextEditorValue} from './hooks/usePortableTextEditorValue'
 import {PortableTextEditor} from './PortableTextEditor'
+import {KEY_TO_SLATE_ELEMENT, KEY_TO_VALUE_ELEMENT} from '../utils/weakMaps'
 
 const debug = debugWithName('component:Editable')
 
@@ -122,7 +129,8 @@ export const PortableTextEditable = (props: Props) => {
     // Default value
     toSlateValue(
       getValueOrIntitialValue(value, [createPlaceHolderBlock()]),
-      portableTextFeatures.types.block.name
+      portableTextFeatures.types.block.name,
+      KEY_TO_SLATE_ELEMENT.get(editor)
     )
   )
 
@@ -210,7 +218,11 @@ export const PortableTextEditable = (props: Props) => {
   const setValueFromProps = () => {
     if (VALUE_TO_SLATE_VALUE.get(value || []) !== stateValue) {
       debug('Setting value from props')
-      const slateValueFromProps = toSlateValue(value, portableTextFeatures.types.block.name)
+      const slateValueFromProps = toSlateValue(
+        value,
+        portableTextFeatures.types.block.name,
+        KEY_TO_SLATE_ELEMENT.get(editor)
+      )
       setStateValue(slateValueFromProps)
       VALUE_TO_SLATE_VALUE.set(value || [], slateValueFromProps)
       change$.next({type: 'value', value: value})
@@ -218,6 +230,15 @@ export const PortableTextEditable = (props: Props) => {
       debug('Value in sync, not updating value from props')
     }
   }
+
+  useEffect(() => {
+    KEY_TO_SLATE_ELEMENT.set(editor, {})
+    KEY_TO_VALUE_ELEMENT.set(editor, {})
+    return () => {
+      KEY_TO_SLATE_ELEMENT.delete(editor)
+      KEY_TO_VALUE_ELEMENT.delete(editor)
+    }
+  }, [])
 
   // Restore value from props
   useEffect(() => {

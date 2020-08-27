@@ -1,4 +1,4 @@
-import React, {ReactElement, FunctionComponent, useRef} from 'react'
+import React, {ReactElement, FunctionComponent, useRef, useMemo} from 'react'
 import {Element as SlateElement, Editor, Range} from 'slate'
 import {useSelected, useEditor, ReactEditor} from '@sanity/slate-react'
 import {PortableTextFeatures} from '../types/portableText'
@@ -12,6 +12,7 @@ import {debugWithName} from '../utils/debug'
 import {DraggableBlock} from './DraggableBlock'
 import {DraggableChild} from './DraggableChild'
 import {ListItem, ListItemInner} from './nodes'
+import {KEY_TO_VALUE_ELEMENT} from '../utils/weakMaps'
 
 const debug = debugWithName('components:Element')
 const debugRenders = false
@@ -75,17 +76,32 @@ export const Element: FunctionComponent<ElementProps> = ({
             spanType={portableTextFeatures.types.span.name}
             keyGenerator={keyGenerator}
           >
-            <span ref={inlineBlockObjectRef} key={element._key} style={inlineBlockStyle} contentEditable={false}>
+            <span
+              ref={inlineBlockObjectRef}
+              key={element._key}
+              style={inlineBlockStyle}
+              contentEditable={false}
+            >
               {renderChild &&
                 renderChild(
-                  fromSlateValue([element], portableTextFeatures.types.block.name)[0],
+                  fromSlateValue(
+                    [element],
+                    portableTextFeatures.types.block.name,
+                    KEY_TO_VALUE_ELEMENT.get(editor)
+                  )[0],
                   type,
                   {focused, selected, path},
                   defaultRender,
                   inlineBlockObjectRef
                 )}
               {!renderChild &&
-                defaultRender(fromSlateValue([element], portableTextFeatures.types.block.name)[0])}
+                defaultRender(
+                  fromSlateValue(
+                    [element],
+                    portableTextFeatures.types.block.name,
+                    KEY_TO_VALUE_ELEMENT.get(editor)
+                  )[0]
+                )}
               {children}
             </span>
           </DraggableChild>
@@ -115,7 +131,7 @@ export const Element: FunctionComponent<ElementProps> = ({
       const renderedBlock =
         renderBlock &&
         renderBlock(
-          fromSlateValue([element], element._type)[0],
+          fromSlateValue([element], element._type, KEY_TO_VALUE_ELEMENT.get(editor))[0],
           portableTextFeatures.types.block,
           {
             focused,
@@ -162,29 +178,43 @@ export const Element: FunctionComponent<ElementProps> = ({
       }
       className = 'pt-block pt-object-block'
       debugRenders && debug(`Render ${element._key} (object block)`)
+      const block = fromSlateValue(
+        [element],
+        portableTextFeatures.types.block.name,
+        KEY_TO_VALUE_ELEMENT.get(editor)
+      )[0]
+      const renderedBlockFromProps =
+        renderBlock &&
+        useMemo(() => {
+          return renderBlock(
+            block,
+            type,
+            {
+              focused,
+              selected,
+              path: [{_key: block._key}]
+            },
+            defaultRender,
+            blockObjectRef
+          )
+        }, [block, focused, selected])
       return (
         <div {...attributes} className={className} key={element._key}>
           <DraggableBlock element={element} readOnly={readOnly}>
             <>
-              {renderBlock && (
+              {renderedBlockFromProps && (
                 <div ref={blockObjectRef} contentEditable={false}>
-                  {renderBlock(
-                    fromSlateValue([element], portableTextFeatures.types.block.name)[0],
-                    type,
-                    {
-                      focused,
-                      selected,
-                      path: [{_key: element._key}]
-                    },
-                    defaultRender,
-                    blockObjectRef
-                  )}
+                  {renderedBlockFromProps}
                 </div>
               )}
               {!renderBlock && (
                 <BlockObjectContainer selected={selected} className={className}>
                   {defaultRender(
-                    fromSlateValue([element], portableTextFeatures.types.block.name)[0]
+                    fromSlateValue(
+                      [element],
+                      portableTextFeatures.types.block.name,
+                      KEY_TO_VALUE_ELEMENT.get(editor)
+                    )[0]
                   )}
                 </BlockObjectContainer>
               )}

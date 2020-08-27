@@ -16,6 +16,7 @@ import {EditorChange, PatchObservable, PortableTextSlateEditor} from '../../type
 import {debugWithName} from '../../utils/debug'
 import {createPatchToOperations} from '../../utils/patchToOperations'
 import {PATCHING, withoutPatching, isPatching} from '../../utils/withoutPatching'
+import {KEY_TO_VALUE_ELEMENT} from '../../utils/weakMaps'
 
 const debug = debugWithName('plugin:withPatches')
 
@@ -130,7 +131,11 @@ export function createWithPatches(
         patches.push(unset([]))
         change$.next({
           type: 'unset',
-          previousValue: fromSlateValue(previousChildren, portableTextFeatures.types.block.name)
+          previousValue: fromSlateValue(
+            previousChildren,
+            portableTextFeatures.types.block.name,
+            KEY_TO_VALUE_ELEMENT.get(editor)
+          )
         })
       }
 
@@ -420,4 +425,3 @@ function adjustSelection(
     return editor.selection
   }
 }
-

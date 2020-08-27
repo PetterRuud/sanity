@@ -19,6 +19,7 @@ import {PortableTextEditor} from '../PortableTextEditor'
 
 import {debugWithName} from '../../utils/debug'
 import {DOMNode} from '@sanity/slate-react/dist/utils/dom'
+import {KEY_TO_VALUE_ELEMENT} from '../../utils/weakMaps'
 
 const debug = debugWithName('API:editable')
 
@@ -103,7 +104,11 @@ export function createWithEditableAPI(
               })
             )[0] || [undefined]
             if (block) {
-              return fromSlateValue([block], portableTextFeatures.types.block.name)[0]
+              return fromSlateValue(
+                [block],
+                portableTextFeatures.types.block.name,
+                KEY_TO_VALUE_ELEMENT.get(editor)
+              )[0]
             }
           } catch (err) {
             return undefined
@@ -128,8 +133,11 @@ export function createWithEditableAPI(
                 _type: portableTextFeatures.types.block.name,
                 children: [node]
               }
-              return fromSlateValue([pseudoBlock], portableTextFeatures.types.block.name)[0]
-                .children[0]
+              return fromSlateValue(
+                [pseudoBlock],
+                portableTextFeatures.types.block.name,
+                KEY_TO_VALUE_ELEMENT.get(editor)
+              )[0].children[0]
             }
           } catch (err) {
             return undefined
@@ -232,7 +240,11 @@ export function createWithEditableAPI(
                 [{_key: block._key}]
               ]
             }
-            const ptBlock = fromSlateValue([block], portableTextFeatures.types.block.name)[0]
+            const ptBlock = fromSlateValue(
+              [block],
+              portableTextFeatures.types.block.name,
+              KEY_TO_VALUE_ELEMENT.get(editor)
+            )[0]
             const ptChild = ptBlock.children[slatePath.focus.path[1]]
             if (ptChild) {
               return [ptChild, [{_key: block._key}, 'children', {_key: ptChild._key}]]
@@ -443,7 +455,11 @@ export function createWithEditableAPI(
         return toPortableTextRange(editor)
       },
       getValue: () => {
-        return fromSlateValue(editor.children, portableTextFeatures.types.block.name)
+        return fromSlateValue(
+          editor.children,
+          portableTextFeatures.types.block.name,
+          KEY_TO_VALUE_ELEMENT.get(editor)
+        )
       }
     })
     return editor
