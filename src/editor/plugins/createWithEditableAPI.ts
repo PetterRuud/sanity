@@ -460,6 +460,12 @@ export function createWithEditableAPI(
           portableTextFeatures.types.block.name,
           KEY_TO_VALUE_ELEMENT.get(editor)
         )
+      },
+      isCollapsedSelection: () => {
+        return !!editor.selection &&  Range.isCollapsed(editor.selection)
+      },
+      isExpandedSelection: () => {
+        return !!editor.selection &&  Range.isExpanded(editor.selection)
       }
     })
     return editor

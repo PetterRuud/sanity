@@ -97,6 +97,10 @@ export class PortableTextEditor extends React.Component<Props, State> {
   static hasListStyle = (editor: PortableTextEditor, listStyle: string) => {
     return editor.editable?.hasListStyle(listStyle)
   }
+  static isCollapsedSelection = (editor: PortableTextEditor) =>
+    editor.editable?.isCollapsedSelection()
+  static isExpandedSelection = (editor: PortableTextEditor) =>
+    editor.editable?.isExpandedSelection()
   static isMarkActive = (editor: PortableTextEditor, mark: string) =>
     editor.editable?.isMarkActive(mark)
   static insertChild = (

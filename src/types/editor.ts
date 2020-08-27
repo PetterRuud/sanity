@@ -23,6 +23,8 @@ export interface EditableAPI {
   hasListStyle: (listStyle: string) => boolean
   insertBlock: (type: Type, value?: {[prop: string]: any}) => Path
   insertChild: (type: Type, value?: {[prop: string]: any}) => Path
+  isCollapsedSelection: () => boolean
+  isExpandedSelection: () => boolean
   isMarkActive: (mark: string) => boolean
   isVoid: (element: PortableTextBlock | PortableTextChild) => boolean
   marks: () => string[]
