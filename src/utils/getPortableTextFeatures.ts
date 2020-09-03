@@ -23,7 +23,9 @@ export function getPortableTextFeatures(portabletextType): PortableTextFeatures 
     throw new Error('Span type not found in schema (required)')
   }
   const inlineObjectTypes: Type[] = ofType.filter(memberType => memberType.name !== 'span')
-  const blockObjectTypes: Type[] = portabletextType.of.filter(field => field.name !== 'block')
+  const blockObjectTypes: Type[] = portabletextType.of.filter(
+    field => field.name !== blockType.name
+  )
   const annotations = resolveEnabledAnnotationTypes(spanType)
   return {
     styles: resolveEnabledStyles(blockType),
@@ -88,12 +90,12 @@ function resolveEnabledListItems(blockType) {
 }
 
 function findBlockType(type) {
-  if (type.name === 'block') {
-    return type
-  }
-
   if (type.type) {
     return findBlockType(type.type)
+  }
+
+  if (type.name === 'block') {
+    return type
   }
 
   return null
