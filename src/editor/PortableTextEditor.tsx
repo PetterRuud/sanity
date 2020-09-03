@@ -244,7 +244,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
         this.flush()
         onChange(next)
         break
-      case 'unset':
       default:
         onChange(next)
     }
