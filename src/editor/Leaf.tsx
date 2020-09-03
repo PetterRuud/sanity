@@ -29,7 +29,7 @@ type LeafProps = {
 export const Leaf = (props: LeafProps) => {
   const editor = useEditor()
   const selected = useSelected()
-  const {attributes, children, leaf, portableTextFeatures, keyGenerator} = props
+  const {attributes, children, leaf, portableTextFeatures, keyGenerator, renderChild} = props
   const spanRef = React.useRef(null)
   let returnedChildren = children
   const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
@@ -116,6 +116,16 @@ export const Leaf = (props: LeafProps) => {
           }
         }
       })
+    }
+    if (renderChild) {
+      const child = blockElement.children.find(child => child._key === leaf._key) // Ensure object equality
+      returnedChildren = renderChild(
+        child,
+        portableTextFeatures.types.span,
+        {focused, selected, path, annotations},
+        () => returnedChildren,
+        spanRef
+      )
     }
   }
   debugRenders && debug(`Render ${leaf._key} (span)`)
