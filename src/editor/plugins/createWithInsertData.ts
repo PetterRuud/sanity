@@ -1,4 +1,4 @@
-import {htmlToBlocks} from '@sanity/block-tools'
+import {htmlToBlocks, normalizeBlock} from '@sanity/block-tools'
 import {PortableTextFeatures, PortableTextBlock} from '../../types/portableText'
 import {EditorChanges, PortableTextSlateEditor} from '../../types/editor'
 import {Transforms, Node, Editor, Range} from 'slate'
@@ -100,8 +100,12 @@ export function createWithInsertData(
           portableText = fromSlateValue(fragment, portableTextFeatures.types.block.name)
           insertedType = 'Slate Fragment'
         } else if (html) {
-          // HTML
+          // HTML (TODO: get rid of @sanity/block-tools)
           portableText = htmlToBlocks(html, portableTextFeatures.types.portableText)
+            // Ensure it has keys
+            .map(block =>
+              normalizeBlock(block, {blockTypeName: portableTextFeatures.types.block.name})
+            )
           fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
           insertedType = 'HTML'
         } else {
