@@ -4,7 +4,6 @@ import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 import {toPortableTextRange} from '../../utils/selection'
 import {Subject} from 'rxjs'
-import {throttle} from 'lodash'
 
 const debug = debugWithName('plugin:withPortableTextLists')
 const MAX_LIST_LEVEL = 10
@@ -133,7 +132,7 @@ export function createWithPortableTextLists(
       return true // Note: we are exiting the plugin chain by not returning editor (or hotkey plugin 'enter' will fire)
     }
 
-    editor.pteIncrementBlockLevels = throttle((reverse?: boolean): boolean => {
+    editor.pteIncrementBlockLevels = (reverse?: boolean): boolean => {
       if (!editor.selection) {
         return false
       }
@@ -164,7 +163,7 @@ export function createWithPortableTextLists(
       change$.next({type: 'selection', selection: toPortableTextRange(editor)})
       editor.onChange()
       return true
-    }, 100)
+    }
 
     editor.pteHasListStyle = (listStyle: string): boolean => {
       if (!editor.selection) {
