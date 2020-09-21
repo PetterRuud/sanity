@@ -1,7 +1,7 @@
 import {isEqual} from 'lodash'
 import {Node, Element} from 'slate'
+import {PathSegment} from '@sanity/types'
 import {PortableTextBlock, PortableTextChild} from '../types/portableText'
-import {PathSegment} from '../types/path'
 
 type Partial<T> = {
   [P in keyof T]?: T[P]

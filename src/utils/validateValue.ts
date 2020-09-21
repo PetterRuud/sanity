@@ -1,5 +1,5 @@
-import {set, unset, insert} from '../patch/PatchEvent'
 import {isObject} from 'lodash'
+import {set, unset, insert} from '../patch/PatchEvent'
 import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
 import {InvalidValueResolution} from '../types/editor'
 

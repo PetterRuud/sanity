@@ -1,7 +1,8 @@
-import {Editor, Point, Path as SlatePath, Range, Element, Node} from 'slate'
-import {EditorSelection, EditorSelectionPoint} from '../types/editor'
-import {PortableTextBlock} from 'src/types/portableText'
 import {isEqual} from 'lodash'
+import {Editor, Point, Path as SlatePath, Range, Element, Node} from 'slate'
+import {PortableTextBlock} from '../types/portableText'
+import {EditorSelection, EditorSelectionPoint} from '../types/editor'
+import {isKeySegment} from '@sanity/types'
 
 export function createKeyedPath(point: Point, editor: Editor) {
   let blockPath = [point.path[0]]
@@ -39,7 +40,7 @@ export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): 
   const [block, blockPath] = Array.from(
     Editor.nodes(editor, {
       at: [],
-      match: n => typeof point.path[0] === 'object' && n._key === point.path[0]._key
+      match: n => isKeySegment(point.path[0]) && n._key === point.path[0]._key
     })
   )[0] || [undefined, undefined]
   if (!block || !Element.isElement(block)) {

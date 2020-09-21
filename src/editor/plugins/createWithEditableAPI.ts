@@ -8,17 +8,17 @@ import {
   Operation
 } from 'slate'
 import {isEqual} from 'lodash'
+import {Path} from '@sanity/types'
 import {ReactEditor} from '@sanity/slate-react'
+import {DOMNode} from '@sanity/slate-react/dist/utils/dom'
 import {Type} from '../../types/schema'
 import {PortableTextBlock, PortableTextChild} from '../../types/portableText'
-import {Path} from '../../types/path'
 import {EditorSelection, PortableTextSlateEditor} from '../../types/editor'
 import {toSlateValue, fromSlateValue, isEqualToEmptyEditor} from '../../utils/values'
 import {toSlateRange, toPortableTextRange} from '../../utils/selection'
 import {PortableTextEditor} from '../PortableTextEditor'
 
 import {debugWithName} from '../../utils/debug'
-import {DOMNode} from '@sanity/slate-react/dist/utils/dom'
 import {KEY_TO_VALUE_ELEMENT} from '../../utils/weakMaps'
 
 const debug = debugWithName('API:editable')
@@ -462,10 +462,10 @@ export function createWithEditableAPI(
         )
       },
       isCollapsedSelection: () => {
-        return !!editor.selection &&  Range.isCollapsed(editor.selection)
+        return !!editor.selection && Range.isCollapsed(editor.selection)
       },
       isExpandedSelection: () => {
-        return !!editor.selection &&  Range.isExpanded(editor.selection)
+        return !!editor.selection && Range.isExpanded(editor.selection)
       }
     })
     return editor

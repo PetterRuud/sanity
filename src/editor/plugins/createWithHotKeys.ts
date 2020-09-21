@@ -1,11 +1,11 @@
 import {Editor, Transforms, Path, Range} from 'slate'
 import isHotkey from 'is-hotkey'
+import {ReactEditor} from '@sanity/slate-react'
 import {PortableTextSlateEditor} from '../../types/editor'
 import {HotkeyOptions} from '../../types/options'
 import {debugWithName} from '../../utils/debug'
 import {toSlateValue} from '../../utils/values'
 import {PortableTextFeatures} from 'src/types/portableText'
-import {ReactEditor} from '@sanity/slate-react'
 import {PortableTextEditor} from '../PortableTextEditor'
 
 const debug = debugWithName('plugin:withHotKeys')

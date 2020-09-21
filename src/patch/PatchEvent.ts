@@ -1,8 +1,8 @@
-import {prefixPath, set, unset, setIfMissing, insert, diffMatchPatch} from './patches'
-
+import {PathSegment} from '@sanity/types'
 import {flatten} from 'lodash'
+
 import {Patch} from '../types/patch'
-import {PathSegment} from '../types/path'
+import {prefixPath, set, unset, setIfMissing, insert, diffMatchPatch} from './patches'
 
 type PatchArg = Patch | Array<Patch>
 

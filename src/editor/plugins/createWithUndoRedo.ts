@@ -13,9 +13,9 @@ import {
   RemoveTextOperation,
   SelectionOperation
 } from 'slate'
-import {Patch} from '../../types/patch'
-import {PatchObservable, PortableTextSlateEditor} from 'src/types/editor'
 import * as DMP from 'diff-match-patch'
+import {Patch} from '../../types/patch'
+import {PatchObservable, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 import {isPatching} from '../../utils/withoutPatching'
 

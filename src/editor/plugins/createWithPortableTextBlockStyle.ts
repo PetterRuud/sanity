@@ -1,9 +1,9 @@
+import {Subject} from 'rxjs'
 import {Editor, Transforms, Element, Path} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 import {toPortableTextRange} from '../../utils/selection'
-import {Subject} from 'rxjs'
 
 const debug = debugWithName('plugin:withPortableTextBlockStyle')
 
@@ -69,7 +69,8 @@ export function createWithPortableTextBlockStyle(
           debug(`Unsetting block style '${blockStyle}'`)
           Transforms.setNodes(editor, {...rest, style: undefined}, {at: path})
         } else {
-          const defaultStyle = portableTextFeatures.styles[0] && portableTextFeatures.styles[0].value
+          const defaultStyle =
+            portableTextFeatures.styles[0] && portableTextFeatures.styles[0].value
           if (blockStyle) {
             debug(`Setting style '${blockStyle}'`)
           } else {
@@ -79,8 +80,7 @@ export function createWithPortableTextBlockStyle(
             editor,
             {
               ...rest,
-              style:
-                blockStyle || defaultStyle
+              style: blockStyle || defaultStyle
             },
             {at: path}
           )

@@ -1,3 +1,4 @@
+import {Path, PathSegment} from '@sanity/types'
 import * as DMP from 'diff-match-patch'
 
 import {
@@ -8,7 +9,6 @@ import {
   UnsetPatch,
   DiffMatchPatch
 } from '../types/patch'
-import {Path, PathSegment} from '../types/path'
 
 export function setIfMissing(value: any, path: Path = []): SetIfMissingPatch {
   return {
@@ -20,7 +20,11 @@ export function setIfMissing(value: any, path: Path = []): SetIfMissingPatch {
 
 const dmp = new DMP.diff_match_patch()
 
-export function diffMatchPatch(currentValue: string, nextValue: string, path: Path = []): DiffMatchPatch {
+export function diffMatchPatch(
+  currentValue: string,
+  nextValue: string,
+  path: Path = []
+): DiffMatchPatch {
   const patch = dmp
     .patch_make(currentValue, nextValue)
     .map(patch => patch.toString())

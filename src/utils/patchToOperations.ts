@@ -1,6 +1,6 @@
-import {Patch, InsertPatch, UnsetPatch} from '../types/patch'
-import {Path, KeyedSegment, PathSegment} from '../types/path'
 import {Editor, Transforms} from 'slate'
+import {Path, KeyedSegment, PathSegment} from '@sanity/types'
+import {Patch, InsertPatch, UnsetPatch} from '../types/patch'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
 import {toSlateValue} from './values'
 import {debugWithName} from './debug'

@@ -1,8 +1,8 @@
 import * as DMP from 'diff-match-patch'
 import {debounce, isEqual} from 'lodash'
 import {Subject} from 'rxjs'
-import {setIfMissing} from '../../patch/PatchEvent'
 import {Editor, Operation, Transforms, Path, Node, Range} from 'slate'
+import {setIfMissing} from '../../patch/PatchEvent'
 import {Patch} from '../../types/patch'
 import {unset} from './../../patch/PatchEvent'
 import {

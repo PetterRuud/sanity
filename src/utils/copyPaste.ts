@@ -4,7 +4,7 @@ import {fromSlateValue} from '../utils/values'
 
 import DOMNode = globalThis.Node
 import DOMText = globalThis.Text
-import {PortableTextFeatures} from 'src/types/portableText'
+import {PortableTextFeatures} from '../types/portableText'
 import {KEY_TO_VALUE_ELEMENT} from './weakMaps'
 
 const isDOMText = (value: any): value is DOMText => {

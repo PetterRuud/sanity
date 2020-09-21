@@ -3,9 +3,9 @@
  * This plugin will change Slate's default marks model (every prop is a mark) with the Portable Text model (marks is an array of strings on prop .marks).
  */
 
-import {Editor, Range, Transforms, Text, Path, NodeEntry, Element} from 'slate'
-import {isEqual, flatten, uniq} from 'lodash'
 import {Subject} from 'rxjs'
+import {isEqual, flatten, uniq} from 'lodash'
+import {Editor, Range, Transforms, Text, Path, NodeEntry, Element} from 'slate'
 
 import {debugWithName} from '../../utils/debug'
 import {EditorChange, PortableTextSlateEditor} from '../../types/editor'

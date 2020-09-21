@@ -1,5 +1,5 @@
-import {PortableTextFeatures} from '../types/portableText'
 import {Subject} from 'rxjs'
+import {PortableTextFeatures} from '../types/portableText'
 import {EditorChange, PatchObservable} from '../types/editor'
 import {PortableTextEditor} from '../editor/PortableTextEditor'
 

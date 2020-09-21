@@ -1,9 +1,9 @@
+import {Subject} from 'rxjs'
 import {Editor, Transforms, Element} from 'slate'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 import {toPortableTextRange} from '../../utils/selection'
-import {Subject} from 'rxjs'
 
 const debug = debugWithName('plugin:withPortableTextLists')
 const MAX_LIST_LEVEL = 10
@@ -62,11 +62,7 @@ export function createWithPortableTextLists(
       selectedBlocks.forEach(([node, path]) => {
         const {listItem, level, ...rest} = node
         debug(`Unsetting list '${listItemStyle}'`)
-        Transforms.setNodes(
-          editor,
-          {...rest, listItem: undefined, level: undefined},
-          {at: path}
-        )
+        Transforms.setNodes(editor, {...rest, listItem: undefined, level: undefined}, {at: path})
       })
       // Emit a new selection here (though it might be the same).
       // This is for toolbars etc that listens to selection changes to update themselves.

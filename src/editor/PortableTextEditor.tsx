@@ -1,11 +1,11 @@
 import React from 'react'
+import {Path} from '@sanity/types'
 import {randomKey} from '../utils/randomKey'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
 import {Type} from '../types/schema'
 import {Patch} from '../types/patch'
-import {Path} from '../types/path'
 import {
   EditorSelection,
   EditorChange,

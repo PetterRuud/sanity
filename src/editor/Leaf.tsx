@@ -11,6 +11,7 @@ import {
 } from '../types/editor'
 import {debugWithName} from '../utils/debug'
 import {DraggableChild} from './DraggableChild'
+
 const debug = debugWithName('components:Leaf')
 const debugRenders = false
 
