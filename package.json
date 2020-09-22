@@ -42,7 +42,7 @@
     "@sanity/block-tools": "^1.150.6",
     "@sanity/schema": "^1.150.3",
     "@sanity/slate-react": "0.58.6",
-    "@sanity/types": "^1.150.8-review-changes.644",
+    "@sanity/types": "^1.150.7",
     "debug": "^4.1.1",
     "get-random-values": "^1.2.0",
     "is-hotkey": "^0.1.6",
