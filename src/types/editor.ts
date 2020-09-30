@@ -19,7 +19,7 @@ export interface EditableAPI {
   focusBlock: () => PortableTextBlock | undefined
   focusChild: () => PortableTextChild | undefined
   getSelection: () => EditorSelection | undefined
-  getValue: () => PortableTextBlock | undefined
+  getValue: () => PortableTextBlock[] | undefined
   hasBlockStyle: (style: string) => boolean
   hasListStyle: (listStyle: string) => boolean
   insertBlock: (type: Type, value?: {[prop: string]: any}) => Path
