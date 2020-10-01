@@ -214,7 +214,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
   private flush = () => {
     const {onChange} = this.props
     const finalPatches = compactPatches(this.pendingPatches)
-    if (finalPatches.length) {
+    if (finalPatches.length > 0) {
       onChange({type: 'mutation', patches: finalPatches})
     }
     this.pendingPatches = []

@@ -92,7 +92,7 @@ export function createWithPatches(
         return editor
       }
 
-      if (editorWasEmpty) {
+      if (editorWasEmpty && operation.type !== 'set_selection') {
         patches = [setIfMissing(previousChildren, [])]
       }
 
@@ -127,7 +127,10 @@ export function createWithPatches(
       }
 
       // Unset the value if editor has become empty
-      if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
+      if (
+        isEqualToEmptyEditor(editor.children, portableTextFeatures) &&
+        operation.type !== 'set_selection'
+      ) {
         patches.push(unset([]))
         change$.next({
           type: 'unset',
