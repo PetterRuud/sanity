@@ -203,6 +203,10 @@ export class PortableTextEditor extends React.Component<Props, State> {
     this.changeSubscription.unsubscribe()
   }
 
+  componentDidUpdate() {
+    this.readOnly = this.props.readOnly || false
+  }
+
   public setEditable = editable => {
     this.editable = {...this.editable, ...editable}
     this.change$.next({type: 'ready'})
