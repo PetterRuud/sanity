@@ -234,7 +234,7 @@ export function createWithEditableAPI(
         if (slatePath) {
           const [block, blockPath] = Editor.node(editor, slatePath.focus.path.slice(0, 1))
           if (block && blockPath && typeof block._key === 'string') {
-            if (slatePath.focus.path.length === 1) {
+            if (path.length === 1 && slatePath.focus.path.length === 1) {
               return [
                 fromSlateValue([block], portableTextFeatures.types.block.name)[0],
                 [{_key: block._key}]
