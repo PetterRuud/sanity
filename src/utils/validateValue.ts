@@ -1,6 +1,6 @@
-import {isObject} from 'lodash'
+import {flatten, isObject, uniq} from 'lodash'
 import {set, unset, insert} from '../patch/PatchEvent'
-import {PortableTextBlock, PortableTextFeatures} from '../types/portableText'
+import {PortableTextBlock, PortableTextChild, PortableTextFeatures} from '../types/portableText'
 import {InvalidValueResolution} from '../types/editor'
 
 export function validateValue(
@@ -78,6 +78,70 @@ export function validateValue(
           }
           return true
         }
+        // Test that markDefs exists
+        if (!blk.markDefs) {
+          resolution = {
+            patches: [set({...blk, markDefs: []}, [{_key: blk._key}])],
+            description: `Block is missing required key 'markDefs'.`,
+            action: 'Add empty markDefs array',
+            item: blk
+          }
+          return true
+        }
+
+        const allUsedMarks: string[] = uniq(
+          flatten(
+            blk.children
+              .filter(cld => cld._type === portableTextFeatures.types.span.name)
+              .map(cld => cld.marks)
+          )
+        )
+        // Test that all markDefs are in use
+        if (blk.markDefs && blk.markDefs.length > 0) {
+          const unusedMarkDefs: string[] = uniq(
+            blk.markDefs.map(def => def._key).filter(key => !allUsedMarks.includes(key))
+          )
+          if (unusedMarkDefs.length > 0) {
+            resolution = {
+              patches: unusedMarkDefs.map(key =>
+                unset([{_key: blk._key}, 'markDefs', {_key: key}])
+              ),
+              description: `Block has unused mark definitions: ${unusedMarkDefs.join(', ')}.`,
+              action: 'Remove unused markDefs',
+              item: blk
+            }
+            return true
+          }
+        }
+
+        // Test that every annotation mark used has a definition
+        const annotationMarks = allUsedMarks.filter(
+          mark => !portableTextFeatures.decorators.map(dec => dec.value).includes(mark)
+        )
+        const orphanedMarks = annotationMarks.filter(
+          mark => !blk.markDefs.find(def => def._key === mark)
+        )
+        if (orphanedMarks.length > 0) {
+          const mark = orphanedMarks[0]
+          const child = blk.children.find(
+            cld => Array.isArray(cld.marks) && cld.marks.includes(mark)
+          ) as PortableTextChild
+          if (child) {
+            resolution = {
+              patches: [
+                set(
+                  child.marks.filter(cmrk => cmrk !== mark),
+                  [{_key: blk._key}, 'children', {_key: child._key}, 'marks']
+                )
+              ],
+              description: `Span with _key '${child._key}' has an orphaned mark: ${mark}`,
+              action: 'Remove orphaned mark',
+              item: blk
+            }
+            return true
+          }
+        }
+
         // Test that children is lengthy
         if (blk.children && blk.children.length === 0) {
           const newSpan = {
@@ -93,7 +157,7 @@ export function validateValue(
           }
           return true
         }
-        // Test very child
+        // Test every child
         if (
           blk.children.some((child, cIndex) => {
             if (!child._key) {
