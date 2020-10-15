@@ -21,22 +21,21 @@ export function createWithPortableTextMarkModel(
 ) {
   return function withPortableTextMarkModel(editor: PortableTextSlateEditor) {
     // Extend Slate's default normalization. Merge spans with same set of .marks when doing merge_node operations
-    const {normalizeNode} = editor
+    const {apply, normalizeNode} = editor
     editor.normalizeNode = nodeEntry => {
       normalizeNode(nodeEntry)
-      if (editor.operations.some(op => op.type === 'merge_node')) {
+      if (
+        editor.operations.some(op => ['remove_node', 'remove_text', 'merge_node'].includes(op.type))
+      ) {
         mergeSpans(editor)
       }
       // Check consistency of markDefs
       if (
         editor.operations.some(op =>
-          ['split_node', 'remove_node', 'remove_text', 'merge_node', 'set_selection'].includes(
-            op.type
-          )
+          ['split_node', 'remove_node', 'remove_text', 'merge_node'].includes(op.type)
         )
       ) {
         normalizeMarkDefs(editor)
-        ensureEmptyTextAfterEndingAnnotation(editor)
       }
       // This should not be needed? Commented out for now.
       // // Ensure that every span node has .marks
@@ -47,6 +46,53 @@ export function createWithPortableTextMarkModel(
       //     Transforms.setNodes(editor, {marks: []}, {at: path})
       //   }
       // }
+    }
+
+    // Special hook before inserting text at the end of an annotation.
+    // Split and remove annotation marks in that case when text is inserted
+    editor.apply = op => {
+      if (op.type === 'insert_text') {
+        const {selection} = editor
+        if (selection && Range.isCollapsed(selection)) {
+          const [node] = Array.from(
+            Editor.nodes(editor, {
+              mode: 'lowest',
+              at: selection.focus,
+              match: n => n._type === portableTextFeatures.types.span.name,
+              voids: false
+            })
+          )[0] || [undefined]
+          if (
+            node &&
+            node.text &&
+            typeof node.text === 'string' &&
+            node.text.length === selection.focus.offset &&
+            Array.isArray(node.marks) &&
+            node.marks.length > 0
+          ) {
+            apply(op)
+            Editor.withoutNormalizing(editor, () => {
+              Transforms.splitNodes(editor, {
+                match: Text.isText,
+                at: {...selection.focus, offset: selection.focus.offset}
+              })
+              const marksWithoutAnnotationMarks: string[] = (
+                {
+                  ...(Editor.marks(editor) || {})
+                }.marks || []
+              ).filter(mark => portableTextFeatures.decorators.map(t => t.value).includes(mark))
+              Transforms.setNodes(
+                editor,
+                {marks: marksWithoutAnnotationMarks},
+                {at: Path.next(selection.focus.path)}
+              )
+            })
+            editor.operations.filter(op => op.type !== 'insert_text').map(op => apply(op))
+            return
+          }
+        }
+      }
+      apply(op)
     }
 
     // Override built in addMark function
@@ -155,7 +201,7 @@ export function createWithPortableTextMarkModel(
         Editor.addMark(editor, mark, true)
       }
       const newSelection = toPortableTextRange(editor)
-      if (newSelection !== undefined) {
+      if (newSelection) {
         // Emit a new selection here (though it might be the same).
         // This is for toolbars etc that listens to selection changes to update themselves.
         change$.next({type: 'selection', selection: newSelection})
@@ -167,7 +213,6 @@ export function createWithPortableTextMarkModel(
 
   /**
    * Normalize re-marked spans in selection
-   *
    * @param {Editor} editor
    */
   function mergeSpans(editor: Editor) {
@@ -175,50 +220,22 @@ export function createWithPortableTextMarkModel(
     if (selection) {
       for (const [node, path] of Array.from(
         Editor.nodes(editor, {
-          at: Editor.range(editor, [selection.anchor.path[0]], [selection.focus.path[0]]),
-          match: Text.isText
+          at: Editor.range(editor, [selection.anchor.path[0]], [selection.focus.path[0]])
         })
       ).reverse()) {
-        const [parent] = Editor.node(editor, Path.parent(path))
+        const [parent] = path.length > 1 ? Editor.node(editor, Path.parent(path)) : [undefined]
         const nextPath = [path[0], path[1] + 1]
         if (Editor.isBlock(editor, parent)) {
-          const nextTextNode = parent.children[nextPath[1]]
-          if (nextTextNode && nextTextNode.text && isEqual(nextTextNode.marks, node.marks)) {
+          const nextNode = parent.children[nextPath[1]]
+          if (
+            node._type === 'span' &&
+            nextNode &&
+            nextNode._type === 'span' &&
+            isEqual(nextNode.marks, node.marks)
+          ) {
             Transforms.mergeNodes(editor, {at: nextPath, voids: true})
           }
         }
-      }
-    }
-  }
-  /**
-   * Normalize markDefs
-   *
-   * @param {Editor} editor
-   */
-  function ensureEmptyTextAfterEndingAnnotation(editor: Editor) {
-    const {selection} = editor
-    if (selection) {
-      const [block] = Editor.node(editor, selection, {depth: 1})
-      const [span] = Editor.node(editor, selection, {depth: 2})
-      if (
-        block &&
-        span &&
-        Array.isArray(block.children) &&
-        span === block.children[block.children.length - 1] &&
-        Array.isArray(span.marks) &&
-        span.marks.some(
-          mark =>
-            Array.isArray(block.markDefs) && block.markDefs.map(def => def._key).includes(mark)
-        )
-      ) {
-        debug('Inserting space after annotation')
-        Transforms.insertNodes(
-          editor,
-          [{_type: 'span', text: '​ ', marks: [], _key: keyGenerator()}],
-          {
-            at: selection.focus
-          }
-        )
       }
     }
   }
