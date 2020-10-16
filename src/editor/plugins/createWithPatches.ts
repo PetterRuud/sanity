@@ -44,7 +44,7 @@ export function createWithPatches(
   let isThrottling = false
   return function withPatches(editor: PortableTextSlateEditor) {
     PATCHING.set(editor, true)
-    previousChildren = editor.children as Node[]
+    previousChildren = editor.children
 
     // This will cancel the throttle when the user is not producing anything for a short time
     const cancelThrottle = debounce(() => {
@@ -55,7 +55,7 @@ export function createWithPatches(
     // Inspect incoming patches and adjust editor selection accordingly.
     if (incomingPatche$) {
       incomingPatche$.subscribe((patch: Patch) => {
-        previousChildren = editor.children as Node[]
+        previousChildren = editor.children
         debug('Handling incoming patch', patch.type)
         if (isThrottling) {
           withoutPatching(editor, () => {
@@ -381,7 +381,7 @@ function adjustSelection(
       return
     }
     const [child, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
-    if (!child || typeof childIndex === 'undefined') {
+    if (!child) {
       return
     }
     if (selection.focus.path[0] === blockIndex && selection.focus.path[1] === childIndex) {
