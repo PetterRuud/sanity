@@ -122,20 +122,19 @@ export function validateValue(
           mark => !blk.markDefs.find(def => def._key === mark)
         )
         if (orphanedMarks.length > 0) {
-          const mark = orphanedMarks[0]
-          const child = blk.children.find(
-            cld => Array.isArray(cld.marks) && cld.marks.includes(mark)
-          ) as PortableTextChild
-          if (child) {
+          const children = blk.children.filter(
+            cld => Array.isArray(cld.marks) && cld.marks.some(mark => orphanedMarks.includes(mark))
+          ) as PortableTextChild[]
+          if (children) {
             resolution = {
-              patches: [
-                set(
-                  child.marks.filter(cmrk => cmrk !== mark),
+              patches: children.map(child => {
+                return set(
+                  child.marks.filter(cmrk => !orphanedMarks.includes(cmrk)),
                   [{_key: blk._key}, 'children', {_key: child._key}, 'marks']
                 )
-              ],
-              description: `Span with _key '${child._key}' has an orphaned mark: ${mark}`,
-              action: 'Remove orphaned mark',
+              }),
+              description: `This block contains marks that’s not supported by the current content model (${orphanedMarks.join(', ')}).`,
+              action: 'Remove invalid marks',
               item: blk
             }
             return true
