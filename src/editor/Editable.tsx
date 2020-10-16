@@ -5,20 +5,18 @@ import {normalizeBlock} from '@sanity/block-tools'
 import React, {useCallback, useMemo, useState, useEffect} from 'react'
 import {Editable as SlateEditable, Slate, withReact, ReactEditor} from '@sanity/slate-react'
 import {
+  EditorSelection,
+  OnBeforeInputFn,
+  OnCopyFn,
+  OnPasteFn,
   OnPasteResult,
   OnPasteResultOrPromise,
-  RenderChildFunction,
   RenderAnnotationFunction,
-  RenderDecoratorFunction
+  RenderBlockFunction,
+  RenderChildFunction,
+  RenderDecoratorFunction,
 } from '../types/editor'
 import {PortableTextBlock} from '../types/portableText'
-import {
-  EditorSelection,
-  OnPasteFn,
-  OnCopyFn,
-  OnBeforeInputFn,
-  RenderBlockFunction
-} from '../types/editor'
 import {createWithEditableAPI} from './plugins/createWithEditableAPI'
 import {HotkeyOptions} from '../types/options'
 import {toSlateValue, isEqualToEmptyEditor} from '../utils/values'
