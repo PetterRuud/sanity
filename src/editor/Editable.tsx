@@ -324,10 +324,10 @@ export const PortableTextEditable = (props: Props) => {
               normalizeBlock(block, {allowedDecorators})
             ) as PortableTextBlock[]
             const dataTransfer = new DataTransfer()
-            const string = JSON.stringify(
+            const stringToEncode = JSON.stringify(
               toSlateValue(blocksToInsertNormalized, portableTextFeatures.types.block.name)
             )
-            const encoded = window.btoa(encodeURIComponent(string))
+            const encoded = window.btoa(encodeURIComponent(stringToEncode))
             dataTransfer.setData('application/x-slate-fragment', encoded)
             editor.insertData(dataTransfer)
             change$.next({type: 'loading', isLoading: false})
