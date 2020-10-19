@@ -178,7 +178,6 @@ export class PortableTextEditor extends React.Component<Props, State> {
     // Validate the Portable Text value
     let state: State = {selection: null, invalidValueResolution: null}
     const validation = validateValue(props.value, this.portableTextFeatures, this.keyGenerator)
-
     if (props.value && !validation.valid) {
       this.change$.next({type: 'loading', isLoading: false})
       this.change$.next({
@@ -202,8 +201,25 @@ export class PortableTextEditor extends React.Component<Props, State> {
     this.changeSubscription.unsubscribe()
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps: Props) {
     this.readOnly = this.props.readOnly || false
+    // Validate again if value length has changed
+    if (this.props.value && (prevProps.value || []).length !== this.props.value.length) {
+      debug('Validating')
+      const validation = validateValue(
+        this.props.value,
+        this.portableTextFeatures,
+        this.keyGenerator
+      )
+      if (this.props.value && !validation.valid) {
+        this.change$.next({
+          type: 'invalidValue',
+          resolution: validation.resolution,
+          value: this.props.value
+        })
+        this.setState({invalidValueResolution: validation.resolution})
+      }
+    }
   }
 
   public setEditable = editable => {
