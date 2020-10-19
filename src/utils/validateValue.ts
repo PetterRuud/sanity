@@ -89,6 +89,23 @@ export function validateValue(
           return true
         }
 
+        // // Test that every span has .marks
+        // const spansWithUndefinedMarks = blk.children
+        //   .filter(cld => cld._type === portableTextFeatures.types.span.name)
+        //   .filter(cld => typeof cld.marks === 'undefined')
+
+        // if (spansWithUndefinedMarks.length > 0) {
+        //   const first = spansWithUndefinedMarks[0]
+        //   resolution = {
+        //     patches: [
+        //       set({...first, marks: []}, [{_key: blk._key}, 'children', {_key: first._key}])
+        //     ],
+        //     description: `Span has no .marks array`,
+        //     action: 'Add empty marks array',
+        //     item: first
+        //   }
+        //   return true
+        // }
         const allUsedMarks: string[] = uniq(
           flatten(
             blk.children
@@ -96,23 +113,23 @@ export function validateValue(
               .map(cld => cld.marks || [])
           )
         )
-        // Test that all markDefs are in use
-        if (blk.markDefs && blk.markDefs.length > 0) {
-          const unusedMarkDefs: string[] = uniq(
-            blk.markDefs.map(def => def._key).filter(key => !allUsedMarks.includes(key))
-          )
-          if (unusedMarkDefs.length > 0) {
-            resolution = {
-              patches: unusedMarkDefs.map(key =>
-                unset([{_key: blk._key}, 'markDefs', {_key: key}])
-              ),
-              description: `Block has unused mark definitions: ${unusedMarkDefs.join(', ')}.`,
-              action: 'Remove unused markDefs',
-              item: blk
-            }
-            return true
-          }
-        }
+        // // Test that all markDefs are in use
+        // if (blk.markDefs && blk.markDefs.length > 0) {
+        //   const unusedMarkDefs: string[] = uniq(
+        //     blk.markDefs.map(def => def._key).filter(key => !allUsedMarks.includes(key))
+        //   )
+        //   if (unusedMarkDefs.length > 0) {
+        //     resolution = {
+        //       patches: unusedMarkDefs.map(key =>
+        //         unset([{_key: blk._key}, 'markDefs', {_key: key}])
+        //       ),
+        //       description: `Block has unused mark definitions: ${unusedMarkDefs.join(', ')}.`,
+        //       action: 'Remove unused markDefs',
+        //       item: blk
+        //     }
+        //     return true
+        //   }
+        // }
 
         // Test that every annotation mark used has a definition
         const annotationMarks = allUsedMarks.filter(
@@ -121,7 +138,6 @@ export function validateValue(
         const orphanedMarks = annotationMarks.filter(
           mark => !blk.markDefs.find(def => def._key === mark)
         )
-        console.log(orphanedMarks)
         if (orphanedMarks.length > 0) {
           const children = blk.children.filter(
             cld => Array.isArray(cld.marks) && cld.marks.some(mark => orphanedMarks.includes(mark))
