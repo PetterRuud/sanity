@@ -150,9 +150,9 @@ export function validateValue(
                   [{_key: blk._key}, 'children', {_key: child._key}, 'marks']
                 )
               }),
-              description: `This block contains marks that’s not supported by the current content model (${orphanedMarks.join(
+              description: `Block with _key '${blk._key}' contains marks (${orphanedMarks.join(
                 ', '
-              )}).`,
+              )}) not supported by the current content model.`,
               action: 'Remove invalid marks',
               item: blk
             }
