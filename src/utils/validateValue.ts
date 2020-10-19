@@ -93,7 +93,7 @@ export function validateValue(
           flatten(
             blk.children
               .filter(cld => cld._type === portableTextFeatures.types.span.name)
-              .map(cld => cld.marks)
+              .map(cld => cld.marks || [])
           )
         )
         // Test that all markDefs are in use
@@ -121,6 +121,7 @@ export function validateValue(
         const orphanedMarks = annotationMarks.filter(
           mark => !blk.markDefs.find(def => def._key === mark)
         )
+        console.log(orphanedMarks)
         if (orphanedMarks.length > 0) {
           const children = blk.children.filter(
             cld => Array.isArray(cld.marks) && cld.marks.some(mark => orphanedMarks.includes(mark))
@@ -133,7 +134,9 @@ export function validateValue(
                   [{_key: blk._key}, 'children', {_key: child._key}, 'marks']
                 )
               }),
-              description: `This block contains marks that’s not supported by the current content model (${orphanedMarks.join(', ')}).`,
+              description: `This block contains marks that’s not supported by the current content model (${orphanedMarks.join(
+                ', '
+              )}).`,
               action: 'Remove invalid marks',
               item: blk
             }
