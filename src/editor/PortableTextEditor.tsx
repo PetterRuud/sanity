@@ -4,7 +4,7 @@ import {randomKey} from '../utils/randomKey'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
-import {Type} from '../types/schema'
+import {Type, RawType as RawSchemaType} from '../types/schema'
 import {Patch} from '../types/patch'
 import {
   EditorSelection,
@@ -21,7 +21,6 @@ import {PortableTextEditorSelectionContext} from './hooks/usePortableTextEditorS
 import {PortableTextEditorValueContext} from './hooks/usePortableTextEditorValue'
 import {compactPatches} from '../utils/patches'
 import {validateValue} from '../utils/validateValue'
-import {RawType as RawSchemaType} from '../types/schema'
 import {debugWithName} from '../utils/debug'
 
 export const defaultKeyGenerator = () => randomKey(12)
