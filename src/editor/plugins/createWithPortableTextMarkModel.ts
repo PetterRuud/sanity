@@ -1,6 +1,7 @@
 /**
  *
  * This plugin will change Slate's default marks model (every prop is a mark) with the Portable Text model (marks is an array of strings on prop .marks).
+ *
  */
 
 import {Subject} from 'rxjs'
@@ -36,6 +37,24 @@ export function createWithPortableTextMarkModel(
         )
       ) {
         normalizeMarkDefs(editor)
+      }
+      // Make sure we don't continue marks on a new empty block when the current one is split
+      const [, path] = nodeEntry
+      for (const op of editor.operations) {
+        if (
+          op.type === 'split_node' &&
+          op.path.length === 1 &&
+          op.path[0] === path[0] &&
+          !Path.equals(path, op.path)
+        ) {
+          const [child] = Editor.node(editor, [op.path[0] + 1, 0])
+          if (child.text === '') {
+            debug(`Removing leftover marks for new empty block`, op)
+            Transforms.setNodes(editor, {marks: []}, {at: [op.path[0] + 1, 0], voids: false})
+            editor.onChange()
+            break
+          }
+        }
       }
       // This should not be needed? Commented out for now.
       // // Ensure that every span node has .marks
@@ -234,6 +253,7 @@ export function createWithPortableTextMarkModel(
             isEqual(nextNode.marks, node.marks)
           ) {
             Transforms.mergeNodes(editor, {at: nextPath, voids: true})
+            editor.onChange()
           }
         }
       }
@@ -271,6 +291,7 @@ export function createWithPortableTextMarkModel(
               },
               {at: path}
             )
+            editor.onChange()
           }
         }
       }
