@@ -24,7 +24,7 @@ export function createWithPortableTextBlockStyle(
           op.type === 'split_node' &&
           op.path.length === 1 &&
           op.properties.style !== normalStyle &&
-          op.path[0] == path[0] &&
+          op.path[0] === path[0] &&
           !Path.equals(path, op.path)
         ) {
           const [child] = Editor.node(editor, [op.path[0] + 1, 0])

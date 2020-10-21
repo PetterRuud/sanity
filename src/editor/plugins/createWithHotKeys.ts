@@ -162,7 +162,9 @@ export function createWithHotkeys(
         let focusBlock
         try {
           ;[focusBlock] = Editor.node(editor, editor.selection.focus, {depth: 1})
-        } catch (err) {}
+        } catch (err) {
+          // Just ignore
+        }
         // List item enter key
         if (focusBlock && focusBlock.listItem) {
           editor.pteEndList() && event.preventDefault()
