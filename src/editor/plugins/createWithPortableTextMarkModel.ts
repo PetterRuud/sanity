@@ -21,38 +21,58 @@ export function createWithPortableTextMarkModel(
   change$: Subject<EditorChange>
 ) {
   return function withPortableTextMarkModel(editor: PortableTextSlateEditor) {
-    // Extend Slate's default normalization. Merge spans with same set of .marks when doing merge_node operations
     const {apply, normalizeNode} = editor
+    const decorators = portableTextFeatures.decorators.map(t => t.value)
+
+    // Extend Slate's default normalization. Merge spans with same set of .marks when doing merge_node operations
     editor.normalizeNode = nodeEntry => {
       normalizeNode(nodeEntry)
-      if (
-        editor.operations.some(op => ['remove_node', 'remove_text', 'merge_node'].includes(op.type))
-      ) {
-        mergeSpans(editor)
-      }
+      const [node, path] = nodeEntry
+      const isBlock = node._type === portableTextFeatures.types.block.name
+      const isSpan = node._type === portableTextFeatures.types.span.name
       // Check consistency of markDefs
       if (
+        isBlock &&
         editor.operations.some(op =>
           ['split_node', 'remove_node', 'remove_text', 'merge_node'].includes(op.type)
         )
       ) {
         normalizeMarkDefs(editor)
       }
-      // Make sure we don't continue marks on a new empty block when the current one is split
-      const [, path] = nodeEntry
-      for (const op of editor.operations) {
+      if (isSpan) {
+        if (!node.marks) {
+          debug('Adding .marks to span node')
+          Transforms.setNodes(editor, {marks: []}, {at: path})
+        }
         if (
-          op.type === 'split_node' &&
-          op.path.length === 1 &&
-          op.path[0] === path[0] &&
-          !Path.equals(path, op.path)
+          editor.operations.some(op =>
+            [
+              'insert_node',
+              'insert_text',
+              'merge_node',
+              'remove_node',
+              'remove_text',
+              'set_node'
+            ].includes(op.type)
+          )
         ) {
-          const [child] = Editor.node(editor, [op.path[0] + 1, 0])
-          if (child.text === '') {
-            debug(`Removing leftover marks for new empty block`, op)
-            Transforms.setNodes(editor, {marks: []}, {at: [op.path[0] + 1, 0], voids: false})
-            editor.onChange()
-            break
+          mergeSpans(editor)
+        }
+        // Make sure we don't continue marks on a new empty block when the current one is split
+        for (const op of editor.operations) {
+          if (
+            op.type === 'split_node' &&
+            op.path.length === 1 &&
+            op.path[0] === path[0] &&
+            !Path.equals(path, op.path)
+          ) {
+            const [child] = Editor.node(editor, [op.path[0] + 1, 0])
+            if (child.text === '') {
+              debug(`Removing leftover marks for new empty block`, op)
+              Transforms.setNodes(editor, {marks: []}, {at: [op.path[0] + 1, 0], voids: false})
+              editor.onChange()
+              break
+            }
           }
         }
       }
@@ -68,11 +88,10 @@ export function createWithPortableTextMarkModel(
     }
 
     // Special hook before inserting text at the end of an annotation.
-    // Split and remove annotation marks in that case when text is inserted
     editor.apply = op => {
       if (op.type === 'insert_text') {
         const {selection} = editor
-        if (selection && Range.isCollapsed(selection)) {
+        if (selection && Range.isCollapsed(selection) && Editor.marks(editor)?.marks.some(mark => !decorators.includes(mark))) {
           const [node] = Array.from(
             Editor.nodes(editor, {
               mode: 'lowest',
@@ -90,23 +109,20 @@ export function createWithPortableTextMarkModel(
             node.marks.length > 0
           ) {
             apply(op)
-            Editor.withoutNormalizing(editor, () => {
-              Transforms.splitNodes(editor, {
-                match: Text.isText,
-                at: {...selection.focus, offset: selection.focus.offset}
-              })
-              const marksWithoutAnnotationMarks: string[] = (
-                {
-                  ...(Editor.marks(editor) || {})
-                }.marks || []
-              ).filter(mark => portableTextFeatures.decorators.map(t => t.value).includes(mark))
-              Transforms.setNodes(
-                editor,
-                {marks: marksWithoutAnnotationMarks},
-                {at: Path.next(selection.focus.path)}
-              )
+            Transforms.splitNodes(editor, {
+              match: Text.isText,
+              at: {...selection.focus, offset: selection.focus.offset}
             })
-            editor.operations.filter(op => op.type !== 'insert_text').map(op => apply(op))
+            const marksWithoutAnnotationMarks: string[] = (
+              {
+                ...(Editor.marks(editor) || {})
+              }.marks || []
+            ).filter(mark => decorators.includes(mark))
+            Transforms.setNodes(
+              editor,
+              {marks: marksWithoutAnnotationMarks},
+              {at: Path.next(selection.focus.path)}
+            )
             return
           }
         }
@@ -140,7 +156,6 @@ export function createWithPortableTextMarkModel(
             ]
             Transforms.setNodes(editor, {marks}, {at: path})
           })
-          mergeSpans(editor)
         } else {
           const existingMarks: string[] =
             {
@@ -176,7 +191,6 @@ export function createWithPortableTextMarkModel(
               {at: path}
             )
           })
-          mergeSpans(editor)
         } else {
           const existingMarks: string[] =
             {
@@ -252,6 +266,7 @@ export function createWithPortableTextMarkModel(
             nextNode._type === 'span' &&
             isEqual(nextNode.marks, node.marks)
           ) {
+            debug('Merging spans')
             Transforms.mergeNodes(editor, {at: nextPath, voids: true})
             editor.onChange()
           }
