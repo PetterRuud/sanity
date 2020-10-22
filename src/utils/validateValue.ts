@@ -57,7 +57,18 @@ export function validateValue(
         return true
       }
       // Test that every block has valid _type
-      if (!blk._type || validBlockTypes.includes(blk._type) === false) {
+      if (!blk._type || !validBlockTypes.includes(blk._type)) {
+        // Special case where block type is set to default 'block', but the block type is named something else according to the schema.
+        if (blk._type === 'block') {
+          const currentBlockTypeName = portableTextFeatures.types.block.name
+          resolution = {
+            patches: [set({...blk, _type: currentBlockTypeName}, [{_key: blk._key}])],
+            description: `Block with _key '${blk._key}' has invalid type name '${blk._type}'. According to the schema, the block type name is '${currentBlockTypeName}'`,
+            action: `Use type '${currentBlockTypeName}'`,
+            item: blk
+          }
+          return true
+        }
         resolution = {
           patches: [unset([{_key: blk._key}])],
           description: `Block with _key '${blk._key}' has invalid _type '${blk._type}'`,
