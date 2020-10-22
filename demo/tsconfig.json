@@ -1,8 +1,5 @@
 {
-  "include": [
-    "dem/**/*.ts",
-    "demo/**/*.tsx"
-  ],
+  "include": ["demo/**/*.ts", "demo/**/*.tsx"],
   "compilerOptions": {
     "strict": false,
     "noUnusedLocals": false,
@@ -15,16 +12,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "skipLibCheck": true,
     "esModuleInterop": true,
     "moduleResolution": "node"
   },
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

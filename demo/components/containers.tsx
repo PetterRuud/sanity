@@ -10,8 +10,12 @@ export const EditorContainer = styled.div`
   height: 250px;
   border: 1px solid #ccc;
   overflow-y: scroll;
+  padding: 0.5em;
 `
 export const AppContainer = styled.div`
   font-family: arial;
   font-size: 0.8em;
+`
+
+export const ToolbarContainer = styled.div`
 `

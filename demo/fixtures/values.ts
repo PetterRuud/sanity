@@ -1,17 +1,17 @@
 import {PortableTextBlock} from '../../src/types/portableText'
 import {keyGenerator} from '../keyGenerator'
 
-export const createHelloFromPropsValue = (): PortableTextBlock[] => {
+export const createFromPropsValue = (): PortableTextBlock[] => {
   return [
     {
       _key: keyGenerator(),
       _type: 'block',
       markDefs: [],
       children: [
-        {_key: keyGenerator(), _type: 'span', text: ' from props change ', marks: []},
+        {_key: keyGenerator(), _type: 'span', text: 'Hello from props change ', marks: []},
       ]
     },
-    {_key: keyGenerator(), _type: 'gotcha', text: 'fnufnu'},
+    {_key: keyGenerator(), _type: 'someObject', color: 'red'},
     {
       _key: keyGenerator(),
       _type: 'block',
@@ -25,7 +25,7 @@ export const createHelloFromPropsValue = (): PortableTextBlock[] => {
   ]
 }
 
-export const initialPortableText: Block[] = [
+export const initialPortableText: PortableTextBlock[] = [
   {
     _key: keyGenerator(),
     _type: 'block',

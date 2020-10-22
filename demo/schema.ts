@@ -1,18 +1,20 @@
-import {PortableTextType, Type} from '../src/types/schema'
+import {some} from 'lodash'
+import {PortableTextType, Type, RawType} from '../src/types/schema'
 
-export const imageType: Type = {
+export const imageType: RawType = {
   type: 'image',
   name: 'blockImage'
 }
 
-export const gotcha: Type = {
+export const someObject: RawType = {
   type: 'object',
-  name: 'gotcha',
-  fields: [{type: 'string', name: 'title'}]
+  name: 'someObject',
+  fields: [{type: 'string', name: 'color'}]
 }
 
-export const blockType: PortableTextType = {
+export const blockType: RawType = {
   type: 'block',
+  name: 'block',
   styles: [
     {title: 'Normal', value: 'normal'},
     {title: 'H1', value: 'h1'},
@@ -23,11 +25,11 @@ export const blockType: PortableTextType = {
     {title: 'H6', value: 'h6'},
     {title: 'Quote', value: 'blockquote'}
   ],
-  of: [gotcha]
+  of: [someObject]
 }
 
-export const portableTextType: PortableTextType = {
+export const portableTextType: RawType = {
   type: 'array',
   name: 'body',
-  of: [blockType, gotcha]
+  of: [blockType, someObject]
 }
