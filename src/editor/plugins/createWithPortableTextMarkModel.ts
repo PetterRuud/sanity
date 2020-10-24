@@ -24,25 +24,17 @@ export function createWithPortableTextMarkModel(
     const {apply, normalizeNode} = editor
     const decorators = portableTextFeatures.decorators.map(t => t.value)
 
-    // Extend Slate's default normalization. Merge spans with same set of .marks when doing merge_node operations
+    // Extend Slate's default normalization. Merge spans with same set of .marks when doing merge_node operations, and clean up markDefs / marks
     editor.normalizeNode = nodeEntry => {
       normalizeNode(nodeEntry)
       const [node, path] = nodeEntry
       const isBlock = node._type === portableTextFeatures.types.block.name
       const isSpan = node._type === portableTextFeatures.types.span.name
-      // Check consistency of markDefs
-      if (
-        isBlock &&
-        editor.operations.some(op =>
-          ['split_node', 'remove_node', 'remove_text', 'merge_node'].includes(op.type)
-        )
-      ) {
-        normalizeMarkDefs(editor)
-      }
       if (isSpan) {
         if (!node.marks) {
           debug('Adding .marks to span node')
           Transforms.setNodes(editor, {marks: []}, {at: path})
+          editor.onChange()
         }
         if (
           editor.operations.some(op =>
@@ -60,9 +52,16 @@ export function createWithPortableTextMarkModel(
         }
         // Make sure we don't continue marks on a new empty block when the current one is split
         for (const op of editor.operations) {
+          const hasMarks =
+            (op.type === 'split_node' || op.type === 'merge_node') &&
+            op.properties.marks &&
+            Array.isArray(op.properties.marks) &&
+            op.properties.marks.length > 0
+
           if (
             op.type === 'split_node' &&
             op.path.length === 1 &&
+            op.position === 1 &&
             op.path[0] === path[0] &&
             !Path.equals(path, op.path)
           ) {
@@ -74,24 +73,41 @@ export function createWithPortableTextMarkModel(
               break
             }
           }
+          if (
+            hasMarks &&
+            op.type === 'split_node' &&
+            op.path.length === 2 &&
+            op.position === 0 &&
+            op.path[1] === 0 &&
+            !Path.equals(path, op.path)
+          ) {
+            debug(`Removing leftover marks when splitting in the start of a block`, op)
+            Transforms.setNodes(editor, {marks: []}, {at: [op.path[0], 0], voids: false})
+            editor.onChange()
+            break
+          }
+        }
+        // Check consistency of markDefs
+        if (
+          isBlock &&
+          editor.operations.some(op =>
+            ['split_node', 'remove_node', 'remove_text', 'merge_node'].includes(op.type)
+          )
+        ) {
+          normalizeMarkDefs(editor)
         }
       }
-      // This should not be needed? Commented out for now.
-      // // Ensure that every span node has .marks
-      // const [node, path] = nodeEntry
-      // if (node._type === portableTextFeatures.types.span.name) {
-      //   if (!node.marks) {
-      //     debug('Adding .marks to span node')
-      //     Transforms.setNodes(editor, {marks: []}, {at: path})
-      //   }
-      // }
     }
 
     // Special hook before inserting text at the end of an annotation.
     editor.apply = op => {
       if (op.type === 'insert_text') {
         const {selection} = editor
-        if (selection && Range.isCollapsed(selection) && Editor.marks(editor)?.marks.some(mark => !decorators.includes(mark))) {
+        if (
+          selection &&
+          Range.isCollapsed(selection) &&
+          Editor.marks(editor)?.marks.some(mark => !decorators.includes(mark))
+        ) {
           const [node] = Array.from(
             Editor.nodes(editor, {
               mode: 'lowest',
