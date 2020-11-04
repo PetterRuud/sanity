@@ -11,7 +11,7 @@ import {Editor, Range, Transforms, Text, Path, NodeEntry, Element} from 'slate'
 import {debugWithName} from '../../utils/debug'
 import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {toPortableTextRange} from '../../utils/selection'
-import {PortableTextFeatures} from '../../types/portableText'
+import {PortableTextChild, PortableTextFeatures} from '../../types/portableText'
 
 const debug = debugWithName('plugin:withPortableTextMarkModel')
 
@@ -70,7 +70,6 @@ export function createWithPortableTextMarkModel(
               debug(`Removing leftover marks for new empty block`, op)
               Transforms.setNodes(editor, {marks: []}, {at: [op.path[0] + 1, 0], voids: false})
               editor.onChange()
-              break
             }
           }
           if (
@@ -84,18 +83,64 @@ export function createWithPortableTextMarkModel(
             debug(`Removing leftover marks when splitting in the start of a block`, op)
             Transforms.setNodes(editor, {marks: []}, {at: [op.path[0], 0], voids: false})
             editor.onChange()
-            break
+          }
+          if (
+            op.type === 'merge_node' &&
+            op.path.length === 1 &&
+            op.properties._type === portableTextFeatures.types.block.name &&
+            Array.isArray(op.properties.markDefs) &&
+            op.properties.markDefs.length > 0
+          ) {
+            const targetPath = [op.path[0] - 1]
+            const [targetBlock] = Editor.node(editor, targetPath)
+            debug(`Copying markDefs over to target block`, op)
+            if (targetBlock) {
+              const oldDefs = (Array.isArray(targetBlock.markDefs) && targetBlock.markDefs) || []
+              Transforms.setNodes(
+                editor,
+                {markDefs: uniq([...oldDefs, ...op.properties.markDefs])},
+                {at: targetPath, voids: false}
+              )
+              editor.onChange()
+            }
+          }
+          if (
+            op.type === 'split_node' &&
+            op.path.length === 1 &&
+            op.properties._type === portableTextFeatures.types.block.name &&
+            Array.isArray(op.properties.markDefs) &&
+            op.properties.markDefs.length > 0
+          ) {
+            const [targetBlock] = Editor.node(editor, op.path)
+            debug(`Reoving any leftover markDefs`, op)
+            if (
+              targetBlock &&
+              Array.isArray(targetBlock.markDefs) &&
+              Array.isArray(targetBlock.children)
+            ) {
+              const newMarkDefs = targetBlock.markDefs.filter(def => {
+                return (targetBlock.children as PortableTextChild[]).find(child => {
+                  return Array.isArray(child.marks) && child.marks.includes(def._key)
+                })
+              })
+              Transforms.setNodes(
+                editor,
+                {markDefs: uniq(newMarkDefs)},
+                {at: op.path, voids: false}
+              )
+              editor.onChange()
+            }
           }
         }
-        // Check consistency of markDefs
-        if (
-          isBlock &&
-          editor.operations.some(op =>
-            ['split_node', 'remove_node', 'remove_text', 'merge_node'].includes(op.type)
-          )
-        ) {
-          normalizeMarkDefs(editor)
-        }
+      }
+      // Check consistency of markDefs
+      if (
+        isBlock &&
+        editor.operations.some(op =>
+          ['split_node', 'remove_node', 'remove_text', 'merge_node'].includes(op.type)
+        )
+      ) {
+        normalizeMarkDefs(editor)
       }
     }
 
