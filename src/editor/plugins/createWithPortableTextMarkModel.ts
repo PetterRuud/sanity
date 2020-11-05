@@ -52,16 +52,9 @@ export function createWithPortableTextMarkModel(
         }
         // Make sure we don't continue marks on a new empty block when the current one is split
         for (const op of editor.operations) {
-          const hasMarks =
-            (op.type === 'split_node' || op.type === 'merge_node') &&
-            op.properties.marks &&
-            Array.isArray(op.properties.marks) &&
-            op.properties.marks.length > 0
-
           if (
             op.type === 'split_node' &&
             op.path.length === 1 &&
-            op.position === 1 &&
             op.path[0] === path[0] &&
             !Path.equals(path, op.path)
           ) {
@@ -71,18 +64,6 @@ export function createWithPortableTextMarkModel(
               Transforms.setNodes(editor, {marks: []}, {at: [op.path[0] + 1, 0], voids: false})
               editor.onChange()
             }
-          }
-          if (
-            hasMarks &&
-            op.type === 'split_node' &&
-            op.path.length === 2 &&
-            op.position === 0 &&
-            op.path[1] === 0 &&
-            !Path.equals(path, op.path)
-          ) {
-            debug(`Removing leftover marks when splitting in the start of a block`, op)
-            Transforms.setNodes(editor, {marks: []}, {at: [op.path[0], 0], voids: false})
-            editor.onChange()
           }
           if (
             op.type === 'merge_node' &&
@@ -112,7 +93,7 @@ export function createWithPortableTextMarkModel(
             op.properties.markDefs.length > 0
           ) {
             const [targetBlock] = Editor.node(editor, op.path)
-            debug(`Reoving any leftover markDefs`, op)
+            debug(`Removing any leftover markDefs`, op)
             if (
               targetBlock &&
               Array.isArray(targetBlock.markDefs) &&
