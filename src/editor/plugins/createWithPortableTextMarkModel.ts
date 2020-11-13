@@ -11,7 +11,7 @@ import {Editor, Range, Transforms, Text, Path, NodeEntry, Element} from 'slate'
 import {debugWithName} from '../../utils/debug'
 import {EditorChange, PortableTextSlateEditor} from '../../types/editor'
 import {toPortableTextRange} from '../../utils/selection'
-import {PortableTextChild, PortableTextFeatures} from '../../types/portableText'
+import {PortableTextFeatures} from '../../types/portableText'
 
 const debug = debugWithName('plugin:withPortableTextMarkModel')
 
@@ -50,41 +50,18 @@ export function createWithPortableTextMarkModel(
         ) {
           mergeSpans(editor)
         }
-        // Make sure we don't continue marks on a new empty block when the current one is split
         for (const op of editor.operations) {
-          const hasMarks =
-            (op.type === 'split_node' || op.type === 'merge_node') &&
-            op.properties.marks &&
-            Array.isArray(op.properties.marks) &&
-            op.properties.marks.length > 0
-          if (
-            op.type === 'split_node' &&
-            op.path.length === 1 &&
-            op.path[0] === path[0] &&
-            !Path.equals(path, op.path)
-          ) {
-            const [child] = Editor.node(editor, [op.path[0] + 1, 0])
-            if (child.text === '') {
-              debug(`Removing leftover marks for new empty block`, op)
-              Transforms.setNodes(editor, {marks: []}, {at: [op.path[0] + 1, 0], voids: false})
-              editor.onChange()
-            }
-          }
-          if (hasMarks && op.type === 'split_node' && op.path.length === 2) {
-            debug(`Removing leftover marks when splitting in the start of a block`, op)
-            Transforms.setNodes(editor, {marks: []}, {at: [op.path[0], 0], voids: false})
-            editor.onChange()
-          }
+          // Make sure markDefs are copied over when merging two blocks.
           if (
             op.type === 'merge_node' &&
             op.path.length === 1 &&
             op.properties._type === portableTextFeatures.types.block.name &&
             Array.isArray(op.properties.markDefs) &&
-            op.properties.markDefs.length > 0
+            op.properties.markDefs.length > 0 &&
+            op.path[0] - 1 >= 0
           ) {
-            const targetPath = [op.path[0] - 1]
-            const [targetBlock] = Editor.node(editor, targetPath)
-            debug(`Copying markDefs over to target block`, op)
+            const [targetBlock, targetPath] = Editor.node(editor, [op.path[0] - 1])
+            debug(`Copying markDefs over to merged block`, op)
             if (targetBlock) {
               const oldDefs = (Array.isArray(targetBlock.markDefs) && targetBlock.markDefs) || []
               Transforms.setNodes(
@@ -95,33 +72,52 @@ export function createWithPortableTextMarkModel(
               editor.onChange()
             }
           }
+          // Make sure markDefs are copied over to new block when splitting a block.
           if (
             op.type === 'split_node' &&
             op.path.length === 1 &&
             op.properties._type === portableTextFeatures.types.block.name &&
             Array.isArray(op.properties.markDefs) &&
-            op.properties.markDefs.length > 0
+            op.properties.markDefs.length > 0 &&
+            op.path[0] + 1 < editor.children.length
           ) {
-            const [targetBlock] = Editor.node(editor, op.path)
-            debug(`Removing any leftover markDefs`, op)
-            if (
-              targetBlock &&
-              Array.isArray(targetBlock.markDefs) &&
-              Array.isArray(targetBlock.children)
-            ) {
-              const newMarkDefs = targetBlock.markDefs.filter(def => {
-                return (targetBlock.children as PortableTextChild[]).find(child => {
-                  return Array.isArray(child.marks) && child.marks.includes(def._key)
-                })
-              })
+            const [targetBlock, targetPath] = Editor.node(editor, [op.path[0] + 1])
+            debug(`Copying markDefs over to split block`, op)
+            if (targetBlock) {
+              const oldDefs = (Array.isArray(targetBlock.markDefs) && targetBlock.markDefs) || []
               Transforms.setNodes(
                 editor,
-                {markDefs: uniq(newMarkDefs)},
-                {at: op.path, voids: false}
+                {markDefs: uniq([...oldDefs, ...op.properties.markDefs])},
+                {at: targetPath, voids: false}
               )
               editor.onChange()
             }
           }
+          // Make sure marks are reset, if a block is split at the end.
+          if (
+            op.type === 'split_node' &&
+            op.path.length === 2 &&
+            op.properties._type === portableTextFeatures.types.span.name &&
+            Array.isArray(op.properties.marks) &&
+            op.properties.marks.length > 0 &&
+            op.path[0] + 1 < editor.children.length
+          ) {
+            const [child, childPath] = Editor.node(editor, [op.path[0] + 1, 0])
+            if (
+              child &&
+              child.text === '' &&
+              Array.isArray(child.marks) &&
+              child.marks.length > 0
+            ) {
+              Transforms.setNodes(editor, {marks: []}, {at: childPath, voids: false})
+              editor.onChange()
+            }
+          }
+        }
+        // Remove marks if text is empty
+        if (Array.isArray(node.marks) && node.marks.length > 0 && node.text === '') {
+          Transforms.setNodes(editor, {marks: []}, {at: path, voids: false})
+          editor.onChange()
         }
       }
       // Check consistency of markDefs
@@ -142,7 +138,7 @@ export function createWithPortableTextMarkModel(
         if (
           selection &&
           Range.isCollapsed(selection) &&
-          Editor.marks(editor)?.marks.some(mark => !decorators.includes(mark))
+          Editor.marks(editor)?.marks?.some(mark => !decorators.includes(mark))
         ) {
           const [node] = Array.from(
             Editor.nodes(editor, {
@@ -345,16 +341,12 @@ export function createWithPortableTextMarkModel(
               return Array.isArray(child.marks) && child.marks.includes(def._key)
             })
           })
-          const isEmptySingleChild =
-            block.markDefs.length > 0 &&
-            block.children.length === 1 &&
-            block.children[0].text === ''
-          if (!isEqual(newMarkDefs, block.markDefs) || isEmptySingleChild) {
+          if (!isEqual(newMarkDefs, block.markDefs)) {
             debug('Removing markDef not in use')
             Transforms.setNodes(
               editor,
               {
-                markDefs: isEmptySingleChild ? [] : newMarkDefs
+                markDefs: newMarkDefs
               },
               {at: path}
             )
