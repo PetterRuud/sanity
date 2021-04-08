@@ -54,7 +54,15 @@ type Props = {
 const SELECT_TOP_DOCUMENT = {anchor: {path: [0, 0], offset: 0}, focus: {path: [0, 0], offset: 0}}
 
 export const PortableTextEditable = (props: Props) => {
-  const {hotkeys, placeholderText, spellCheck} = props
+  const {
+    hotkeys,
+    placeholderText,
+    renderAnnotation,
+    renderBlock,
+    renderChild,
+    renderDecorator,
+    spellCheck
+  } = props
 
   const portableTextEditor = usePortableTextEditor()
   const value = usePortableTextEditorValue()
@@ -147,12 +155,12 @@ export const PortableTextEditable = (props: Props) => {
           keyGenerator={keyGenerator}
           portableTextFeatures={portableTextFeatures}
           readOnly={readOnly}
-          renderBlock={props.renderBlock}
-          renderChild={props.renderChild}
+          renderBlock={renderBlock}
+          renderChild={renderChild}
         />
       )
     },
-    [value]
+    [value, renderChild, renderBlock]
   )
 
   const renderLeaf = useCallback(
@@ -165,14 +173,14 @@ export const PortableTextEditable = (props: Props) => {
           {...lProps}
           keyGenerator={keyGenerator}
           portableTextFeatures={portableTextFeatures}
-          renderAnnotation={props.renderAnnotation}
-          renderChild={props.renderChild}
-          renderDecorator={props.renderDecorator}
+          renderAnnotation={renderAnnotation}
+          renderChild={renderChild}
+          renderDecorator={renderDecorator}
           readOnly={readOnly}
         />
       )
     },
-    [value]
+    [value, renderChild, renderDecorator, renderAnnotation]
   )
 
   const handleChange = val => {
@@ -488,7 +496,7 @@ export const PortableTextEditable = (props: Props) => {
         />
       </Slate>
     ),
-    [placeholderText, readOnly, spellCheck, stateValue, selection]
+    [placeholderText, readOnly, spellCheck, stateValue, selection, renderElement]
   )
   if (!portableTextEditor) {
     return null

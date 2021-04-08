@@ -64,7 +64,7 @@ export const Element: FunctionComponent<ElementProps> = ({
     if (!type) {
       throw new Error('Could not find type for inline block element')
     }
-    if (block && typeof element._key === 'string' && typeof block._key === 'string') {
+    if (block && typeof block._key === 'string') {
       const path: Path = [{_key: block._key}, 'children', {_key: element._key}]
       debugRenders && debug(`Render ${element._key} (inline object)`)
       const inlineBlockStyle = {display: 'inline-block'}
