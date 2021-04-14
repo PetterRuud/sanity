@@ -197,7 +197,7 @@ export const Element: FunctionComponent<ElementProps> = ({
             defaultRender,
             blockObjectRef
           )
-        }, [block, focused, selected])
+        }, [block, focused, selected, renderBlock])
       return (
         <div {...attributes} className={className} key={element._key}>
           <DraggableBlock element={element} readOnly={readOnly}>
