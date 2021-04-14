@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 
-export const DraggableBlockWrappper = styled.div`
+export const DraggableBlockWrapper = styled.div`
   border-top: ${props => {
     if (props.isDraggingOverTop) {
       return '1px solid black'

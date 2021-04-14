@@ -8,7 +8,7 @@ import {
   IS_DRAGGING,
   IS_DRAGGING_BLOCK_TARGET_POSITION
 } from '../utils/weakMaps'
-import {DraggableBlockWrappper} from './nodes'
+import {DraggableBlockWrapper} from './nodes'
 
 const debug = debugWithName('components:DraggableBlock')
 const debugRenders = false
@@ -52,8 +52,8 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     const elementRect = blockElement.getBoundingClientRect()
     const offset = elementRect.top
     const height = elementRect.height
-    var Y = event.pageY
-    var loc = Math.abs(offset - Y)
+    const Y = event.pageY
+    const loc = Math.abs(offset - Y)
     let position
     if (element === editor.children[0]) {
       position = 'top'
@@ -206,7 +206,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
       onDragEnd={handleDragEnd}
       onDrop={handleDrop}
     >
-      <DraggableBlockWrappper
+      <DraggableBlockWrapper
         isDraggingOverTop={
           isDraggingOverFirstBlock ||
           (isDragOver &&
@@ -223,7 +223,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
         }
       >
         {children}
-      </DraggableBlockWrappper>
+      </DraggableBlockWrapper>
     </div>
   )
 }
