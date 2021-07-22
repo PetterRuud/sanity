@@ -2,8 +2,8 @@ import PropTypes from 'prop-types'
 import React, {useContext} from 'react'
 import {Item as GridListItem} from 'part:@sanity/components/lists/grid'
 import {PaneRouterContext} from '../../contexts/PaneRouterContext'
-import styles from './PaneItem.css'
 import listStyles from '../../components/listView/ListView.css'
+import styles from './PaneItem.css'
 
 const PaneItemWrapper = (props) => {
   const {ChildLink} = useContext(PaneRouterContext)
