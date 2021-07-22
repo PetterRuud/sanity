@@ -4,9 +4,9 @@ import schema from 'part:@sanity/base/schema'
 import {SanityDefaultPreview} from 'part:@sanity/base/preview'
 import folderIcon from 'part:@sanity/base/folder-icon'
 import fileIcon from 'part:@sanity/base/file-icon'
-import DocumentPaneItemPreview from '../../components/DocumentPaneItemPreview'
+import {DocumentPaneItemPreview} from '../../components/DocumentPaneItemPreview'
 import getIconWithFallback from '../../utils/getIconWithFallback'
-import MissingSchemaType from '../../components/MissingSchemaType'
+import {MissingSchemaType} from '../../components/MissingSchemaType'
 import PaneItemWrapper from './PaneItemWrapper'
 
 export default function PaneItem(props) {
