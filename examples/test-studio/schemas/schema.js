@@ -2,6 +2,7 @@ import createSchema from 'part:@sanity/base/schema-creator'
 import codeInputType from 'part:@sanity/form-builder/input/code/schema'
 import schemaTypes from 'all:part:@sanity/base/schema-type'
 
+import documentActions from './documentActions'
 import poppers from './poppers'
 import simpleBlock from './simpleBlock'
 import simpleBlockNote from './simpleBlockNote'
@@ -70,6 +71,7 @@ import {
 export default createSchema({
   name: 'test-examples',
   types: schemaTypes.concat([
+    documentActions,
     poppers,
     objectWithNestedArray,
     book,
