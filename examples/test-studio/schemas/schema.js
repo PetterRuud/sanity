@@ -66,6 +66,7 @@ import {
   fieldValidationInferReproSharedObject,
   fieldValidationInferReproDoc,
 } from './fieldValidationInferRepro'
+import conditionalFields from './conditionalFields'
 import {previewSelectBugRepro} from './previewSelectBugRepro'
 
 export default createSchema({
@@ -91,6 +92,7 @@ export default createSchema({
     customNumber,
     booleans,
     objects,
+    conditionalFields,
     fieldsets,
     datetime,
     date,
