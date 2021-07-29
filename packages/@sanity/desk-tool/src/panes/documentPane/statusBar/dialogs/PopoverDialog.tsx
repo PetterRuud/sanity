@@ -16,6 +16,7 @@ export function PopoverDialog(props: {
       open
       placement="left-end"
       portal
+      preventOverflow
       referenceElement={referenceElement}
     />
   )

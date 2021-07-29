@@ -40,6 +40,7 @@ export const DeleteAction: DocumentActionComponent = ({id, type, draft, publishe
 
   if (!deletePermission.granted) {
     return {
+      color: 'danger',
       icon: TrashIcon,
       disabled: true,
       label: 'Delete',
@@ -53,12 +54,7 @@ export const DeleteAction: DocumentActionComponent = ({id, type, draft, publishe
   }
 
   return {
-    icon: TrashIcon,
-    disabled: isDeleting || Boolean(deleteOp.disabled),
-    title: (deleteOp.disabled && DISABLED_REASON_TITLE[deleteOp.disabled]) || '',
-    label: isDeleting ? 'Deleting…' : 'Delete',
-    shortcut: 'Ctrl+Alt+D',
-    onHandle: handle,
+    color: 'danger',
     dialog: isConfirmDialogOpen && {
       type: 'legacy',
       onClose: onComplete,
@@ -71,5 +67,11 @@ export const DeleteAction: DocumentActionComponent = ({id, type, draft, publishe
         />
       ),
     },
+    disabled: isDeleting || Boolean(deleteOp.disabled),
+    icon: TrashIcon,
+    label: isDeleting ? 'Deleting…' : 'Delete',
+    onHandle: handle,
+    shortcut: 'Ctrl+Alt+D',
+    title: (deleteOp.disabled && DISABLED_REASON_TITLE[deleteOp.disabled]) || '',
   }
 }

@@ -1,13 +1,11 @@
 import defaultResolve from 'part:@sanity/base/document-badges'
-
-function CustomBadge() {
-  return {
-    label: 'Hello World',
-    title: 'Hello I am a custom document badge',
-    color: 'success',
-  }
-}
+import {SuccessBadge} from './badges/CustomBadge'
+import {DangerBadge} from './badges/DangerBadge'
 
 export default function resolveDocumentBadges(props) {
-  return [...defaultResolve(props), CustomBadge]
+  if (props.type === 'documentActionsTest') {
+    return [DangerBadge, SuccessBadge]
+  }
+
+  return defaultResolve(props)
 }

@@ -66,6 +66,7 @@ export const DiscardChangesAction: DocumentActionComponent = ({
   }
 
   return {
+    color: 'danger',
     icon: ResetIcon,
     disabled: Boolean(discardChanges.disabled),
     title: (discardChanges.disabled && DISABLED_REASON_TITLE[discardChanges.disabled]) || '',

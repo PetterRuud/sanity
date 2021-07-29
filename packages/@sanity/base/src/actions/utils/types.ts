@@ -1,6 +1,8 @@
 import {SanityDocument} from '@sanity/types'
 import React from 'react'
 
+export type LegacyDocumentActionColor = 'primary' | 'success' | 'warning' | 'danger'
+
 export interface ActionComponent<ActionProps> {
   (props: ActionProps): ActionDescription | null
 }
@@ -17,6 +19,7 @@ export interface DocumentActionProps {
 
 export type DocumentActionComponent = ActionComponent<DocumentActionProps>
 
+// Rename to `portal`?
 export interface DocumentActionLegacyDialogProps {
   type: 'legacy'
   content: React.ReactNode
@@ -24,7 +27,7 @@ export interface DocumentActionLegacyDialogProps {
 
 export interface DocumentActionConfirmDialogProps {
   type: 'confirm'
-  color?: 'warning' | 'success' | 'danger' | 'info'
+  color?: 'success' | 'warning' | 'danger' | 'info'
   message: React.ReactNode
   onConfirm: () => void
   onCancel: () => void
@@ -84,11 +87,12 @@ export type DocumentActionDialogProps =
   | DocumentActionSuccessDialogProps
 
 export interface ActionDescription {
-  label: string
-  icon?: React.ReactNode
+  color?: LegacyDocumentActionColor
+  dialog?: DocumentActionDialogProps | false | null
   disabled?: boolean
+  icon?: React.ReactNode
+  label: string
+  onHandle?: () => void
   shortcut?: string | null
   title?: React.ReactNode
-  dialog?: DocumentActionDialogProps | false | null
-  onHandle?: () => void
 }

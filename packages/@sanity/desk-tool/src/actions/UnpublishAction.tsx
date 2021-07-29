@@ -88,6 +88,7 @@ export const UnpublishAction: DocumentActionComponent = ({
 
   if (!unpublishPermission.granted) {
     return {
+      color: 'danger',
       icon: UnpublishIcon,
       label: 'Unpublish',
       title: (
@@ -105,6 +106,7 @@ export const UnpublishAction: DocumentActionComponent = ({
   }
 
   return {
+    color: 'danger',
     icon: UnpublishIcon,
     disabled: Boolean(unpublish.disabled),
     label: 'Unpublish',

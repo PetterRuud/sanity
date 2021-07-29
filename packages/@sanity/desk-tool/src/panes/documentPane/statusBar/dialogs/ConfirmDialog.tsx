@@ -17,6 +17,7 @@ export function ConfirmDialog(props: {
       open
       placement="left-end"
       portal
+      preventOverflow
       referenceElement={referenceElement}
     />
   )
@@ -53,7 +54,7 @@ function ConfirmDialogContent(props: {dialog: DocumentActionConfirmDialogProps})
           <Button
             onClick={onConfirm}
             text="Confirm"
-            tone={color ? LEGACY_DIALOG_TO_UI_COLOR[color] : 'critical'}
+            tone={color ? LEGACY_DIALOG_TO_UI_COLOR[color] : 'primary'}
           />
         </Grid>
       </Box>

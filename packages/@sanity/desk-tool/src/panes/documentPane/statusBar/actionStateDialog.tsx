@@ -42,6 +42,7 @@ export function ActionStateDialog(props: ActionStateDialogProps) {
     return <DeprecatedErrorDialog dialog={dialog} />
   }
 
+  // @todo: add validation?
   const unknownDialog: any = dialog
 
   // eslint-disable-next-line no-console
