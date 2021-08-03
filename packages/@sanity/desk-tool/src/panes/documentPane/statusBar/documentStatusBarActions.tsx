@@ -12,9 +12,6 @@ import {LEGACY_BUTTON_COLOR_TO_TONE} from './constants'
 
 export interface DocumentStatusBarActionsProps {
   disabled: boolean
-  isMenuOpen: boolean
-  onMenuClose: () => void
-  onMenuOpen: () => void
   showMenu: boolean
   states: DocumentActionDescription[]
 }
@@ -26,9 +23,9 @@ export interface HistoryStatusBarActionsProps {
 }
 
 function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
-  const {disabled, isMenuOpen, onMenuClose, onMenuOpen, showMenu, states} = props
+  const {disabled, showMenu, states} = props
   const [firstActionState, ...menuActionStates] = states
-  const [buttonContainerElement, setButtonContainerElement] = useState<HTMLDivElement | null>(null)
+  const [buttonElement, setButtonElement] = useState<HTMLDivElement | null>(null)
 
   const tooltipContent = useMemo(() => {
     if (!firstActionState || (!firstActionState.title && !firstActionState.shortcut)) return null
@@ -56,11 +53,12 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
       {firstActionState && (
         <LayerProvider zOffset={200}>
           <Tooltip disabled={!tooltipContent} content={tooltipContent} portal placement="top">
-            <Stack flex={1} ref={setButtonContainerElement}>
+            <Stack flex={1}>
               <Button
                 disabled={disabled || Boolean(firstActionState.disabled)}
                 icon={firstActionState.icon}
                 onClick={firstActionState.onHandle}
+                ref={setButtonElement}
                 text={firstActionState.label}
                 tone={
                   firstActionState.color
@@ -75,21 +73,12 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
 
       {showMenu && menuActionStates.length > 0 && (
         <Box marginLeft={1}>
-          <ActionMenuButton
-            actionStates={menuActionStates}
-            disabled={disabled}
-            isOpen={isMenuOpen}
-            onOpen={onMenuOpen}
-            onClose={onMenuClose}
-          />
+          <ActionMenuButton actionStates={menuActionStates} disabled={disabled} />
         </Box>
       )}
 
       {firstActionState && firstActionState.dialog && (
-        <ActionStateDialog
-          dialog={firstActionState.dialog}
-          referenceElement={buttonContainerElement}
-        />
+        <ActionStateDialog dialog={firstActionState.dialog} referenceElement={buttonElement} />
       )}
     </Flex>
   )

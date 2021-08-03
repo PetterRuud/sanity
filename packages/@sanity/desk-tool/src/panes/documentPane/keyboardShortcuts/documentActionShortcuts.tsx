@@ -86,7 +86,7 @@ export const DocumentActionShortcuts = React.memo(
     const [activeIndex, setActiveIndex] = useState(-1)
     const actions = editState ? resolveDocumentActions(editState) : null
 
-    const onActionStart = useCallback((idx) => {
+    const onActionStart = useCallback((idx: number) => {
       setActiveIndex(idx)
     }, [])
 

@@ -1,5 +1,6 @@
 import {useId} from '@reach/auto-id'
 import {DocumentActionDescription} from '@sanity/base'
+import {LegacyLayerProvider} from '@sanity/base/components'
 import {ChevronDownIcon} from '@sanity/icons'
 import {
   Box,
@@ -7,133 +8,99 @@ import {
   Flex,
   Hotkeys,
   Menu,
+  MenuButton,
   MenuItem,
-  Popover,
+  PopoverProps,
   Text,
   Tooltip,
-  useClickOutside,
-  useGlobalKeyDown,
-  useLayer,
 } from '@sanity/ui'
-import React, {createElement, isValidElement, useCallback, useRef, useState} from 'react'
+import React, {createElement, isValidElement, useCallback, useRef, useState, useMemo} from 'react'
 import {isValidElementType} from 'react-is'
 import {ActionStateDialog} from './actionStateDialog'
 import {LEGACY_BUTTON_COLOR_TO_TONE} from './constants'
 
 export interface ActionMenuButtonProps {
   actionStates: DocumentActionDescription[]
-  isOpen: boolean
-  onClose: () => void
-  onOpen: () => void
   disabled: boolean
 }
 
 export function ActionMenuButton(props: ActionMenuButtonProps) {
-  const {actionStates, disabled, isOpen, onClose, onOpen} = props
-  const idPrefix = useId()
+  const {actionStates, disabled} = props
+  const idPrefix = useId() || ''
   const buttonRef = useRef<HTMLButtonElement | null>(null)
-  const [popoverElement, setPopoverElement] = useState<HTMLDivElement | null>(null)
+  const [actionIndex, setActionIndex] = useState(-1)
+  const [referenceElement, setReferenceElement] = useState<HTMLButtonElement | null>(null)
 
-  const handleCloseMenu = useCallback(() => {
-    if (!isOpen) {
-      return
-    }
+  const handleAction = useCallback((idx: number) => {
+    setActionIndex(idx)
+  }, [])
 
-    const hasOpenDialog = actionStates.some((state) => state.dialog)
+  const popoverProps: PopoverProps = useMemo(
+    () => ({
+      placement: 'top-end',
+      portal: true,
+      preventOverflow: true,
+    }),
+    []
+  )
 
-    // this is a bit hacky, but if there is a modal open, we should not close
-    if (hasOpenDialog) return
-
-    onClose()
-
-    buttonRef.current?.focus()
-  }, [actionStates, isOpen, onClose])
+  const currentAction = actionStates[actionIndex]
 
   return (
-    <Popover
-      id={`${idPrefix}-menu`}
-      open={isOpen}
-      placement="top-end"
-      portal
-      ref={setPopoverElement}
-      content={
-        <ActionMenu
-          actionStates={actionStates}
-          disabled={disabled}
-          onClose={handleCloseMenu}
-          popoverElement={popoverElement}
-        />
-      }
-    >
-      <Button
-        aria-controls={`${idPrefix}-menu`}
-        aria-haspopup="true"
-        aria-label="Actions"
-        disabled={disabled}
-        icon={ChevronDownIcon}
-        id={`${idPrefix}-button`}
-        mode="ghost"
-        onClick={isOpen ? onClose : onOpen}
-        ref={buttonRef}
-        selected={isOpen}
+    <>
+      <MenuButton
+        id={`${idPrefix}-action-menu`}
+        button={
+          <Button
+            aria-label="Open document actions"
+            disabled={disabled}
+            icon={ChevronDownIcon}
+            mode="ghost"
+            ref={buttonRef}
+          />
+        }
+        menu={
+          <Menu padding={1}>
+            {actionStates.map((actionState, idx) => (
+              <ActionMenuListItem
+                actionState={actionState}
+                disabled={disabled}
+                index={idx}
+                // eslint-disable-next-line react/no-array-index-key
+                key={idx}
+                onAction={handleAction}
+              />
+            ))}
+          </Menu>
+        }
+        popover={popoverProps}
+        ref={setReferenceElement}
       />
-    </Popover>
-  )
-}
 
-interface ActionMenuProps {
-  actionStates: DocumentActionDescription[]
-  disabled: boolean
-  onClose: () => void
-  popoverElement: HTMLDivElement | null
-}
-
-function ActionMenu(props: ActionMenuProps) {
-  const {actionStates, disabled, onClose, popoverElement} = props
-  const {isTopLayer} = useLayer()
-
-  const handleClickOutside = useCallback(() => {
-    if (!isTopLayer) return
-
-    onClose()
-  }, [isTopLayer, onClose])
-
-  const handleGlobalKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (!isTopLayer) return
-
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    },
-    [isTopLayer, onClose]
-  )
-
-  useClickOutside(handleClickOutside, [popoverElement])
-  useGlobalKeyDown(handleGlobalKeyDown)
-
-  return (
-    <Menu padding={1}>
-      {actionStates.map((actionState, idx) => (
-        <ActionMenuListItem
-          actionState={actionState}
-          disabled={disabled}
-          // eslint-disable-next-line react/no-array-index-key
-          key={idx}
-        />
-      ))}
-    </Menu>
+      {currentAction && currentAction.dialog && (
+        <LegacyLayerProvider zOffset="paneFooter">
+          <ActionStateDialog dialog={currentAction.dialog} referenceElement={referenceElement} />
+        </LegacyLayerProvider>
+      )}
+    </>
   )
 }
 
 interface ActionMenuListItemProps {
   actionState: DocumentActionDescription
   disabled: boolean
+  index: number
+  onAction: (idx: number) => void
 }
 
 function ActionMenuListItem(props: ActionMenuListItemProps) {
-  const {actionState, disabled} = props
-  const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null)
+  const {actionState, disabled, index, onAction} = props
+  const {onHandle} = actionState
+
+  const handleClick = useCallback(() => {
+    onAction(index)
+    if (onHandle) onHandle()
+  }, [index, onAction, onHandle])
 
   const tooltipContent = actionState.title && (
     <Box padding={2}>
@@ -144,52 +111,44 @@ function ActionMenuListItem(props: ActionMenuListItemProps) {
   )
 
   return (
-    <>
-      <MenuItem
-        disabled={disabled || Boolean(actionState.disabled)}
-        onClick={actionState.onHandle}
-        padding={0}
-        ref={setRootElement}
-        tone={actionState.color && LEGACY_BUTTON_COLOR_TO_TONE[actionState.color]}
+    <MenuItem
+      disabled={disabled || Boolean(actionState.disabled)}
+      onClick={handleClick}
+      padding={0}
+      tone={actionState.color && LEGACY_BUTTON_COLOR_TO_TONE[actionState.color]}
+    >
+      <Tooltip
+        content={tooltipContent}
+        disabled={!tooltipContent}
+        fallbackPlacements={['left', 'bottom']}
+        placement="top"
+        portal
       >
-        <Tooltip
-          content={tooltipContent}
-          disabled={!tooltipContent}
-          fallbackPlacements={['left', 'bottom']}
-          placement="top"
-          portal
-        >
-          <Flex align="center" paddingX={3}>
-            <Flex flex={1} paddingY={3}>
-              {actionState.icon && (
-                <Box marginRight={3}>
-                  <Text>
-                    {isValidElement(actionState.icon) && actionState.icon}
-                    {isValidElementType(actionState.icon) && createElement(actionState.icon)}
-                  </Text>
-                </Box>
-              )}
-
-              <Text>{actionState.label}</Text>
-            </Flex>
-
-            {actionState.shortcut && (
-              <Box marginLeft={3}>
-                <Hotkeys
-                  keys={String(actionState.shortcut)
-                    .split('+')
-                    .map((s) => s.slice(0, 1).toUpperCase() + s.slice(1))}
-                />
+        <Flex align="center" paddingX={3}>
+          <Flex flex={1} paddingY={3}>
+            {actionState.icon && (
+              <Box marginRight={3}>
+                <Text>
+                  {isValidElement(actionState.icon) && actionState.icon}
+                  {isValidElementType(actionState.icon) && createElement(actionState.icon)}
+                </Text>
               </Box>
             )}
-          </Flex>
-        </Tooltip>
-      </MenuItem>
 
-      {/* Rendered outside MenuItem so "click" events won't trigger the `onHandle` callback */}
-      {actionState.dialog && (
-        <ActionStateDialog dialog={actionState.dialog} referenceElement={rootElement} />
-      )}
-    </>
+            <Text>{actionState.label}</Text>
+          </Flex>
+
+          {actionState.shortcut && (
+            <Box marginLeft={3}>
+              <Hotkeys
+                keys={String(actionState.shortcut)
+                  .split('+')
+                  .map((s) => s.slice(0, 1).toUpperCase() + s.slice(1))}
+              />
+            </Box>
+          )}
+        </Flex>
+      </Tooltip>
+    </MenuItem>
   )
 }
