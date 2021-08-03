@@ -1,4 +1,5 @@
 import {DocumentActionComponent} from '@sanity/base'
+import {BookIcon} from '@sanity/icons'
 import {Box, Button, Dialog, Grid, Text, useToast} from '@sanity/ui'
 import React, {useCallback, useState} from 'react'
 
@@ -39,7 +40,8 @@ export const TestLegacyDialogAction: DocumentActionComponent = (props) => {
       ),
       onClose: handleClose,
     },
-    onHandle: handleOpen,
+    icon: BookIcon,
     label: 'Test legacy dialog',
+    onHandle: handleOpen,
   }
 }

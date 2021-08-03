@@ -10,11 +10,11 @@ import {PopoverDialog} from './dialogs/PopoverDialog'
 
 export interface ActionStateDialogProps {
   dialog: DocumentActionDialogProps
-  referenceElement: HTMLElement | null
+  referenceElement?: HTMLElement | null
 }
 
 export function ActionStateDialog(props: ActionStateDialogProps) {
-  const {dialog, referenceElement} = props
+  const {dialog, referenceElement = null} = props
   const dialogId = useId() || ''
 
   // @todo: rename this type type "component" or "node"?

@@ -8,9 +8,11 @@ export const TestConfirmDialogAction: DocumentActionComponent = (props) => {
   const {push: pushToast} = useToast()
 
   const handleOpen = useCallback(() => {
-    setDialogOpen(true)
-    pushToast({closable: true, title: '[confirm] Opened'})
-  }, [pushToast])
+    if (!dialogOpen) {
+      setDialogOpen(true)
+      pushToast({closable: true, title: '[confirm] Opened'})
+    }
+  }, [dialogOpen, pushToast])
 
   const handleClose = useCallback(() => {
     setDialogOpen(false)
@@ -47,5 +49,6 @@ export const TestConfirmDialogAction: DocumentActionComponent = (props) => {
     },
     onHandle: handleOpen,
     label: 'Test confirm dialog',
+    shortcut: 'mod+p',
   }
 }

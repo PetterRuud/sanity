@@ -11,14 +11,12 @@ import {ActionStateDialog} from './actionStateDialog'
 import {LEGACY_BUTTON_COLOR_TO_TONE} from './constants'
 
 export interface DocumentStatusBarActionsProps {
-  id: string
-  type: string
-  states: DocumentActionDescription[]
   disabled: boolean
   isMenuOpen: boolean
-  showMenu: boolean
-  onMenuOpen: () => void
   onMenuClose: () => void
+  onMenuOpen: () => void
+  showMenu: boolean
+  states: DocumentActionDescription[]
 }
 
 export interface HistoryStatusBarActionsProps {
@@ -28,7 +26,7 @@ export interface HistoryStatusBarActionsProps {
 }
 
 function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
-  const {states, showMenu} = props
+  const {disabled, isMenuOpen, onMenuClose, onMenuOpen, showMenu, states} = props
   const [firstActionState, ...menuActionStates] = states
   const [buttonContainerElement, setButtonContainerElement] = useState<HTMLDivElement | null>(null)
 
@@ -42,7 +40,11 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
         </Text>
         {firstActionState.shortcut && (
           <Box marginLeft={firstActionState.title ? 2 : 0}>
-            <Hotkeys keys={String(firstActionState.shortcut).split('+')} />
+            <Hotkeys
+              keys={String(firstActionState.shortcut)
+                .split('+')
+                .map((s) => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase())}
+            />
           </Box>
         )}
       </Flex>
@@ -56,7 +58,7 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
           <Tooltip disabled={!tooltipContent} content={tooltipContent} portal placement="top">
             <Stack flex={1} ref={setButtonContainerElement}>
               <Button
-                disabled={props.disabled || Boolean(firstActionState.disabled)}
+                disabled={disabled || Boolean(firstActionState.disabled)}
                 icon={firstActionState.icon}
                 onClick={firstActionState.onHandle}
                 text={firstActionState.label}
@@ -75,10 +77,10 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
         <Box marginLeft={1}>
           <ActionMenuButton
             actionStates={menuActionStates}
-            disabled={props.disabled}
-            isOpen={props.isMenuOpen}
-            onOpen={props.onMenuOpen}
-            onClose={props.onMenuClose}
+            disabled={disabled}
+            isOpen={isMenuOpen}
+            onOpen={onMenuOpen}
+            onClose={onMenuClose}
           />
         </Box>
       )}
@@ -94,8 +96,9 @@ function DocumentStatusBarActionsInner(props: DocumentStatusBarActionsProps) {
 }
 
 export function DocumentStatusBarActions(props: {id: string; type: string}) {
-  const editState: EditStateFor | null = useEditState(props.id, props.type) as any
-  const connectionState = useConnectionState(props.id, props.type)
+  const {id, type} = props
+  const editState: EditStateFor | null = useEditState(id, type) as any
+  const connectionState = useConnectionState(id, type)
   const [isMenuOpen, setMenuOpen] = useState(false)
   const actions = editState ? resolveDocumentActions(editState) : null
   const handleMenuOpen = useCallback(() => setMenuOpen(true), [])

@@ -1,4 +1,5 @@
 import {DocumentActionComponent} from '@sanity/base'
+import {LaunchIcon} from '@sanity/icons'
 import {Button, Stack, Text, useToast} from '@sanity/ui'
 import React, {useCallback, useState} from 'react'
 
@@ -31,7 +32,8 @@ export const TestPopoverDialogAction: DocumentActionComponent = (props) => {
       ),
       onClose: handleClose,
     },
-    onHandle: handleOpen,
+    icon: LaunchIcon,
     label: 'Test popover dialog',
+    onHandle: handleOpen,
   }
 }

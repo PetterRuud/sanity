@@ -20,21 +20,16 @@ import {isValidElementType} from 'react-is'
 import {ActionStateDialog} from './actionStateDialog'
 import {LEGACY_BUTTON_COLOR_TO_TONE} from './constants'
 
-export interface ActionMenuProps {
+export interface ActionMenuButtonProps {
   actionStates: DocumentActionDescription[]
-  onOpen: () => void
-  onClose: () => void
   isOpen: boolean
+  onClose: () => void
+  onOpen: () => void
   disabled: boolean
 }
 
-export function ActionMenuButton({
-  actionStates,
-  onOpen,
-  onClose,
-  disabled,
-  isOpen,
-}: ActionMenuProps) {
+export function ActionMenuButton(props: ActionMenuButtonProps) {
+  const {actionStates, disabled, isOpen, onClose, onOpen} = props
   const idPrefix = useId()
   const buttonRef = useRef<HTMLButtonElement | null>(null)
   const [popoverElement, setPopoverElement] = useState<HTMLDivElement | null>(null)
@@ -86,12 +81,14 @@ export function ActionMenuButton({
   )
 }
 
-function ActionMenu(props: {
+interface ActionMenuProps {
   actionStates: DocumentActionDescription[]
   disabled: boolean
   onClose: () => void
   popoverElement: HTMLDivElement | null
-}) {
+}
+
+function ActionMenu(props: ActionMenuProps) {
   const {actionStates, disabled, onClose, popoverElement} = props
   const {isTopLayer} = useLayer()
 
@@ -129,13 +126,13 @@ function ActionMenu(props: {
   )
 }
 
-function ActionMenuListItem({
-  actionState,
-  disabled,
-}: {
+interface ActionMenuListItemProps {
   actionState: DocumentActionDescription
   disabled: boolean
-}) {
+}
+
+function ActionMenuListItem(props: ActionMenuListItemProps) {
+  const {actionState, disabled} = props
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null)
 
   const tooltipContent = actionState.title && (
@@ -178,7 +175,11 @@ function ActionMenuListItem({
 
             {actionState.shortcut && (
               <Box marginLeft={3}>
-                <Hotkeys keys={String(actionState.shortcut).split('+')} />
+                <Hotkeys
+                  keys={String(actionState.shortcut)
+                    .split('+')
+                    .map((s) => s.slice(0, 1).toUpperCase() + s.slice(1))}
+                />
               </Box>
             )}
           </Flex>

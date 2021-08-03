@@ -1,4 +1,5 @@
 import {DocumentActionComponent} from '@sanity/base'
+import {CopyIcon} from '@sanity/icons'
 import {Button, Grid, Text, useToast} from '@sanity/ui'
 import React, {useCallback, useState} from 'react'
 
@@ -36,7 +37,8 @@ export const TestModalDialogAction: DocumentActionComponent = (props) => {
       showCloseButton: false,
       width: 'medium',
     },
-    onHandle: handleOpen,
+    icon: CopyIcon,
     label: 'Test modal dialog',
+    onHandle: handleOpen,
   }
 }

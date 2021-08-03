@@ -1,4 +1,5 @@
 import {DocumentActionComponent} from '@sanity/base'
+import {ErrorOutlineIcon} from '@sanity/icons'
 import React, {useCallback, useState} from 'react'
 
 export const TestErrorDialogAction: DocumentActionComponent = (props) => {
@@ -16,6 +17,7 @@ export const TestErrorDialogAction: DocumentActionComponent = (props) => {
 
   return {
     color: 'danger',
+    icon: ErrorOutlineIcon,
     label: 'Test error dialog',
     dialog: dialogOpen && {
       type: 'error',

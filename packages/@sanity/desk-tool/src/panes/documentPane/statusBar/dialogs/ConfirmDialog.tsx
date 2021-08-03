@@ -15,7 +15,7 @@ export function ConfirmDialog(props: {
       content={<ConfirmDialogContent dialog={dialog} />}
       fallbackPlacements={POPOVER_FALLBACK_PLACEMENTS}
       open
-      placement="left-end"
+      placement="top"
       portal
       preventOverflow
       referenceElement={referenceElement}

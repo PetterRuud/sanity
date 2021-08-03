@@ -22,8 +22,8 @@ export const UnpublishAction: DocumentActionComponent = ({
   liveEdit,
 }) => {
   const {unpublish}: any = useDocumentOperation(id, type)
-  const [error, setError] = useState<Error | null>(null)
-  const [didUnpublish, setDidUnpublish] = useState(false)
+  // const [error, setError] = useState<Error | null>(null)
+  // const [didUnpublish, setDidUnpublish] = useState(false)
   const [isConfirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const unpublishPermission = useCheckDocumentPermission(id, type, 'unpublish')
   const {value: currentUser} = useCurrentUser()
@@ -40,24 +40,24 @@ export const UnpublishAction: DocumentActionComponent = ({
   }, [onComplete, unpublish])
 
   const dialog: DocumentActionDialogProps | null = useMemo(() => {
-    if (error) {
-      return {
-        type: 'error',
-        onClose: () => setError(null),
-        title: 'An error occured',
-        content: error.message,
-      }
-    }
+    // if (error) {
+    //   return {
+    //     type: 'error',
+    //     onClose: () => setError(null),
+    //     title: 'An error occured',
+    //     content: error.message,
+    //   }
+    // }
 
-    if (didUnpublish) {
-      return {
-        type: 'success',
-        onClose: () => {
-          setDidUnpublish(false)
-        },
-        title: 'Succesfully unpublished the document',
-      }
-    }
+    // if (didUnpublish) {
+    //   return {
+    //     type: 'success',
+    //     onClose: () => {
+    //       setDidUnpublish(false)
+    //     },
+    //     title: 'Succesfully unpublished the document',
+    //   }
+    // }
 
     if (isConfirmDialogOpen) {
       return {
@@ -76,9 +76,9 @@ export const UnpublishAction: DocumentActionComponent = ({
 
     return null
   }, [
-    didUnpublish,
+    // didUnpublish,
     draft,
-    error,
+    // error,
     handleCancel,
     handleConfirm,
     isConfirmDialogOpen,

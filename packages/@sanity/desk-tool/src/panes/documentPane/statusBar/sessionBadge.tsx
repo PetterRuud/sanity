@@ -1,6 +1,6 @@
 import {Flex, rem, Text, Theme} from '@sanity/ui'
 import {IconComponent, RestoreIcon} from '@sanity/icons'
-import {ChunkType} from '@sanity/field/lib/diff'
+import {ChunkType} from '@sanity/field/diff'
 import React, {createElement, isValidElement, useMemo} from 'react'
 import {isValidElementType} from 'react-is'
 import styled, {css, keyframes} from 'styled-components'

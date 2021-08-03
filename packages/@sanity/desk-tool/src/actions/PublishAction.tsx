@@ -1,6 +1,6 @@
 import {DocumentActionComponent} from '@sanity/base'
-import {useSyncState, useDocumentOperation, useValidationStatus} from '@sanity/react-hooks'
 import {CheckmarkIcon, PublishIcon} from '@sanity/icons'
+import {useSyncState, useDocumentOperation, useValidationStatus} from '@sanity/react-hooks'
 import React, {useCallback, useEffect, useState} from 'react'
 import {
   unstable_useCheckDocumentPermission as useCheckDocumentPermission,
@@ -16,7 +16,7 @@ const DISABLED_REASON_TITLE = {
   NO_CHANGES: 'No unpublished changes',
 }
 
-function getDisabledReason(reason, publishedAt) {
+function getDisabledReason(reason: string, publishedAt: string | undefined) {
   if (reason === 'ALREADY_PUBLISHED' && publishedAt) {
     return (
       <>
@@ -95,6 +95,7 @@ export const PublishAction: DocumentActionComponent = (props) => {
   if (liveEdit) {
     return {
       color: 'success',
+      icon: PublishIcon,
       label: 'Publish',
       title:
         'Live Edit is enabled for this content type and publishing happens automatically as you make changes',
@@ -105,6 +106,7 @@ export const PublishAction: DocumentActionComponent = (props) => {
   if (!publishPermission.granted) {
     return {
       color: 'success',
+      icon: PublishIcon,
       label: 'Publish',
       title: (
         <InsufficientPermissionsMessage
@@ -127,6 +129,7 @@ export const PublishAction: DocumentActionComponent = (props) => {
   return {
     color: 'success',
     disabled,
+    icon: publishState === 'published' ? CheckmarkIcon : PublishIcon,
     label:
       // eslint-disable-next-line no-nested-ternary
       publishState === 'published'
@@ -136,7 +139,6 @@ export const PublishAction: DocumentActionComponent = (props) => {
         : 'Publish',
     // @todo: Implement loading state, to show a `<Button loading />` state
     // loading: publishScheduled || publishState === 'publishing',
-    icon: publishState === 'published' ? CheckmarkIcon : PublishIcon,
     // eslint-disable-next-line no-nested-ternary
     title: publishScheduled
       ? 'Waiting for tasks to finish before publishing'

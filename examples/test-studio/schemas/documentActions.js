@@ -9,4 +9,5 @@ export default {
       title: 'Title',
     },
   ],
+  liveEdit: true,
 }

@@ -9,6 +9,7 @@ import {DocumentStatusBarActions, HistoryStatusBarActions} from './documentStatu
 import {DocumentSparkline} from './documentSparkline'
 
 export interface DocumentStatusBarProps {
+  actionsBoxRef?: React.Ref<HTMLDivElement>
   id: string
   type: string
   lastUpdated?: string | null
@@ -20,8 +21,9 @@ const DocumentActionsBox = styled(Box)`
 `
 
 export function DocumentStatusBar(props: DocumentStatusBarProps) {
+  const {actionsBoxRef, id, lastUpdated, type} = props
   const {historyController} = useDocumentHistory()
-  const editState: EditStateFor | null = useEditState(props.id, props.type) as any
+  const editState: EditStateFor | null = useEditState(id, type) as any
   const badges = editState ? resolveDocumentBadges(editState) : []
   const showingRevision = historyController.onOlderRevision()
   const revision = historyController.revTime?.id || ''
@@ -30,18 +32,14 @@ export function DocumentStatusBar(props: DocumentStatusBarProps) {
     <Card paddingX={[3, 4]} paddingY={[3, 3]}>
       <Flex align="center">
         <Box flex={[1, 2]}>
-          <DocumentSparkline
-            badges={badges}
-            editState={editState}
-            lastUpdated={props.lastUpdated}
-          />
+          <DocumentSparkline badges={badges} editState={editState} lastUpdated={lastUpdated} />
         </Box>
 
-        <DocumentActionsBox flex={1} marginLeft={[1, 3]}>
+        <DocumentActionsBox flex={1} marginLeft={[1, 3]} ref={actionsBoxRef}>
           {showingRevision ? (
-            <HistoryStatusBarActions id={props.id} type={props.type} revision={revision} />
+            <HistoryStatusBarActions id={id} type={type} revision={revision} />
           ) : (
-            <DocumentStatusBarActions id={props.id} type={props.type} />
+            <DocumentStatusBarActions id={id} type={type} />
           )}
         </DocumentActionsBox>
       </Flex>

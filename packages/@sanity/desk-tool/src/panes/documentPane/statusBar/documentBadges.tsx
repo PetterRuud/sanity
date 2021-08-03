@@ -56,13 +56,15 @@ function DocumentBadgesInner({states}: DocumentBadgesInnerProps) {
 }
 
 export function DocumentBadges(props: DocumentBadgesProps) {
-  if (!props.badges) return null
+  const {badges, editState} = props
+
+  if (!badges) return null
 
   return (
     <RenderBadgeCollectionState
       component={DocumentBadgesInner}
-      badges={props.badges}
-      badgeProps={props.editState}
+      badges={badges}
+      badgeProps={editState}
     />
   )
 }
