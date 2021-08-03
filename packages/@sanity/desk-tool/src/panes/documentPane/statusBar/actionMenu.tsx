@@ -113,7 +113,7 @@ function ActionMenu(props: ActionMenuProps) {
   useGlobalKeyDown(handleGlobalKeyDown)
 
   return (
-    <Menu padding={1} shouldFocus="last">
+    <Menu padding={1}>
       {actionStates.map((actionState, idx) => (
         <ActionMenuListItem
           actionState={actionState}
