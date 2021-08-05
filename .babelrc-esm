@@ -1,0 +1,18 @@
+{
+  "presets": [
+    [
+      "@babel/env",
+      {
+        "targets": {
+          "node": "10",
+          "chrome": "59",
+          "safari": "10",
+          "firefox": "56",
+          "edge": "14"
+        },
+        "modules": false
+      }
+    ]
+  ],
+  "plugins": ["lodash", "@babel/plugin-proposal-class-properties"]
+}
