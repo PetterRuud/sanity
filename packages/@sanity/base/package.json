@@ -2,7 +2,9 @@
   "name": "@sanity/base",
   "version": "2.13.1",
   "description": "Sanity plugin containing the base components and roles for a Sanity configuration",
-  "main": "lib/index.js",
+  "main": "./lib/index.js",
+  "esm": "./dist/esm/index.js",
+  "types": "./dist/dts",
   "scripts": {
     "clean": "rimraf lib",
     "coverage": "nyc --report=lcov --report=text _mocha -- test/**/*.test.js",
