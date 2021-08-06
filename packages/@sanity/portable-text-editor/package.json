@@ -17,7 +17,8 @@
     "test:watch": "jest --watch",
     "test": "jest",
     "watch": "ttsc --module commonjs --watch",
-    "gen-doc": "typedoc --out docs src"
+    "gen-doc": "typedoc --out docs src",
+    "prettier": "prettier --write 'src/**/*.{ts,js,css,html}'"
   },
   "files": [
     "lib/**/*"
