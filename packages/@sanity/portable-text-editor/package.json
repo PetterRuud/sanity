@@ -18,8 +18,8 @@
     "test": "jest",
     "watch": "ttsc --module commonjs --watch",
     "gen-doc": "typedoc --out docs src",
-    "prettier": "prettier --write 'src/**/*.{ts,js,css,html}'",
-    "eslint": "eslint 'src/**/*.{ts,js,css,html}'"
+    "prettier": "prettier --write 'src/**/*.{ts,tsx,js,css,html}'",
+    "eslint": "eslint 'src/**/*.{ts,js,tsx}'"
   },
   "files": [
     "lib/**/*"
