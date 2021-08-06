@@ -2,7 +2,7 @@ import {MutationPayload} from './buffered-doc/types'
 import {DocumentVersionSnapshots} from './document-pair/snapshotPair'
 
 export {SanityClient} from '@sanity/client'
-export {MutationPayload as Mutation}
+export type {MutationPayload as Mutation}
 
 export interface SanityDocument {
   _id: string

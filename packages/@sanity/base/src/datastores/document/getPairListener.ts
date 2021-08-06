@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import {defer, of as observableOf, Observable} from 'rxjs'
 import {concatMap, map} from 'rxjs/operators'
-import {
+import type {
   IdPair,
   MutationEvent,
   ReconnectEvent,
@@ -25,7 +25,7 @@ export interface PairListenerOptions {
   tag?: string
 }
 
-export {MutationEvent}
+export type {MutationEvent}
 
 export type ListenerEvent = MutationEvent | ReconnectEvent | InitialSnapshotEvent
 
