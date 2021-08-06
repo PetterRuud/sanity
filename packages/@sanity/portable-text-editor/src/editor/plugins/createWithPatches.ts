@@ -2,9 +2,9 @@ import * as DMP from 'diff-match-patch'
 import {debounce, isEqual} from 'lodash'
 import {Subject} from 'rxjs'
 import {Editor, Operation, Transforms, Path, Node, Range} from 'slate'
-import {setIfMissing} from '../../patch/PatchEvent'
+import {setIfMissing, unset} from '../../patch/PatchEvent'
 import {Patch} from '../../types/patch'
-import {unset} from './../../patch/PatchEvent'
+
 import {
   fromSlateValue,
   isEqualToEmptyEditor,
@@ -201,7 +201,7 @@ function adjustSelection(
   patch: Patch,
   previousChildren: (Node | Partial<Node>)[]
 ): void | Range {
-  let selection = editor.selection
+  const selection = editor.selection
   if (selection === null) {
     debug('No selection, not adjusting selection')
     return
@@ -394,7 +394,7 @@ function adjustSelection(
         nextBlock.children &&
         nextBlock.children[0] &&
         typeof nextBlock.children[0]._key === 'string' &&
-        isEqual(nextBlock.children[0]._key, patch.items[0]['_key'])
+        isEqual(nextBlock.children[0]._key, patch.items[0]._key)
       const [node] = Editor.node(editor, selection)
       const nodeText = node.text as Text
       if (!nodeText) {

@@ -3,16 +3,15 @@ import {Element as SlateElement, Editor, Range} from 'slate'
 import {Path} from '@sanity/types'
 import {useSelected, useEditor, ReactEditor} from '@sanity/slate-react'
 import {PortableTextFeatures} from '../types/portableText'
-import TextBlock from './nodes/TextBlock'
-import Object from './nodes/DefaultObject'
-import {BlockObject as BlockObjectContainer} from './nodes/index'
 import {RenderBlockFunction, RenderChildFunction} from '../types/editor'
 import {fromSlateValue} from '../utils/values'
 import {debugWithName} from '../utils/debug'
+import {KEY_TO_VALUE_ELEMENT} from '../utils/weakMaps'
+import TextBlock from './nodes/TextBlock'
+import Object from './nodes/DefaultObject'
+import {BlockObject as BlockObjectContainer, ListItem, ListItemInner} from './nodes/index'
 import {DraggableBlock} from './DraggableBlock'
 import {DraggableChild} from './DraggableChild'
-import {ListItem, ListItemInner} from './nodes'
-import {KEY_TO_VALUE_ELEMENT} from '../utils/weakMaps'
 
 const debug = debugWithName('components:Element')
 const debugRenders = false
@@ -28,7 +27,7 @@ type ElementProps = {
   renderChild?: RenderChildFunction
 }
 
-const defaultRender = value => {
+const defaultRender = (value) => {
   return <Object value={value} />
 }
 
@@ -40,7 +39,7 @@ export const Element: FunctionComponent<ElementProps> = ({
   portableTextFeatures,
   readOnly,
   renderBlock,
-  renderChild
+  renderChild,
 }) => {
   const editor = useEditor()
   const selected = useSelected()
@@ -60,7 +59,9 @@ export const Element: FunctionComponent<ElementProps> = ({
   if (editor.isInline(element)) {
     const path = ReactEditor.findPath(editor, element)
     const [block] = Editor.node(editor, path, {depth: 1})
-    const type = portableTextFeatures.types.inlineObjects.find(type => type.name === element._type)
+    const type = portableTextFeatures.types.inlineObjects.find(
+      (type) => type.name === element._type
+    )
     if (!type) {
       throw new Error('Could not find type for inline block element')
     }
@@ -107,9 +108,8 @@ export const Element: FunctionComponent<ElementProps> = ({
           </DraggableChild>
         </span>
       )
-    } else {
-      throw new Error('Block not found!')
     }
+    throw new Error('Block not found!')
   }
 
   let className = ''
@@ -136,7 +136,7 @@ export const Element: FunctionComponent<ElementProps> = ({
           {
             focused,
             selected,
-            path: [{_key: element._key}]
+            path: [{_key: element._key}],
           },
           () => textBlock,
           blockObjectRef
@@ -172,7 +172,9 @@ export const Element: FunctionComponent<ElementProps> = ({
         </>
       )
     default:
-      const type = portableTextFeatures.types.blockObjects.find(type => type.name === element._type)
+      const type = portableTextFeatures.types.blockObjects.find(
+        (type) => type.name === element._type
+      )
       if (!type) {
         throw new Error(`Could not find schema type for block element of _type ${element._type}`)
       }
@@ -192,7 +194,7 @@ export const Element: FunctionComponent<ElementProps> = ({
             {
               focused,
               selected,
-              path: [{_key: block._key}]
+              path: [{_key: block._key}],
             },
             defaultRender,
             blockObjectRef

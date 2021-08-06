@@ -6,7 +6,7 @@ import {
   IS_DRAGGING_ELEMENT_TARGET,
   IS_DRAGGING_BLOCK_ELEMENT,
   IS_DRAGGING,
-  IS_DRAGGING_BLOCK_TARGET_POSITION
+  IS_DRAGGING_BLOCK_TARGET_POSITION,
 } from '../utils/weakMaps'
 import {DraggableBlockWrapper} from './nodes'
 
@@ -21,7 +21,7 @@ type ElementProps = {
 
 function useForceUpdate() {
   const [, setValue] = useState(0)
-  return () => setValue(value => ++value)
+  return () => setValue((value) => ++value)
 }
 
 export const DraggableBlock: FunctionComponent<ElementProps> = ({children, element, readOnly}) => {
@@ -39,7 +39,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
   debugRenders && debug('render')
 
   // Note: this is called not for the dragging block, but for the targets when the block is dragged over them
-  const handleDragOver = event => {
+  const handleDragOver = (event) => {
     const isMyDragOver = IS_DRAGGING_BLOCK_ELEMENT.get(editor)
     // debug('Drag over', isMyDragOver)
     if (!isMyDragOver) {
@@ -73,12 +73,12 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
   }
 
   // Note: this is called not for the dragging block, but for the targets when the block is dragged over them
-  const handleDragLeave = event => {
+  const handleDragLeave = (event) => {
     setIsDragOver(false)
   }
 
   // Note: this is called for the dragging block
-  const handleDragEnd = event => {
+  const handleDragEnd = (event) => {
     IS_DRAGGING.set(editor, false)
     event.preventDefault()
     event.stopPropagation()
@@ -134,7 +134,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     debug('No target element, not doing anything')
   }
   // Note: this is called not for the dragging block, but for the drop target
-  const handleDrop = event => {
+  const handleDrop = (event) => {
     if (IS_DRAGGING_BLOCK_ELEMENT.get(editor)) {
       debug('On drop (prevented)', element)
       event.preventDefault()
@@ -143,7 +143,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     }
   }
   // Note: this is called for the dragging block
-  const handleDrag = event => {
+  const handleDrag = (event) => {
     if (!isVoid) {
       IS_DRAGGING_BLOCK_ELEMENT.delete(editor)
       return
@@ -154,7 +154,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
   }
 
   // Note: this is called for the dragging block
-  const handleDragStart = event => {
+  const handleDragStart = (event) => {
     if (!isVoid || isInline) {
       debug('Not dragging block')
       IS_DRAGGING_BLOCK_ELEMENT.delete(editor)

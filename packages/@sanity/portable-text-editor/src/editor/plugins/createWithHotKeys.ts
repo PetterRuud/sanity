@@ -1,11 +1,11 @@
 import {Editor, Transforms, Path, Range} from 'slate'
 import isHotkey from 'is-hotkey'
 import {ReactEditor} from '@sanity/slate-react'
+import {PortableTextFeatures} from 'src/types/portableText'
 import {PortableTextSlateEditor} from '../../types/editor'
 import {HotkeyOptions} from '../../types/options'
 import {debugWithName} from '../../utils/debug'
 import {toSlateValue} from '../../utils/values'
-import {PortableTextFeatures} from 'src/types/portableText'
 import {PortableTextEditor} from '../PortableTextEditor'
 
 const debug = debugWithName('plugin:withHotKeys')
@@ -213,7 +213,6 @@ export function createWithHotkeys(
       if (isHotkey('mod+y', event.nativeEvent) || isHotkey('mod+shift+z', event.nativeEvent)) {
         event.preventDefault()
         editor.redo()
-        return
       }
     }
     return editor

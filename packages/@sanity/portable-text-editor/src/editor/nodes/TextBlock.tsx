@@ -16,7 +16,7 @@ export default class TextBlock extends React.Component<Props> {
     let CustomStyle
     const blockStyle =
       portableTextFeatures && style
-        ? portableTextFeatures.styles.find(item => item.value === style)
+        ? portableTextFeatures.styles.find((item) => item.value === style)
         : undefined
     if (blockStyle) {
       // TODO: Look into this API.

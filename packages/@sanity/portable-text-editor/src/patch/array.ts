@@ -1,6 +1,7 @@
 import {findIndex} from 'lodash'
 import applyPatch from './applyPatch'
 import insert from './arrayInsert'
+
 const hasOwn = Object.prototype.hasOwnProperty.call.bind(Object.prototype.hasOwnProperty)
 
 function move(arr, from, to) {

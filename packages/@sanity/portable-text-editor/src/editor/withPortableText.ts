@@ -1,4 +1,8 @@
 import {Editor} from 'slate'
+import {createOperationToPatches} from '../utils/operationToPatches'
+import {createEditorOptions} from '../types/options'
+import {PortableTextSlateEditor} from '../types/editor'
+import {debugWithName} from '../utils/debug'
 import {
   createWithObjectKeys,
   createWithPortableTextMarkModel,
@@ -10,10 +14,6 @@ import {
   createWithPortableTextBlockStyle,
   createWithUtils,
 } from './plugins'
-import {createOperationToPatches} from '../utils/operationToPatches'
-import {createEditorOptions} from '../types/options'
-import {PortableTextSlateEditor} from '../types/editor'
-import {debugWithName} from '../utils/debug'
 
 const debug = debugWithName('createPortableTextEditor')
 

@@ -17,20 +17,20 @@ import {
   RenderDecoratorFunction,
 } from '../types/editor'
 import {PortableTextBlock} from '../types/portableText'
-import {createWithEditableAPI} from './plugins/createWithEditableAPI'
 import {HotkeyOptions} from '../types/options'
 import {toSlateValue, isEqualToEmptyEditor} from '../utils/values'
 import {hasEditableTarget, setFragmentData} from '../utils/copyPaste'
+import {normalizeSelection, toPortableTextRange, toSlateRange} from '../utils/selection'
+import {debugWithName} from '../utils/debug'
+import {KEY_TO_SLATE_ELEMENT, KEY_TO_VALUE_ELEMENT} from '../utils/weakMaps'
+import {createWithEditableAPI} from './plugins/createWithEditableAPI'
 import {createWithInsertData, createWithHotkeys} from './plugins'
 import {Leaf} from './Leaf'
 import {Element} from './Element'
 import {withPortableText} from './withPortableText'
-import {normalizeSelection, toPortableTextRange, toSlateRange} from '../utils/selection'
-import {debugWithName} from '../utils/debug'
 import {usePortableTextEditor} from './hooks/usePortableTextEditor'
 import {usePortableTextEditorValue} from './hooks/usePortableTextEditorValue'
 import {PortableTextEditor} from './PortableTextEditor'
-import {KEY_TO_SLATE_ELEMENT, KEY_TO_VALUE_ELEMENT} from '../utils/weakMaps'
 
 const debug = debugWithName('component:Editable')
 
@@ -61,7 +61,7 @@ export const PortableTextEditable = (props: Props) => {
     renderBlock,
     renderChild,
     renderDecorator,
-    spellCheck
+    spellCheck,
   } = props
 
   const portableTextEditor = usePortableTextEditor()
@@ -74,7 +74,7 @@ export const PortableTextEditable = (props: Props) => {
     keyGenerator,
     maxBlocks,
     portableTextFeatures,
-    readOnly
+    readOnly,
   } = portableTextEditor
 
   const createPlaceHolderBlock = () => ({
@@ -87,9 +87,9 @@ export const PortableTextEditable = (props: Props) => {
         _type: 'span',
         _key: keyGenerator(),
         text: '',
-        marks: []
-      }
-    ]
+        marks: [],
+      },
+    ],
   })
 
   // React/UI-spesific plugins
@@ -121,7 +121,7 @@ export const PortableTextEditable = (props: Props) => {
                 change$,
                 maxBlocks,
                 incomingPatche$,
-                readOnly
+                readOnly,
               })
             )
           )
@@ -145,7 +145,7 @@ export const PortableTextEditable = (props: Props) => {
   const [isSelecting, setIsSelecting] = useState(false)
 
   const renderElement = useCallback(
-    eProps => {
+    (eProps) => {
       if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
         return <div {...eProps.attributes}>{eProps.children}</div>
       }
@@ -164,7 +164,7 @@ export const PortableTextEditable = (props: Props) => {
   )
 
   const renderLeaf = useCallback(
-    lProps => {
+    (lProps) => {
       if (isEqualToEmptyEditor(editor.children, portableTextFeatures)) {
         return <span {...lProps.attributes}>{lProps.children}</span>
       }
@@ -183,7 +183,7 @@ export const PortableTextEditable = (props: Props) => {
     [value, renderChild, renderDecorator, renderAnnotation]
   )
 
-  const handleChange = val => {
+  const handleChange = (val) => {
     if (val !== stateValue) {
       setStateValue(val)
     }
@@ -327,8 +327,8 @@ export const PortableTextEditable = (props: Props) => {
           }
           if (typeof result === 'object' && result.insert) {
             event.preventDefault() // Stop the chain
-            const allowedDecorators = portableTextFeatures.decorators.map(item => item.value)
-            const blocksToInsertNormalized = result.insert.map(block =>
+            const allowedDecorators = portableTextFeatures.decorators.map((item) => item.value)
+            const blocksToInsertNormalized = result.insert.map((block) =>
               normalizeBlock(block, {allowedDecorators})
             ) as PortableTextBlock[]
             const dataTransfer = new DataTransfer()
@@ -343,9 +343,8 @@ export const PortableTextEditable = (props: Props) => {
             return result
           }
           console.warn('Your onPaste function returned something unexpected:', result)
-          return
         })
-        .catch(error => {
+        .catch((error) => {
           change$.next({type: 'loading', isLoading: false})
           console.error(error) // eslint-disable-line no-console
           return error
@@ -432,7 +431,7 @@ export const PortableTextEditable = (props: Props) => {
       onSelectStart(event)
     }
   }
-  const onSelectEndWithKeys = event => {
+  const onSelectEndWithKeys = (event) => {
     if (isSelectingWithKeys && event.key === 'Shift') {
       onSelectEnd()
       isSelectingWithKeys = false

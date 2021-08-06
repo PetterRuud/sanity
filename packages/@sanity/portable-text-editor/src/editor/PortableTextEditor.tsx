@@ -1,5 +1,7 @@
 import React from 'react'
 import {Path} from '@sanity/types'
+import {Subscription, Subject} from 'rxjs'
+import {distinctUntilChanged} from 'rxjs/operators'
 import {randomKey} from '../utils/randomKey'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
@@ -12,16 +14,14 @@ import {
   EditorChanges,
   EditableAPI,
   InvalidValueResolution,
-  PatchObservable
+  PatchObservable,
 } from '../types/editor'
-import {Subscription, Subject} from 'rxjs'
-import {distinctUntilChanged} from 'rxjs/operators'
-import {PortableTextEditorContext} from './hooks/usePortableTextEditor'
-import {PortableTextEditorSelectionContext} from './hooks/usePortableTextEditorSelection'
-import {PortableTextEditorValueContext} from './hooks/usePortableTextEditorValue'
 import {compactPatches} from '../utils/patches'
 import {validateValue} from '../utils/validateValue'
 import {debugWithName} from '../utils/debug'
+import {PortableTextEditorContext} from './hooks/usePortableTextEditor'
+import {PortableTextEditorSelectionContext} from './hooks/usePortableTextEditorSelection'
+import {PortableTextEditorValueContext} from './hooks/usePortableTextEditorValue'
 
 export const defaultKeyGenerator = () => randomKey(12)
 
@@ -183,7 +183,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
       this.change$.next({
         type: 'invalidValue',
         resolution: validation.resolution,
-        value: props.value
+        value: props.value,
       })
       state = {...state, invalidValueResolution: validation.resolution}
     }
@@ -215,14 +215,14 @@ export class PortableTextEditor extends React.Component<Props, State> {
         this.change$.next({
           type: 'invalidValue',
           resolution: validation.resolution,
-          value: this.props.value
+          value: this.props.value,
         })
         this.setState({invalidValueResolution: validation.resolution})
       }
     }
   }
 
-  public setEditable = editable => {
+  public setEditable = (editable) => {
     this.editable = {...this.editable, ...editable}
     this.change$.next({type: 'ready'})
   }

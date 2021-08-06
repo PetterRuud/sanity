@@ -129,7 +129,6 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                     debug('Could not perform undo step', err)
                     editor.history.redos.push(step)
                     editor.history.undos.pop()
-                    return
                   }
                 })
             })
@@ -163,7 +162,6 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
                   debug('Could not perform redo step', err)
                   editor.history.undos.push(step)
                   editor.history.redos.pop()
-                  return
                 }
               })
             })
@@ -202,7 +200,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
   }
 
   if (patch.type === 'diffMatchPatch') {
-    let blockIndex = editor.children.findIndex((blk) => isEqual({_key: blk._key}, patch.path[0]))
+    const blockIndex = editor.children.findIndex((blk) => isEqual({_key: blk._key}, patch.path[0]))
     const block = editor.children[blockIndex]
     if (block && Array.isArray(block.children)) {
       const childIndex = block.children.findIndex((child) =>
@@ -219,9 +217,9 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
       if (operation.type === 'split_node' && operation.path.length > 1) {
         const splitOperation = transformedOperation as SplitNodeOperation
         if (patchIsRemovingText) {
-          splitOperation.position = splitOperation.position - distance
+          splitOperation.position -= distance
         } else {
-          splitOperation.position = splitOperation.position + distance
+          splitOperation.position += distance
         }
         return [splitOperation]
       }
@@ -244,7 +242,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
           }
           if (insertOffset + parsed.start1 <= operation.offset) {
             const insertTextOperation = transformedOperation as InsertTextOperation
-            insertTextOperation.offset = insertTextOperation.offset + distance
+            insertTextOperation.offset += distance
             transformedOperation = insertTextOperation
           }
           // TODO: deal with overlapping ranges
@@ -263,7 +261,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
           }
           if (insertOffset + parsed.start1 <= operation.offset) {
             const removeTextOperation = transformedOperation as RemoveTextOperation
-            removeTextOperation.offset = removeTextOperation.offset - distance
+            removeTextOperation.offset -= distance
             transformedOperation = removeTextOperation
           }
           return [transformedOperation]

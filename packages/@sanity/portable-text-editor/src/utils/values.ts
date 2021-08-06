@@ -35,10 +35,9 @@ export function toSlateValue(
               {_type, _key, children: [{text: ''}], value: rest, __inline: true},
               keyMap
             )
-          } else {
-            // Original object
-            return child
           }
+          // Original object
+          return child
         })
         if (!hasInlines && Element.isElement(block)) {
           // Original object
@@ -68,9 +67,8 @@ export function fromSlateValue(
             hasInlines = true
             const {value, children, __inline, ...rest} = child
             return keepObjectEquality({...rest, ...value}, keyMap) as PortableTextChild
-          } else {
-            return child as PortableTextChild
           }
+          return child as PortableTextChild
         })
         if (typeof block._key === 'string' && typeof block._type === 'string') {
           if (!hasInlines) {

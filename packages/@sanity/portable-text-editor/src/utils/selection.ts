@@ -1,11 +1,11 @@
 import {isEqual} from 'lodash'
 import {Editor, Point, Path as SlatePath, Range, Element, Node} from 'slate'
+import {isKeySegment} from '@sanity/types'
 import {PortableTextBlock} from '../types/portableText'
 import {EditorSelection, EditorSelectionPoint} from '../types/editor'
-import {isKeySegment} from '@sanity/types'
 
 export function createKeyedPath(point: Point, editor: Editor) {
-  let blockPath = [point.path[0]]
+  const blockPath = [point.path[0]]
   let block: Node
   try {
     ;[block] = Editor.node(editor, blockPath, {depth: 1})
@@ -67,9 +67,7 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
   }
   const newPath: any = []
   let newOffset: number = point.offset || 0
-  const block: PortableTextBlock | undefined = value.find(
-    (blk) => blk._key === point.path[0]['_key']
-  )
+  const block: PortableTextBlock | undefined = value.find((blk) => blk._key === point.path[0]._key)
   if (block) {
     newPath.push({_key: block._key})
   } else {
@@ -79,7 +77,7 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
     if (!block.children || block.children.length === 0) {
       return null
     }
-    const child = block.children.find((cld) => cld._key === point.path[2]['_key'])
+    const child = block.children.find((cld) => cld._key === point.path[2]._key)
     if (child) {
       newPath.push('children')
       newPath.push({_key: child._key})

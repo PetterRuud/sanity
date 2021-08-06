@@ -20,7 +20,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   element,
   readOnly,
   spanType,
-  keyGenerator
+  keyGenerator,
 }) => {
   const editor = useEditor()
   const dragGhostRef: React.MutableRefObject<undefined | HTMLElement> = useRef()
@@ -35,7 +35,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   }
 
   // Note: this is called not for the dragging block, but for the targets when the block is dragged over them
-  const handleDragOver = event => {
+  const handleDragOver = (event) => {
     const isMyDragOver = IS_DRAGGING_CHILD_ELEMENT.get(editor)
     if (!isMyDragOver) {
       return
@@ -74,7 +74,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   }
 
   // Note: this is called for the dragging child
-  const handleDragEnd = event => {
+  const handleDragEnd = (event) => {
     IS_DRAGGING.set(editor, false)
     event.preventDefault()
     event.stopPropagation()
@@ -89,8 +89,8 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
       Transforms.insertNodes(editor, dupedElement, {at: range, select: true})
       Transforms.removeNodes(editor, {
         at: [],
-        match: n => n._key === element._key,
-        mode: 'lowest'
+        match: (n) => n._key === element._key,
+        mode: 'lowest',
       })
       editor.onChange()
     }
@@ -99,7 +99,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   }
 
   // Note: this is called for the dragging child
-  const handleDragStart = event => {
+  const handleDragStart = (event) => {
     debug('Drag start')
     if (!isVoid) {
       debug('Not dragging child')
@@ -138,7 +138,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
     return <span onDragOver={handleDragOver}>{children}</span>
   }
 
-  const stopEventIfVoid = event => {
+  const stopEventIfVoid = (event) => {
     if (isVoid) {
       event.stopPropagation()
       event.preventDefault()

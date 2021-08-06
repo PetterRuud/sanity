@@ -89,7 +89,6 @@ export function createWithEditableAPI(
             Transforms.select(editor, slateSelection)
           }
           ReactEditor.focus(editor)
-          return
         }
       },
       focusBlock: (): PortableTextBlock | undefined => {

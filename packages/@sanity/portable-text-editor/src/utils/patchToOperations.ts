@@ -18,7 +18,7 @@ export function createPatchToOperations(portableTextFeatures: PortableTextFeatur
         KEY_TO_SLATE_ELEMENT.get(editor)
       )
       const posKey = findLastKey(patch.path)
-      let index = editor.children.findIndex((node, indx) => {
+      const index = editor.children.findIndex((node, indx) => {
         return posKey ? node._key === posKey : indx === patch.path[0]
       })
       const normalizedIdx = position === 'after' ? index + 1 : index
@@ -38,7 +38,7 @@ export function createPatchToOperations(portableTextFeatures: PortableTextFeatur
     }
     if (patch.path.length === 1) {
       const lastKey = findLastKey(patch.path)
-      let index = editor.children.findIndex((node, indx) =>
+      const index = editor.children.findIndex((node, indx) =>
         lastKey ? node._key === lastKey : indx === patch.path[0]
       )
       if (index > -1) {
