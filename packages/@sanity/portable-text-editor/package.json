@@ -39,12 +39,12 @@
     "access": "public"
   },
   "dependencies": {
-    "@sanity/block-tools": "^2.0.0",
+    "@sanity/block-tools": "^2.13.0",
     "@sanity/schema": "^2.0.0",
     "@sanity/slate-react": "0.58.6",
-    "@sanity/types": "^2.0.0",
+    "@sanity/types": "^2.13.1",
+    "@sanity/util": "^2.13.1",
     "debug": "^3.2.7",
-    "get-random-values": "^1.2.2",
     "is-hotkey": "^0.1.6",
     "lodash": "^4.17.15",
     "slate": "^0.58.4",
@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.11.6",
-    "@babel/core": "^7.7.4",
+    "@babel/core": "^7.11.6",
     "@babel/plugin-proposal-class-properties": "^7.10.4",
     "@babel/preset-env": "^7.11.5",
     "@babel/preset-react": "^7.10.4",

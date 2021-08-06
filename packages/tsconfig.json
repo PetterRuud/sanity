@@ -14,6 +14,7 @@
     {"path": "./@sanity/imagetool"},
     {"path": "./@sanity/initial-value-templates"},
     {"path": "./@sanity/mutator"},
+    {"path": "./@sanity/portable-text-editor"},
     {"path": "./@sanity/react-hooks"},
     {"path": "./@sanity/schema"},
     {"path": "./@sanity/state-router"},
