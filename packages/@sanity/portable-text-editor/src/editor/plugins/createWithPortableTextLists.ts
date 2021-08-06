@@ -55,9 +55,9 @@ export function createWithPortableTextLists(
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node =>
-            Element.isElement(node) && node._type === portableTextFeatures.types.block.name
-        })
+          match: (node) =>
+            Element.isElement(node) && node._type === portableTextFeatures.types.block.name,
+        }),
       ]
       selectedBlocks.forEach(([node, path]) => {
         const {listItem, level, ...rest} = node
@@ -77,9 +77,9 @@ export function createWithPortableTextLists(
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node =>
-            Element.isElement(node) && node._type === portableTextFeatures.types.block.name
-        })
+          match: (node) =>
+            Element.isElement(node) && node._type === portableTextFeatures.types.block.name,
+        }),
       ]
       selectedBlocks.forEach(([node, path]) => {
         const {listItem, level, ...rest} = node
@@ -91,7 +91,7 @@ export function createWithPortableTextLists(
             level: 1,
             listItem:
               listItemStyle ||
-              (portableTextFeatures.lists[0] && portableTextFeatures.lists[0].value)
+              (portableTextFeatures.lists[0] && portableTextFeatures.lists[0].value),
           },
           {at: path}
         )
@@ -109,13 +109,13 @@ export function createWithPortableTextLists(
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node =>
+          match: (node) =>
             Element.isElement(node) &&
             node._type === portableTextFeatures.types.block.name &&
             node.listItem &&
             node.children.length === 1 &&
-            node.children[0].text === ''
-        })
+            node.children[0].text === '',
+        }),
       ]
       if (selectedBlocks.length === 0) {
         return false
@@ -135,8 +135,8 @@ export function createWithPortableTextLists(
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node => !!(Element.isElement(node) && node.listItem)
-        })
+          match: (node) => !!(Element.isElement(node) && node.listItem),
+        }),
       ]
       if (selectedBlocks.length === 0) {
         return false
@@ -168,8 +168,8 @@ export function createWithPortableTextLists(
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node => Element.isElement(node) && node.listItem === listStyle
-        })
+          match: (node) => Element.isElement(node) && node.listItem === listStyle,
+        }),
       ]
       if (selectedBlocks.length > 0) {
         return true

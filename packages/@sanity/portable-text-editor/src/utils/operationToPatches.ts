@@ -9,7 +9,7 @@ import {
   InsertNodeOperation,
   SplitNodeOperation,
   RemoveNodeOperation,
-  MergeNodeOperation
+  MergeNodeOperation,
 } from 'slate'
 import {set, insert, unset, diffMatchPatch, setIfMissing} from '../patch/PatchEvent'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
@@ -23,7 +23,7 @@ const debug = debugWithName('operationToPatches')
 
 function findBlock(path, value: PortableTextBlock[] | undefined) {
   if (path[0] && path[0]._key) {
-    return value?.find(blk => blk._key === path[0]._key)
+    return value?.find((blk) => blk._key === path[0]._key)
   }
   if (Number.isInteger(path[0])) {
     return value && value[path[0]]
@@ -95,8 +95,8 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       )
       return [
         set(fromSlateValue([setNode], portableTextFeatures.types.block.name)[0], [
-          {_key: block._key}
-        ])
+          {_key: block._key},
+        ]),
       ]
     } else if (operation.path.length === 2) {
       const block = editor.children[operation.path[0]]
@@ -106,13 +106,13 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
           const blockKey = block._key
           const childKey = child._key
           const patches: Patch[] = []
-          Object.keys(operation.newProperties).forEach(key => {
+          Object.keys(operation.newProperties).forEach((key) => {
             patches.push(
               set(operation.newProperties[key], [
                 {_key: blockKey},
                 'children',
                 {_key: childKey},
-                key
+                key,
               ])
             )
           })
@@ -144,7 +144,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
             [fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0]],
             position,
             [{_key: targetKey}]
-          )
+          ),
         ]
       }
       if (beforeValue.length === 0) {
@@ -154,7 +154,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
             [fromSlateValue([operation.node], portableTextFeatures.types.block.name)[0]],
             'before',
             [operation.path[0]]
-          )
+          ),
         ]
       }
       throw new Error('Target key not found!')
@@ -169,10 +169,10 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
             children: [
               {
                 ...operation.node,
-                _type: operation.node._type || portableTextFeatures.types.span.name
-              }
-            ]
-          }
+                _type: operation.node._type || portableTextFeatures.types.span.name,
+              },
+            ],
+          },
         ],
         portableTextFeatures.types.block.name
       )[0].children[0]
@@ -182,8 +182,8 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
           'children',
           block.children.length <= 1 || !block.children[operation.path[1] - 1]
             ? 0
-            : {_key: block.children[operation.path[1] - 1]._key}
-        ])
+            : {_key: block.children[operation.path[1] - 1]._key},
+        ]),
       ]
     } else {
       throw new Error(
@@ -211,7 +211,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         if (targetValue) {
           patches.push(insert([targetValue], 'after', [{_key: splitBlock._key}]))
           const spansToUnset = beforeValue[operation.path[0]].children.slice(operation.position)
-          spansToUnset.forEach(span => {
+          spansToUnset.forEach((span) => {
             const path = [{_key: oldBlock._key}, 'children', {_key: span._key}]
             patches.push(unset(path))
           })
@@ -318,7 +318,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
       patches.push(unset([{_key: block._key}]))
       patches.push(
         insert([fromSlateValue([block], portableTextFeatures.types.block.name)[0]], position, [
-          {_key: targetBlock._key}
+          {_key: targetBlock._key},
         ])
       )
     } else if (operation.path.length === 2) {
@@ -332,7 +332,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         insert([childToInsert], position, [
           {_key: targetBlock._key},
           'children',
-          {_key: targetChild._key}
+          {_key: targetChild._key},
         ])
       )
     }
@@ -347,6 +347,6 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
     removeNodePatch,
     removeTextPatch,
     setNodePatch,
-    splitNodePatch
+    splitNodePatch,
   }
 }

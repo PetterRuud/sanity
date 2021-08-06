@@ -5,7 +5,7 @@ import {
   Editor,
   Path as SlatePath,
   Element as SlateElement,
-  Operation
+  Operation,
 } from 'slate'
 import {isEqual} from 'lodash'
 import {Path} from '@sanity/types'
@@ -67,7 +67,7 @@ export function createWithEditableAPI(
       marks: (): string[] => {
         return (
           {
-            ...(Editor.marks(editor) || {})
+            ...(Editor.marks(editor) || {}),
           }.marks || []
         )
       },
@@ -100,7 +100,7 @@ export function createWithEditableAPI(
             const [block] = Array.from(
               Editor.nodes(editor, {
                 at: editor.selection.focus,
-                match: n => Editor.isBlock(editor, n)
+                match: (n) => Editor.isBlock(editor, n),
               })
             )[0] || [undefined]
             if (block) {
@@ -123,15 +123,15 @@ export function createWithEditableAPI(
               Editor.nodes(editor, {
                 mode: 'lowest',
                 at: editor.selection.focus,
-                match: n => n._type !== undefined,
-                voids: true
+                match: (n) => n._type !== undefined,
+                voids: true,
               })
             )[0] || [undefined]
             if (node && !Editor.isBlock(editor, node)) {
               const pseudoBlock = {
                 _key: 'pseudo',
                 _type: portableTextFeatures.types.block.name,
-                children: [node]
+                children: [node],
               }
               return fromSlateValue(
                 [pseudoBlock],
@@ -152,7 +152,7 @@ export function createWithEditableAPI(
         const [focusBlock] = Array.from(
           Editor.nodes(editor, {
             at: editor.selection.focus,
-            match: n => Editor.isBlock(editor, n)
+            match: (n) => Editor.isBlock(editor, n),
           })
         )[0] || [undefined]
         if (!focusBlock) {
@@ -170,10 +170,10 @@ export function createWithEditableAPI(
                 {
                   _key: keyGenerator(),
                   _type: type.name,
-                  ...(value ? value : {})
-                }
-              ]
-            }
+                  ...(value ? value : {}),
+                },
+              ],
+            },
           ],
           portableTextFeatures.types.block.name
         )[0] as SlateElement
@@ -191,8 +191,8 @@ export function createWithEditableAPI(
             {
               _key: keyGenerator(),
               _type: type.name,
-              ...(value ? value : {})
-            }
+              ...(value ? value : {}),
+            },
           ],
           portableTextFeatures.types.block.name
         )[0]
@@ -221,7 +221,7 @@ export function createWithEditableAPI(
       isVoid: (element: PortableTextBlock | PortableTextChild) => {
         return ![
           portableTextFeatures.types.block.name,
-          portableTextFeatures.types.span.name
+          portableTextFeatures.types.span.name,
         ].includes(element._type)
       },
       findByPath: (
@@ -237,7 +237,7 @@ export function createWithEditableAPI(
             if (path.length === 1 && slatePath.focus.path.length === 1) {
               return [
                 fromSlateValue([block], portableTextFeatures.types.block.name)[0],
-                [{_key: block._key}]
+                [{_key: block._key}],
               ]
             }
             const ptBlock = fromSlateValue(
@@ -257,7 +257,7 @@ export function createWithEditableAPI(
         let node
         try {
           const [item] = Array.from(
-            Editor.nodes(editor, {at: [], match: n => n._key === element._key}) || []
+            Editor.nodes(editor, {at: [], match: (n) => n._key === element._key}) || []
           )[0] || [undefined]
           node = ReactEditor.toDOMNode(editor, item)
         } catch (err) {
@@ -273,13 +273,13 @@ export function createWithEditableAPI(
           const activeAnnotations: PortableTextBlock[] = []
           const spans = Editor.nodes(editor, {
             at: editor.selection,
-            match: node =>
-              Text.isText(node) && node.marks && Array.isArray(node.marks) && node.marks.length > 0
+            match: (node) =>
+              Text.isText(node) && node.marks && Array.isArray(node.marks) && node.marks.length > 0,
           })
           for (const [span, path] of spans) {
             const [block] = Editor.node(editor, path, {depth: 1})
             if (block && Array.isArray(block.markDefs)) {
-              block.markDefs.forEach(def => {
+              block.markDefs.forEach((def) => {
                 if (span.marks && Array.isArray(span.marks) && span.marks.includes(def._key)) {
                   activeAnnotations.push(def)
                 }
@@ -306,8 +306,8 @@ export function createWithEditableAPI(
                 {
                   markDefs: [
                     ...blockElement.markDefs,
-                    {_type: type.name, _key: annotationKey, ...value}
-                  ]
+                    {_type: type.name, _key: annotationKey, ...value},
+                  ],
                 },
                 {at: selection.focus}
               )
@@ -323,11 +323,11 @@ export function createWithEditableAPI(
                     Transforms.setNodes(
                       editor,
                       {
-                        marks: [...((textNode.marks || []) as string[]), annotationKey]
+                        marks: [...((textNode.marks || []) as string[]), annotationKey],
                       },
                       {
                         at: editor.selection,
-                        match: n => n._type === portableTextFeatures.types.span.name
+                        match: (n) => n._type === portableTextFeatures.types.span.name,
                       }
                     )
                   }
@@ -343,7 +343,7 @@ export function createWithEditableAPI(
                         editor,
                         [{_type: 'span', text: '', marks: [], _key: keyGenerator()}],
                         {
-                          at: Range.end(editor.selection)
+                          at: Range.end(editor.selection),
                         }
                       )
                       editor.onChange()
@@ -351,7 +351,7 @@ export function createWithEditableAPI(
                   })
                   return {
                     spanPath: newSelection.focus.path,
-                    markDefPath: [{_key: blockElement._key}, 'markDefs', {_key: annotationKey}]
+                    markDefPath: [{_key: blockElement._key}, 'markDefs', {_key: annotationKey}],
                   }
                 }
               }
@@ -395,16 +395,16 @@ export function createWithEditableAPI(
             // Everything in the selection which has marks
             const spans = Editor.nodes(editor, {
               at: selection,
-              match: node =>
+              match: (node) =>
                 Text.isText(node) &&
                 node.marks &&
                 Array.isArray(node.marks) &&
-                node.marks.length > 0
+                node.marks.length > 0,
             })
             for (const [span, path] of spans) {
               const [block] = Editor.node(editor, path, {depth: 1})
               if (block && Array.isArray(block.markDefs)) {
-                block.markDefs.forEach(def => {
+                block.markDefs.forEach((def) => {
                   if (
                     def._type === type.name &&
                     span.marks &&
@@ -414,7 +414,7 @@ export function createWithEditableAPI(
                     Transforms.setNodes(
                       editor,
                       {
-                        marks: [...(span.marks || []).filter(mark => mark !== def._key)]
+                        marks: [...(span.marks || []).filter((mark) => mark !== def._key)],
                       },
                       {at: path, voids: false, split: false}
                     )
@@ -427,7 +427,7 @@ export function createWithEditableAPI(
                 for (const [node, path] of Array.from(
                   Editor.nodes(editor, {
                     at: Editor.range(editor, [selection.anchor.path[0]], [selection.focus.path[0]]),
-                    match: Text.isText
+                    match: Text.isText,
                   })
                 ).reverse()) {
                   const [parent] = Editor.node(editor, SlatePath.parent(path))
@@ -466,7 +466,7 @@ export function createWithEditableAPI(
       },
       isExpandedSelection: () => {
         return !!editor.selection && Range.isExpanded(editor.selection)
-      }
+      },
     })
     return editor
   }

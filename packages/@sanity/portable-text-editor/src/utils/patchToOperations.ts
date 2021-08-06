@@ -50,7 +50,7 @@ export function createPatchToOperations(portableTextFeatures: PortableTextFeatur
     return false
   }
 
-  return function(editor: Editor, patch: Patch): boolean {
+  return function (editor: Editor, patch: Patch): boolean {
     switch (patch.type) {
       case 'insert':
         return !!insertPatch(editor, patch)
@@ -70,7 +70,7 @@ function isKeyedSegment(segment: PathSegment): segment is KeyedSegment {
 // Helper function to find the last part of a patch path that has a known key
 function findLastKey(path: Path) {
   let key: string | null = null
-  path.forEach(part => {
+  path.forEach((part) => {
     if (isKeyedSegment(part)) {
       key = part._key
     }

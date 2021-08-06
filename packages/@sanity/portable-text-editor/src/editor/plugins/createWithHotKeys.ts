@@ -15,9 +15,9 @@ const DEFAULT_HOTKEYS: HotkeyOptions = {
     'mod+b': 'strong',
     'mod+i': 'em',
     'mod+u': 'underline',
-    "mod+'": 'code'
+    "mod+'": 'code',
   },
-  custom: {}
+  custom: {},
 }
 
 /**
@@ -36,7 +36,7 @@ export function createWithHotkeys(
   return function withHotKeys(editor: PortableTextSlateEditor & ReactEditor) {
     editor.pteWithHotKeys = (event: React.KeyboardEvent<HTMLDivElement>): void | boolean => {
       // Wire up custom marks hotkeys
-      Object.keys(activeHotkeys).forEach(cat => {
+      Object.keys(activeHotkeys).forEach((cat) => {
         if (cat === 'marks') {
           for (const hotkey in activeHotkeys[cat]) {
             if (reservedHotkeys.includes(hotkey)) {
@@ -110,7 +110,7 @@ export function createWithHotkeys(
           debug('Preventing deleting void block above')
           event.preventDefault()
           event.stopPropagation()
-          Transforms.removeNodes(editor, {match: n => n === focusBlock})
+          Transforms.removeNodes(editor, {match: (n) => n === focusBlock})
           Transforms.select(editor, prevPath)
           editor.onChange()
           return true
@@ -134,7 +134,7 @@ export function createWithHotkeys(
           debug('Preventing deleting void block below')
           event.preventDefault()
           event.stopPropagation()
-          Transforms.removeNodes(editor, {match: n => n === focusBlock})
+          Transforms.removeNodes(editor, {match: (n) => n === focusBlock})
           Transforms.select(editor, focusBlockPath)
           editor.onChange()
           return true
@@ -184,10 +184,10 @@ export function createWithHotkeys(
                     _type: 'span',
                     _key: keyGenerator(),
                     text: '',
-                    marks: []
-                  }
-                ]
-              }
+                    marks: [],
+                  },
+                ],
+              },
             ],
             portableTextFeatures.types.block.name
           )[0]

@@ -1,13 +1,13 @@
 import styled from 'styled-components'
 
 export const DraggableBlockWrapper = styled.div`
-  border-top: ${props => {
+  border-top: ${(props) => {
     if (props.isDraggingOverTop) {
       return '1px solid black'
     }
     return '1px solid transparent'
   }};
-  border-bottom: ${props => {
+  border-bottom: ${(props) => {
     if (props.isDraggingOverBottom) {
       return '1px solid black'
     }
@@ -17,7 +17,7 @@ export const DraggableBlockWrapper = styled.div`
 
 export const BlockObject = styled.div`
   user-select: none;
-  border: ${props => {
+  border: ${(props) => {
     if (props.selected) {
       return '1px solid blue'
     }
@@ -27,7 +27,7 @@ export const BlockObject = styled.div`
 
 export const InlineObject = styled.span`
   background: #999;
-  border: ${props => {
+  border: ${(props) => {
     if (props.selected) {
       return '1px solid blue'
     }
@@ -45,7 +45,7 @@ export const ListItem = styled.div`
       in Webkit: https://stackoverflow.com/a/21947628/831480
     */
     transform: translateZ(0);
-    margin-left: ${props => getLeftPositionForListLevel(props.listLevel)};
+    margin-left: ${(props) => getLeftPositionForListLevel(props.listLevel)};
   }
   &.pt-list-item > .pt-list-item-inner {
     display: flex;
@@ -57,7 +57,7 @@ export const ListItem = styled.div`
     }
   }
   &.pt-list-item-bullet > .pt-list-item-inner:before {
-      content: '${props => getContentForListLevelAndStyle(props.listLevel, props.listStyle)}';
+      content: '${(props) => getContentForListLevelAndStyle(props.listLevel, props.listStyle)}';
       font-size: 0.4375rem; /* 7px */
       line-height: 1.5rem; /* Same as body text */
       /* Optical alignment */
@@ -70,14 +70,14 @@ export const ListItem = styled.div`
     }
   }
   &.pt-list-item-number {
-    counter-increment: ${props => getCounterIncrementForListLevel(props.listLevel)};
-    counter-rest: ${props => getCounterResetForListLevel(props.listLevel)};
+    counter-increment: ${(props) => getCounterIncrementForListLevel(props.listLevel)};
+    counter-rest: ${(props) => getCounterResetForListLevel(props.listLevel)};
   }
   & + :not(.pt-list-item-number) {
     counter-reset: listItemNumber;
   }
   &.pt-list-item-number > .pt-list-item-inner:before {
-    content: ${props => getCounterContentForListLevel(props.listLevel)};
+    content: ${(props) => getCounterContentForListLevel(props.listLevel)};
     min-width: 1.5rem; /* Make sure space between number and text never shrinks */
     /* Optical alignment */
     position: relative;

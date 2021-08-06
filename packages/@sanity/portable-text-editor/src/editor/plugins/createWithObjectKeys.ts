@@ -12,7 +12,7 @@ export function createWithObjectKeys(
 ) {
   return function withKeys(editor: PortableTextSlateEditor) {
     const {apply, normalizeNode} = editor
-    editor.apply = operation => {
+    editor.apply = (operation) => {
       if (operation.type === 'split_node') {
         operation.properties = {...operation.properties, _key: keyGenerator()}
       }
@@ -22,7 +22,7 @@ export function createWithObjectKeys(
       }
       apply(operation)
     }
-    editor.normalizeNode = entry => {
+    editor.normalizeNode = (entry) => {
       const [node, path] = entry
       if (Element.isElement(node) && node._type === portableTextFeatures.types.block.name) {
         // Set key on block itself

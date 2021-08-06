@@ -8,7 +8,7 @@ import {
   createWithPortableTextLists,
   createWithUndoRedo,
   createWithPortableTextBlockStyle,
-  createWithUtils
+  createWithUtils,
 } from './plugins'
 import {createOperationToPatches} from '../utils/operationToPatches'
 import {createEditorOptions} from '../types/options'
@@ -39,7 +39,7 @@ export const withPortableText = <T extends Editor>(
     change$,
     maxBlocks,
     incomingPatche$,
-    readOnly
+    readOnly,
   } = options
   const operationToPatches = createOperationToPatches(portableTextFeatures)
   const withObjectKeys = createWithObjectKeys(portableTextFeatures, keyGenerator)

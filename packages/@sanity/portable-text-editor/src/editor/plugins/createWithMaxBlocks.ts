@@ -7,7 +7,7 @@ import {PortableTextSlateEditor} from '../../types/editor'
 export function createWithMaxBlocks(rows: number) {
   return function withMaxBlocks(editor: PortableTextSlateEditor) {
     const {apply} = editor
-    editor.apply = operation => {
+    editor.apply = (operation) => {
       if (rows > 0 && editor.children.length >= rows) {
         if (
           (operation.type === 'insert_node' || operation.type === 'split_node') &&

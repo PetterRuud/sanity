@@ -10,5 +10,3 @@ export {createWithUndoRedo} from './createWithUndoRedo'
 export {createWithPortableTextBlockStyle} from './createWithPortableTextBlockStyle'
 export {createWithUtils} from './createWithUtils'
 export {createWithEditableAPI} from './createWithEditableAPI'
-
-

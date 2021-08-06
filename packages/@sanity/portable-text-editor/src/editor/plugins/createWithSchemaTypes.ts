@@ -14,12 +14,12 @@ export function createWithSchemaTypes(portableTextFeatures: PortableTextFeatures
       return (
         typeof element._type === 'string' &&
         portableTextFeatures.types.block.name !== element._type &&
-        (portableTextFeatures.types.blockObjects.map(obj => obj.name).includes(element._type) ||
-          portableTextFeatures.types.inlineObjects.map(obj => obj.name).includes(element._type))
+        (portableTextFeatures.types.blockObjects.map((obj) => obj.name).includes(element._type) ||
+          portableTextFeatures.types.inlineObjects.map((obj) => obj.name).includes(element._type))
       )
     }
     editor.isInline = (element: Element): boolean => {
-      const inlineSchemaTypes = portableTextFeatures.types.inlineObjects.map(obj => obj.name)
+      const inlineSchemaTypes = portableTextFeatures.types.inlineObjects.map((obj) => obj.name)
       return (
         typeof element._type === 'string' &&
         inlineSchemaTypes.includes(element._type) &&

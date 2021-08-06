@@ -10,7 +10,7 @@ export function getPortableTextFeatures(portabletextType): PortableTextFeatures 
     throw new Error('Block type is not defined in this schema (required)')
   }
   const childrenField =
-    blockType && blockType.fields && blockType.fields.find(field => field.name === 'children')
+    blockType && blockType.fields && blockType.fields.find((field) => field.name === 'children')
   if (!childrenField) {
     throw new Error('Children field for block type found in schema (required)')
   }
@@ -22,9 +22,9 @@ export function getPortableTextFeatures(portabletextType): PortableTextFeatures 
   if (!spanType) {
     throw new Error('Span type not found in schema (required)')
   }
-  const inlineObjectTypes: Type[] = ofType.filter(memberType => memberType.name !== 'span')
+  const inlineObjectTypes: Type[] = ofType.filter((memberType) => memberType.name !== 'span')
   const blockObjectTypes: Type[] = portabletextType.of.filter(
-    field => field.name !== blockType.name
+    (field) => field.name !== blockType.name
   )
   const annotations = resolveEnabledAnnotationTypes(spanType)
   return {
@@ -38,18 +38,18 @@ export function getPortableTextFeatures(portabletextType): PortableTextFeatures 
       portableText: portabletextType,
       inlineObjects: inlineObjectTypes,
       blockObjects: blockObjectTypes,
-      annotations: annotations.map(an => an.type)
-    }
+      annotations: annotations.map((an) => an.type),
+    },
   }
 }
 
 function resolveEnabledStyles(blockType) {
-  const styleField = blockType.fields.find(btField => btField.name === 'style')
+  const styleField = blockType.fields.find((btField) => btField.name === 'style')
   if (!styleField) {
     throw new Error("A field with name 'style' is not defined in the block type (required).")
   }
   const textStyles =
-    styleField.type.options.list && styleField.type.options.list.filter(style => style.value)
+    styleField.type.options.list && styleField.type.options.list.filter((style) => style.value)
   if (!textStyles || textStyles.length === 0) {
     throw new Error(
       'The style fields need at least one style ' +
@@ -60,14 +60,14 @@ function resolveEnabledStyles(blockType) {
 }
 
 function resolveEnabledAnnotationTypes(spanType) {
-  return spanType.annotations.map(annotation => {
+  return spanType.annotations.map((annotation) => {
     return {
       blockEditor: annotation.blockEditor,
       portableText: annotation.portableText,
       title: annotation.title,
       type: annotation,
       value: annotation.name,
-      icon: annotation.icon
+      icon: annotation.icon,
     }
   })
 }
@@ -77,12 +77,12 @@ function resolveEnabledDecorators(spanType) {
 }
 
 function resolveEnabledListItems(blockType) {
-  const listField = blockType.fields.find(btField => btField.name === 'list')
+  const listField = blockType.fields.find((btField) => btField.name === 'list')
   if (!listField) {
     throw new Error("A field with name 'list' is not defined in the block type (required).")
   }
   const listItems =
-    listField.type.options.list && listField.type.options.list.filter(list => list.value)
+    listField.type.options.list && listField.type.options.list.filter((list) => list.value)
   if (!listItems) {
     throw new Error('The list field need at least to be an empty array')
   }

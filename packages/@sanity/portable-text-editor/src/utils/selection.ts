@@ -40,7 +40,7 @@ export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): 
   const [block, blockPath] = Array.from(
     Editor.nodes(editor, {
       at: [],
-      match: n => isKeySegment(point.path[0]) && n._key === point.path[0]._key
+      match: (n) => isKeySegment(point.path[0]) && n._key === point.path[0]._key,
     })
   )[0] || [undefined, undefined]
   if (!block || !Element.isElement(block)) {
@@ -50,7 +50,7 @@ export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): 
     return blockPath
   }
   const childPath = [point.path[2]]
-  const childIndex = block.children.findIndex(child => isEqual([{_key: child._key}], childPath))
+  const childIndex = block.children.findIndex((child) => isEqual([{_key: child._key}], childPath))
   if (childIndex >= 0 && block.children[childIndex]) {
     const child = block.children[childIndex]
     if (Element.isElement(child) && editor.isVoid(child)) {
@@ -67,7 +67,9 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
   }
   const newPath: any = []
   let newOffset: number = point.offset || 0
-  const block: PortableTextBlock | undefined = value.find(blk => blk._key === point.path[0]['_key'])
+  const block: PortableTextBlock | undefined = value.find(
+    (blk) => blk._key === point.path[0]['_key']
+  )
   if (block) {
     newPath.push({_key: block._key})
   } else {
@@ -77,7 +79,7 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
     if (!block.children || block.children.length === 0) {
       return null
     }
-    const child = block.children.find(cld => cld._key === point.path[2]['_key'])
+    const child = block.children.find((cld) => cld._key === point.path[2]['_key'])
     if (child) {
       newPath.push('children')
       newPath.push({_key: child._key})
@@ -102,10 +104,10 @@ export function normalizeSelection(
   let newAnchor: EditorSelectionPoint | null = null
   let newFocus: EditorSelectionPoint | null = null
   const {anchor, focus} = selection
-  if (anchor && value.find(blk => isEqual({_key: blk._key}, anchor.path[0]))) {
+  if (anchor && value.find((blk) => isEqual({_key: blk._key}, anchor.path[0]))) {
     newAnchor = normalizePoint(anchor, value)
   }
-  if (focus && value.find(blk => isEqual({_key: blk._key}, focus.path[0]))) {
+  if (focus && value.find((blk) => isEqual({_key: blk._key}, focus.path[0]))) {
     newFocus = normalizePoint(focus, value)
   }
   if (newAnchor && newFocus) {
@@ -124,14 +126,14 @@ export function toPortableTextRange(editor: Editor): EditorSelection | null {
   if (anchorPath) {
     anchor = {
       path: createKeyedPath(editor.selection.anchor, editor),
-      offset: editor.selection.anchor.offset
+      offset: editor.selection.anchor.offset,
     }
   }
   const focusPath = createKeyedPath(editor.selection.focus, editor)
   if (focusPath) {
     focus = {
       path: createKeyedPath(editor.selection.focus, editor),
-      offset: editor.selection.focus.offset
+      offset: editor.selection.focus.offset,
     }
   }
   const range = anchor && focus ? {anchor, focus} : null
@@ -144,11 +146,11 @@ export function toSlateRange(selection: EditorSelection, editor: Editor): Range 
   }
   const anchor = {
     path: createArrayedPath(selection.anchor, editor),
-    offset: selection.anchor.offset
+    offset: selection.anchor.offset,
   }
   const focus = {
     path: createArrayedPath(selection.focus, editor),
-    offset: selection.focus.offset
+    offset: selection.focus.offset,
   }
   const range = anchor && focus ? {anchor, focus} : null
   return range

@@ -23,14 +23,14 @@ export function createWithUtils(portableTextFeatures: PortableTextFeatures) {
         const focusOffset = focus.offset
         const charsBefore = textNode.text.slice(0, focusOffset)
         const charsAfter = textNode.text.slice(focusOffset, -1)
-        const isEmpty = str => str.match(/\s/g)
+        const isEmpty = (str) => str.match(/\s/g)
         const whiteSpaceBeforeIndex = charsBefore
           .split('')
           .reverse()
-          .findIndex(str => isEmpty(str))
+          .findIndex((str) => isEmpty(str))
         const newStartOffset =
           whiteSpaceBeforeIndex > -1 ? charsBefore.length - whiteSpaceBeforeIndex : 0
-        const whiteSpaceAfterIndex = charsAfter.split('').findIndex(obj => isEmpty(obj))
+        const whiteSpaceAfterIndex = charsAfter.split('').findIndex((obj) => isEmpty(obj))
         const newEndOffset =
           charsBefore.length +
           (whiteSpaceAfterIndex > -1 ? whiteSpaceAfterIndex : charsAfter.length + 1)
@@ -38,7 +38,7 @@ export function createWithUtils(portableTextFeatures: PortableTextFeatures) {
           debug('pteExpandToWord: Expanding to focused word')
           Transforms.setSelection(editor, {
             anchor: {...selection.anchor, offset: newStartOffset},
-            focus: {...selection.focus, offset: newEndOffset}
+            focus: {...selection.focus, offset: newEndOffset},
           })
           return
         }

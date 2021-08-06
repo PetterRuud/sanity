@@ -11,7 +11,7 @@ import {
   SplitNodeOperation,
   InsertTextOperation,
   RemoveTextOperation,
-  SelectionOperation
+  SelectionOperation,
 } from 'slate'
 import * as DMP from 'diff-match-patch'
 import {Patch} from '../../types/patch'
@@ -41,7 +41,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
   // Subscribe to incoming patches
   const incomingPatches: {patch: Patch; time: Date}[] = []
   if (incomingPatche$) {
-    incomingPatche$.subscribe(patch => {
+    incomingPatche$.subscribe((patch) => {
       incomingPatches.push({patch: patch, time: new Date()})
     })
   }
@@ -82,11 +82,11 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
         } else {
           const operations = [
             ...(editor.selection !== null ? [createSelectOperation(editor)] : []),
-            op
+            op,
           ]
           const step = {
             operations,
-            timestamp: new Date()
+            timestamp: new Date(),
           }
           undos.push(step)
           debug('Created new undo step', step)
@@ -109,11 +109,11 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
         const step = undos[undos.length - 1]
         debug('Undoing', step)
         if (step.operations.length > 0) {
-          const otherPatches = [...incomingPatches.filter(item => item.time > step.timestamp)]
+          const otherPatches = [...incomingPatches.filter((item) => item.time > step.timestamp)]
           let transformedOperations = step.operations
-          otherPatches.forEach(item => {
+          otherPatches.forEach((item) => {
             transformedOperations = flatten(
-              transformedOperations.map(op => transformOperation(editor, item.patch, op))
+              transformedOperations.map((op) => transformOperation(editor, item.patch, op))
             )
           })
           withoutSaving(editor, () => {
@@ -121,7 +121,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
               transformedOperations
                 .map(Operation.inverse)
                 .reverse()
-                .forEach(op => {
+                .forEach((op) => {
                   // TODO: stop trying this, and have a perfect transformation!
                   try {
                     editor.apply(op)
@@ -147,16 +147,16 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
         const step = redos[redos.length - 1]
         debug('Redoing', step)
         if (step.operations.length > 0) {
-          const otherPatches = incomingPatches.filter(item => item.time > step.timestamp)
+          const otherPatches = incomingPatches.filter((item) => item.time > step.timestamp)
           let transformedOperations = step.operations
-          otherPatches.forEach(item => {
+          otherPatches.forEach((item) => {
             transformedOperations = flatten(
-              transformedOperations.map(op => transformOperation(editor, item.patch, op))
+              transformedOperations.map((op) => transformOperation(editor, item.patch, op))
             )
           })
           withoutSaving(editor, () => {
             Editor.withoutNormalizing(editor, () => {
-              transformedOperations.forEach(op => {
+              transformedOperations.forEach((op) => {
                 try {
                   editor.apply(op)
                 } catch (err) {
@@ -202,10 +202,10 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
   }
 
   if (patch.type === 'diffMatchPatch') {
-    let blockIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+    let blockIndex = editor.children.findIndex((blk) => isEqual({_key: blk._key}, patch.path[0]))
     const block = editor.children[blockIndex]
     if (block && Array.isArray(block.children)) {
-      const childIndex = block.children.findIndex(child =>
+      const childIndex = block.children.findIndex((child) =>
         isEqual({_key: child._key}, patch.path[2])
       )
       const parsed = dmp.patch_fromText(patch.value)[0]
@@ -214,7 +214,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
         return [operation]
       }
       const distance = parsed.length2 - parsed.length1
-      const patchIsRemovingText = parsed.diffs.some(diff => diff[0] === -1)
+      const patchIsRemovingText = parsed.diffs.some((diff) => diff[0] === -1)
 
       if (operation.type === 'split_node' && operation.path.length > 1) {
         const splitOperation = transformedOperation as SplitNodeOperation
@@ -290,7 +290,7 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
 
 function adjustBlockPath(editor, patch, operation, level): Operation {
   const transformedOperation = {...operation}
-  const myIndex = editor.children.findIndex(blk => isEqual({_key: blk._key}, patch.path[0]))
+  const myIndex = editor.children.findIndex((blk) => isEqual({_key: blk._key}, patch.path[0]))
   if (
     myIndex >= 0 &&
     operation.path &&
@@ -373,6 +373,6 @@ function createSelectOperation(editor): SelectionOperation {
   return {
     type: 'set_selection',
     properties: {...editor.selection},
-    newProperties: {...editor.selection}
+    newProperties: {...editor.selection},
   }
 }

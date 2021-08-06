@@ -16,7 +16,7 @@ export function createWithPortableTextBlockStyle(
     // Extend Slate's default normalization to reset split node to normal style
     // if there is no text at the right end of the split.
     const {normalizeNode} = editor
-    editor.normalizeNode = nodeEntry => {
+    editor.normalizeNode = (nodeEntry) => {
       normalizeNode(nodeEntry)
       const [, path] = nodeEntry
       for (const op of editor.operations) {
@@ -43,8 +43,8 @@ export function createWithPortableTextBlockStyle(
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node => Element.isElement(node) && node.style === style
-        })
+          match: (node) => Element.isElement(node) && node.style === style,
+        }),
       ]
       if (selectedBlocks.length > 0) {
         return true
@@ -59,9 +59,9 @@ export function createWithPortableTextBlockStyle(
       const selectedBlocks = [
         ...Editor.nodes(editor, {
           at: editor.selection,
-          match: node =>
-            Element.isElement(node) && node._type === portableTextFeatures.types.block.name
-        })
+          match: (node) =>
+            Element.isElement(node) && node._type === portableTextFeatures.types.block.name,
+        }),
       ]
       selectedBlocks.forEach(([node, path]) => {
         const {style, ...rest} = node
@@ -80,7 +80,7 @@ export function createWithPortableTextBlockStyle(
             editor,
             {
               ...rest,
-              style: blockStyle || defaultStyle
+              style: blockStyle || defaultStyle,
             },
             {at: path}
           )

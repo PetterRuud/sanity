@@ -21,11 +21,13 @@ export type TextSpan = {
   marks: string[]
 }
 
-export type PortableTextChild = {
-  _key: string
-  _type: string
-  [other: string]: any
-} | TextSpan
+export type PortableTextChild =
+  | {
+      _key: string
+      _type: string
+      [other: string]: any
+    }
+  | TextSpan
 
 export type MarkDef = {_key: string; _type: string}
 
@@ -54,7 +56,7 @@ export type PortableTextFeatures = {
     blockObjects: SchemaType[]
     inlineObjects: SchemaType[]
     portableText: SchemaType
-    span: SchemaType,
+    span: SchemaType
     annotations: SchemaType[]
   }
 }

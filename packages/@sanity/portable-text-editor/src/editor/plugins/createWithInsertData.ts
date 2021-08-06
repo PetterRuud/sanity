@@ -27,21 +27,21 @@ export function createWithInsertData(
     editor.getFragment = () => {
       debug('Get fragment data')
       if (editor.selection) {
-        const fragment = Node.fragment(editor, editor.selection).map(node => {
+        const fragment = Node.fragment(editor, editor.selection).map((node) => {
           const newNode = {...node}
           // Ensure the copy has new keys
           if (newNode.markDefs && Array.isArray(newNode.markDefs)) {
-            newNode.markDefs = newNode.markDefs.map(def => {
+            newNode.markDefs = newNode.markDefs.map((def) => {
               const oldKey = def._key
               const newKey = keyGenerator()
               if (Array.isArray(newNode.children)) {
-                newNode.children = newNode.children.map(child =>
+                newNode.children = newNode.children.map((child) =>
                   child._type === portableTextFeatures.types.span.name
                     ? {
                         ...child,
                         marks: child.marks.includes(oldKey)
-                          ? [...child.marks].filter(mark => mark !== oldKey).concat(newKey)
-                          : child.marks
+                          ? [...child.marks].filter((mark) => mark !== oldKey).concat(newKey)
+                          : child.marks,
                       }
                     : child
                 )
@@ -51,9 +51,9 @@ export function createWithInsertData(
           }
           const nodeWithNewKeys = {...newNode, _key: keyGenerator()} as Node
           if (Array.isArray(nodeWithNewKeys.children)) {
-            nodeWithNewKeys.children = nodeWithNewKeys.children.map(child => ({
+            nodeWithNewKeys.children = nodeWithNewKeys.children.map((child) => ({
               ...child,
-              _key: keyGenerator()
+              _key: keyGenerator(),
             }))
           }
           return nodeWithNewKeys
@@ -63,7 +63,7 @@ export function createWithInsertData(
       return []
     }
 
-    editor.insertData = data => {
+    editor.insertData = (data) => {
       if (!editor.selection) {
         debug('No selection, not inserting')
         return
@@ -103,7 +103,7 @@ export function createWithInsertData(
           // HTML (TODO: get rid of @sanity/block-tools)
           portableText = htmlToBlocks(html, portableTextFeatures.types.portableText)
             // Ensure it has keys
-            .map(block =>
+            .map((block) =>
               normalizeBlock(block, {blockTypeName: portableTextFeatures.types.block.name})
             )
           fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
@@ -112,7 +112,9 @@ export function createWithInsertData(
           // plain text
           const blocks = escapeHtml(text)
             .split(/\n{2,}/)
-            .map(line => (line ? `<p>${line.replace(/(?:\r\n|\r|\n)/g, '<br/>')}</p>` : '<p></p>'))
+            .map((line) =>
+              line ? `<p>${line.replace(/(?:\r\n|\r|\n)/g, '<br/>')}</p>` : '<p></p>'
+            )
             .join('')
           const textToHtml = `<html><body>${blocks}</body></html>`
           portableText = htmlToBlocks(textToHtml, portableTextFeatures.types.portableText)
@@ -131,7 +133,7 @@ export function createWithInsertData(
             level: 'warning',
             name: 'pasteError',
             description: errorDescription,
-            data: validation
+            data: validation,
           })
           debug('Invalid insert result', validation)
           return
@@ -152,13 +154,13 @@ export function createWithInsertData(
             const isEmptyText = isEqualToEmptyEditor([focusBlock], portableTextFeatures)
             if (isEmptyText && isVoid) {
               Transforms.insertFragment(editor, [blk], {
-                at: insertAtPath
+                at: insertAtPath,
               })
               Transforms.removeNodes(editor, {at: insertAtPath})
               if (fragment.length === 1) {
                 Transforms.setSelection(editor, {
                   focus: {path: insertAtPath, offset: 0},
-                  anchor: {path: insertAtPath, offset: 0}
+                  anchor: {path: insertAtPath, offset: 0},
                 })
               }
             } else {
@@ -171,8 +173,8 @@ export function createWithInsertData(
                 {
                   markDefs: [
                     ...(Array.isArray(focusBlock.markDefs) ? focusBlock.markDefs : []),
-                    ...(Array.isArray(markDefs) ? markDefs : [])
-                  ]
+                    ...(Array.isArray(markDefs) ? markDefs : []),
+                  ],
                 },
                 {at: insertAtPath}
               )
@@ -214,10 +216,10 @@ const entityMap = {
   "'": '&#39;',
   '/': '&#x2F;',
   '`': '&#x60;',
-  '=': '&#x3D;'
+  '=': '&#x3D;',
 }
 function escapeHtml(string) {
-  return String(string).replace(/[&<>"'`=\/]/g, function(s) {
+  return String(string).replace(/[&<>"'`=\/]/g, function (s) {
     return entityMap[s]
   })
 }

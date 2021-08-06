@@ -26,7 +26,7 @@ export default class PatchEvent {
   }
 
   prefixAll(segment: PathSegment): PatchEvent {
-    return PatchEvent.from(this.patches.map(patch => prefixPath(patch, segment)))
+    return PatchEvent.from(this.patches.map((patch) => prefixPath(patch, segment)))
   }
 }
 

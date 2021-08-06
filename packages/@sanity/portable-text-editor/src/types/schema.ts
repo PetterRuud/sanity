@@ -16,7 +16,7 @@ export type PortableTextType = Type & {
     sortable?: boolean
     layout?: 'grid'
   }
-  styles?: {title: string, value: string}[]
+  styles?: {title: string; value: string}[]
 }
 
 export type RawType = {

@@ -22,12 +22,12 @@ export function toSlateValue(
   keyMap: {} = {}
 ): Node[] {
   if (value && Array.isArray(value)) {
-    return value.map(block => {
+    return value.map((block) => {
       const {_type, _key, ...rest} = block
       const isPortableText = block && block._type === textBlockType
       if (isPortableText) {
         let hasInlines = false
-        const children = block.children.map(child => {
+        const children = block.children.map((child) => {
           const {_type, _key, ...rest} = child
           if (_type !== 'span') {
             hasInlines = true
@@ -58,11 +58,11 @@ export function fromSlateValue(
   keyMap: {} = {}
 ): PortableTextBlock[] {
   if (value && Array.isArray(value)) {
-    return value.map(block => {
+    return value.map((block) => {
       const isPortableText = block && block._type === textBlockType
       if (isPortableText && Element.isElement(block)) {
         let hasInlines = false
-        const children = block.children.map(child => {
+        const children = block.children.map((child) => {
           const {_type} = child
           if (_type !== 'span' && typeof child.value === 'object') {
             hasInlines = true
@@ -119,7 +119,7 @@ export function findBlockAndIndexFromPath(
   if (isNumber) {
     blockIndex = Number(firstPathSegment)
   } else if (children) {
-    blockIndex = children.findIndex(blk => isEqual({_key: blk._key}, firstPathSegment))
+    blockIndex = children.findIndex((blk) => isEqual({_key: blk._key}, firstPathSegment))
   }
   if (blockIndex > -1) {
     return [children[blockIndex] as Element, blockIndex]
@@ -136,7 +136,7 @@ export function findChildAndIndexFromPath(
   if (isNumber) {
     childIndex = Number(secondPathSegment)
   } else {
-    childIndex = block.children.findIndex(child => isEqual({_key: child._key}, secondPathSegment))
+    childIndex = block.children.findIndex((child) => isEqual({_key: child._key}, secondPathSegment))
   }
   if (childIndex > -1) {
     return [block.children[childIndex] as Element | Text, childIndex]

@@ -7,14 +7,14 @@ import {
   InsertPosition,
   SetPatch,
   UnsetPatch,
-  DiffMatchPatch
+  DiffMatchPatch,
 } from '../types/patch'
 
 export function setIfMissing(value: any, path: Path = []): SetIfMissingPatch {
   return {
     type: 'setIfMissing',
     path,
-    value
+    value,
   }
 }
 
@@ -27,7 +27,7 @@ export function diffMatchPatch(
 ): DiffMatchPatch {
   const patch = dmp
     .patch_make(currentValue, nextValue)
-    .map(patch => patch.toString())
+    .map((patch) => patch.toString())
     .join('')
   return {type: 'diffMatchPatch', path, value: patch}
 }
@@ -37,7 +37,7 @@ export function insert(items: any[], position: InsertPosition, path: Path = []):
     type: 'insert',
     path,
     position,
-    items
+    items,
   }
 }
 
@@ -52,6 +52,6 @@ export function unset(path: Path = []): UnsetPatch {
 export function prefixPath<T extends {path: Path}>(patch: T, segment: PathSegment): T {
   return {
     ...patch,
-    path: [segment, ...patch.path]
+    path: [segment, ...patch.path],
   }
 }

@@ -9,7 +9,7 @@ import {
   fromSlateValue,
   isEqualToEmptyEditor,
   findBlockAndIndexFromPath,
-  findChildAndIndexFromPath
+  findChildAndIndexFromPath,
 } from '../../utils/values'
 import {PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PatchObservable, PortableTextSlateEditor} from '../../types/editor'
@@ -33,7 +33,7 @@ export function createWithPatches(
     removeNodePatch,
     removeTextPatch,
     setNodePatch,
-    splitNodePatch
+    splitNodePatch,
   },
   change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures,
@@ -138,7 +138,7 @@ export function createWithPatches(
             previousChildren,
             portableTextFeatures.types.block.name,
             KEY_TO_VALUE_ELEMENT.get(editor)
-          )
+          ),
         })
       }
 
@@ -177,17 +177,17 @@ export function createWithPatches(
         change$.next({type: 'throttle', throttle: true})
         isThrottling = true
         // Emit all patches immediately
-        patches.map(patch => {
+        patches.map((patch) => {
           change$.next({
             type: 'patch',
-            patch
+            patch,
           })
         })
 
         // Emit mutation after user is done typing (we show only local state as that happens)
         change$.next({
           type: 'mutation',
-          patches: patches
+          patches: patches,
         })
         cancelThrottle()
       }
@@ -277,7 +277,7 @@ function adjustSelection(
         newSelection.anchor = {...selection.anchor}
         newSelection.anchor.path = newSelection.anchor.path = [
           newSelection.anchor.path[0],
-          Math.max(0, prevIndexOrLastIndex - 1)
+          Math.max(0, prevIndexOrLastIndex - 1),
         ]
         const textBefore = ((block.children[prevIndexOrLastIndex - 1] &&
           block.children[prevIndexOrLastIndex - 1].text) ||
@@ -288,7 +288,7 @@ function adjustSelection(
         newSelection.focus = {...selection.focus}
         newSelection.focus.path = [
           newSelection.focus.path[0],
-          Math.max(0, prevIndexOrLastIndex - 1)
+          Math.max(0, prevIndexOrLastIndex - 1),
         ]
         const textBefore = ((block.children[prevIndexOrLastIndex - 1] &&
           block.children[Math.max(0, prevIndexOrLastIndex - 1)].text) ||
@@ -299,7 +299,7 @@ function adjustSelection(
         newSelection.anchor = {...selection.anchor}
         newSelection.anchor.path = newSelection.anchor.path = [
           newSelection.anchor.path[0],
-          prevIndexOrLastIndex
+          prevIndexOrLastIndex,
         ]
         newSelection.anchor.offset = selection.anchor.offset + prevText.length
       }
@@ -307,7 +307,7 @@ function adjustSelection(
         newSelection.focus = {...selection.anchor}
         newSelection.focus.path = newSelection.anchor.path = [
           newSelection.anchor.path[0],
-          prevIndexOrLastIndex
+          prevIndexOrLastIndex,
         ]
         newSelection.anchor.offset = selection.anchor.offset + prevText.length
       }
@@ -331,14 +331,14 @@ function adjustSelection(
       newSelection.anchor = {...selection.anchor}
       newSelection.anchor.path = newSelection.anchor.path = [
         Math.max(0, newSelection.anchor.path[0] - 1),
-        ...newSelection.anchor.path.slice(1)
+        ...newSelection.anchor.path.slice(1),
       ]
     }
     if (Path.isAfter(selection.focus.path, [blockIndex])) {
       newSelection.focus = {...selection.focus}
       newSelection.focus.path = newSelection.focus.path = [
         Math.max(0, newSelection.focus.path[0] - 1),
-        ...newSelection.focus.path.slice(1)
+        ...newSelection.focus.path.slice(1),
       ]
     }
     if (!isEqual(newSelection, selection)) {
@@ -358,14 +358,14 @@ function adjustSelection(
       newSelection.anchor = {...selection.anchor}
       newSelection.anchor.path = newSelection.anchor.path = [
         newSelection.anchor.path[0] + patch.items.length,
-        ...newSelection.anchor.path.slice(1)
+        ...newSelection.anchor.path.slice(1),
       ]
     }
     if (Path.isAfter(selection.focus.path, [blockIndex])) {
       newSelection.focus = {...selection.focus}
       newSelection.focus.path = newSelection.focus.path = [
         newSelection.focus.path[0] + patch.items.length,
-        ...newSelection.focus.path.slice(1)
+        ...newSelection.focus.path.slice(1),
       ]
     }
     if (!isEqual(newSelection, selection)) {

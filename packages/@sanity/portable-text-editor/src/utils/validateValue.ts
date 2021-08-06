@@ -12,11 +12,11 @@ export function validateValue(
   let valid = true
   const validChildTypes = [
     ...[portableTextFeatures.types.span.name],
-    ...portableTextFeatures.types.inlineObjects.map(t => t.name)
+    ...portableTextFeatures.types.inlineObjects.map((t) => t.name),
   ]
   const validBlockTypes = [
     ...[portableTextFeatures.types.block.name],
-    ...portableTextFeatures.types.blockObjects.map(t => t.name)
+    ...portableTextFeatures.types.blockObjects.map((t) => t.name),
   ]
 
   // Undefined is allowed
@@ -31,8 +31,8 @@ export function validateValue(
         patches: [unset([])],
         description: 'Value must be an array or undefined',
         action: 'Unset the value',
-        item: value
-      }
+        item: value,
+      },
     }
   }
   if (
@@ -42,7 +42,7 @@ export function validateValue(
           patches: [unset([index])],
           description: `Block must be an object, got ${String(blk)}`,
           action: `Unset invalid item`,
-          item: blk
+          item: blk,
         }
         return true
       }
@@ -52,7 +52,7 @@ export function validateValue(
           patches: [set({...blk, _key: keyGenerator()}, [index])],
           description: `Block at index ${index} is missing required _key.`,
           action: 'Set the block with a random _key value',
-          item: blk
+          item: blk,
         }
         return true
       }
@@ -65,7 +65,7 @@ export function validateValue(
             patches: [set({...blk, _type: currentBlockTypeName}, [{_key: blk._key}])],
             description: `Block with _key '${blk._key}' has invalid type name '${blk._type}'. According to the schema, the block type name is '${currentBlockTypeName}'`,
             action: `Use type '${currentBlockTypeName}'`,
-            item: blk
+            item: blk,
           }
           return true
         }
@@ -73,7 +73,7 @@ export function validateValue(
           patches: [unset([{_key: blk._key}])],
           description: `Block with _key '${blk._key}' has invalid _type '${blk._type}'`,
           action: 'Remove the block',
-          item: blk
+          item: blk,
         }
         return true
       }
@@ -85,7 +85,7 @@ export function validateValue(
             patches: [unset([{_key: blk._key}])],
             description: `Text block with _key '${blk._key}' is missing required key 'children'.`,
             action: 'Remove the block',
-            item: blk
+            item: blk,
           }
           return true
         }
@@ -95,7 +95,7 @@ export function validateValue(
             patches: [set({...blk, markDefs: []}, [{_key: blk._key}])],
             description: `Block is missing required key 'markDefs'.`,
             action: 'Add empty markDefs array',
-            item: blk
+            item: blk,
           }
           return true
         }
@@ -120,8 +120,8 @@ export function validateValue(
         const allUsedMarks: string[] = uniq(
           flatten(
             blk.children
-              .filter(cld => cld._type === portableTextFeatures.types.span.name)
-              .map(cld => cld.marks || [])
+              .filter((cld) => cld._type === portableTextFeatures.types.span.name)
+              .map((cld) => cld.marks || [])
           )
         )
         // // Test that all markDefs are in use
@@ -144,20 +144,21 @@ export function validateValue(
 
         // Test that every annotation mark used has a definition
         const annotationMarks = allUsedMarks.filter(
-          mark => !portableTextFeatures.decorators.map(dec => dec.value).includes(mark)
+          (mark) => !portableTextFeatures.decorators.map((dec) => dec.value).includes(mark)
         )
         const orphanedMarks = annotationMarks.filter(
-          mark => !blk.markDefs.find(def => def._key === mark)
+          (mark) => !blk.markDefs.find((def) => def._key === mark)
         )
         if (orphanedMarks.length > 0) {
           const children = blk.children.filter(
-            cld => Array.isArray(cld.marks) && cld.marks.some(mark => orphanedMarks.includes(mark))
+            (cld) =>
+              Array.isArray(cld.marks) && cld.marks.some((mark) => orphanedMarks.includes(mark))
           ) as PortableTextChild[]
           if (children) {
             resolution = {
-              patches: children.map(child => {
+              patches: children.map((child) => {
                 return set(
-                  child.marks.filter(cmrk => !orphanedMarks.includes(cmrk)),
+                  child.marks.filter((cmrk) => !orphanedMarks.includes(cmrk)),
                   [{_key: blk._key}, 'children', {_key: child._key}, 'marks']
                 )
               }),
@@ -165,7 +166,7 @@ export function validateValue(
                 ', '
               )}) not supported by the current content model.`,
               action: 'Remove invalid marks',
-              item: blk
+              item: blk,
             }
             return true
           }
@@ -176,13 +177,13 @@ export function validateValue(
           const newSpan = {
             _type: portableTextFeatures.types.span.name,
             _key: keyGenerator(),
-            text: ''
+            text: '',
           }
           resolution = {
             patches: [insert([newSpan], 'after', [{_key: blk._key}, 'children', 0])],
             description: `Children for text block with _key '${blk._key}' is empty.`,
             action: 'Insert an empty text',
-            item: blk
+            item: blk,
           }
           return true
         }
@@ -195,7 +196,7 @@ export function validateValue(
                 patches: [set(newchild, [{_key: blk._key}, 'children', cIndex])],
                 description: `Child at index ${cIndex} is missing required _key in block with _key ${blk._key}.`,
                 action: 'Set a new random _key on the object',
-                item: blk
+                item: blk,
               }
               return true
             }
@@ -205,7 +206,7 @@ export function validateValue(
                 patches: [unset([{_key: blk._key}, 'children', {_key: child._key}])],
                 description: `Child with _key '${child._key}' in block with key '${blk._key}' has invalid '_type' property (${child._type}).`,
                 action: 'Remove the object',
-                item: blk
+                item: blk,
               }
               return true
             }
@@ -213,11 +214,11 @@ export function validateValue(
             if (child._type === portableTextFeatures.types.span.name && child.text === undefined) {
               resolution = {
                 patches: [
-                  set({...child, text: ''}, [{_key: blk._key}, 'children', {_key: child._key}])
+                  set({...child, text: ''}, [{_key: blk._key}, 'children', {_key: child._key}]),
                 ],
                 description: `Child with _key '${child._key}' in block with key '${blk._key}' is missing text property!`,
                 action: `Write an empty .text to the object`,
-                item: blk
+                item: blk,
               }
               return true
             }
