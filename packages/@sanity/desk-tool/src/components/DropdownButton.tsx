@@ -1,3 +1,6 @@
+// @todo: remove the following line when part imports has been removed from this file
+///<reference types="@sanity/types/parts" />
+
 import classNames from 'classnames'
 import ChevronDownIcon from 'part:@sanity/base/chevron-down-icon'
 import React from 'react'

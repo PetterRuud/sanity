@@ -1,3 +1,6 @@
+// @todo: remove the following line when part imports has been removed from this file
+///<reference types="@sanity/types/parts" />
+
 import {useSyncState, useDocumentOperation, useValidationStatus} from '@sanity/react-hooks'
 import CheckmarkIcon from 'part:@sanity/base/check-icon'
 import PublishIcon from 'part:@sanity/base/publish-icon'

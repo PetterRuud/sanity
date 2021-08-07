@@ -1,3 +1,6 @@
+// @todo: remove the following line when part imports has been removed from this file
+///<reference types="@sanity/types/parts" />
+
 import {useId} from '@reach/auto-id'
 import {useClickOutside, Tooltip, Box} from '@sanity/ui'
 import Button from 'part:@sanity/components/buttons/default'

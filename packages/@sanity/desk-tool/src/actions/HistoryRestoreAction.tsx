@@ -1,3 +1,6 @@
+// @todo: remove the following line when part imports has been removed from this file
+///<reference types="@sanity/types/parts" />
+
 import {useDocumentOperation} from '@sanity/react-hooks'
 import {useRouter} from 'part:@sanity/base/router'
 import HistoryIcon from 'part:@sanity/base/history-icon'

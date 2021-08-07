@@ -1,3 +1,6 @@
+// @todo: remove the following line when part imports has been removed from this file
+///<reference types="@sanity/types/parts" />
+
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable react/no-multi-comp */
 /* eslint-disable react/no-array-index-key */

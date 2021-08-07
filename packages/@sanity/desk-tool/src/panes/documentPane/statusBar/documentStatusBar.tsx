@@ -1,3 +1,6 @@
+// @todo: remove the following line when part imports has been removed from this file
+///<reference types="@sanity/types/parts" />
+
 import React from 'react'
 import {useEditState} from '@sanity/react-hooks'
 import resolveDocumentBadges from 'part:@sanity/base/document-badges/resolver'

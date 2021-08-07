@@ -1,3 +1,6 @@
+// @todo: remove the following line when part imports has been removed from this file
+///<reference types="@sanity/types/parts" />
+
 import {uuid} from '@sanity/uuid'
 import {useDocumentOperation} from '@sanity/react-hooks'
 import ContentCopyIcon from 'part:@sanity/base/content-copy-icon'
