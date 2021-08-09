@@ -5,6 +5,23 @@
   "main": "./lib/index.js",
   "esm": "./dist/esm/index.js",
   "types": "./dist/dts",
+  "exports": {
+    "./*": "./dist/esm/_exports/*"
+  },
+  "//": "the typesVersion config below is a workaround for TypeScript's lack of support for package exports",
+  "typesVersions": {
+    "*": {
+      "dist/dts/index.d.ts": [
+        "dist/dts/index.d.ts"
+      ],
+      "__legacy/*": [
+        "__legacy/*"
+      ],
+      "*": [
+        "dist/dts/_exports/*"
+      ]
+    }
+  },
   "scripts": {
     "clean": "rimraf lib",
     "coverage": "nyc --report=lcov --report=text _mocha -- test/**/*.test.js",
