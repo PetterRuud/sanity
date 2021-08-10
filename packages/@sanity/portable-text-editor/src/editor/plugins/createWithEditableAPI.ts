@@ -6,13 +6,14 @@ import {
   Path as SlatePath,
   Element as SlateElement,
   Operation,
+  Node,
 } from 'slate'
 import {isEqual} from 'lodash'
 import {Path} from '@sanity/types'
 import {ReactEditor} from '@sanity/slate-react'
 import {DOMNode} from '@sanity/slate-react/dist/utils/dom'
 import {Type} from '../../types/schema'
-import {PortableTextBlock, PortableTextChild} from '../../types/portableText'
+import {PortableTextBlock, PortableTextChild, PortableTextFeatures} from '../../types/portableText'
 import {EditorSelection, PortableTextSlateEditor} from '../../types/editor'
 import {toSlateValue, fromSlateValue, isEqualToEmptyEditor} from '../../utils/values'
 import {toSlateRange, toPortableTextRange} from '../../utils/selection'
@@ -25,7 +26,7 @@ const debug = debugWithName('API:editable')
 
 export function createWithEditableAPI(
   portableTextEditor: PortableTextEditor,
-  portableTextFeatures,
+  portableTextFeatures: PortableTextFeatures,
   keyGenerator: () => string
 ) {
   return function withEditableAPI(editor: PortableTextSlateEditor & ReactEditor) {
@@ -160,7 +161,7 @@ export function createWithEditableAPI(
         if (focusBlock && Editor.isVoid(editor, focusBlock)) {
           throw new Error("Can't insert childs into block objects")
         }
-        const block = toSlateValue(
+        const block = (toSlateValue(
           [
             {
               _key: keyGenerator(),
@@ -175,7 +176,7 @@ export function createWithEditableAPI(
             },
           ],
           portableTextFeatures.types.block.name
-        )[0] as SlateElement
+        )[0] as unknown) as SlateElement
         const child = block.children[0]
         Editor.insertNode(editor, child)
         editor.onChange()
@@ -185,7 +186,7 @@ export function createWithEditableAPI(
         if (!editor.selection) {
           throw new Error('The editor has no selection')
         }
-        const block = toSlateValue(
+        const block = (toSlateValue(
           [
             {
               _key: keyGenerator(),
@@ -194,7 +195,7 @@ export function createWithEditableAPI(
             },
           ],
           portableTextFeatures.types.block.name
-        )[0]
+        )[0] as unknown) as Node
         Editor.insertNode(editor, block)
         editor.onChange()
         return toPortableTextRange(editor)?.focus.path || []
@@ -252,8 +253,8 @@ export function createWithEditableAPI(
         }
         return [undefined, undefined]
       },
-      findDOMNode: (element: PortableTextBlock | PortableTextChild): DOMNode => {
-        let node
+      findDOMNode: (element: PortableTextBlock | PortableTextChild): DOMNode | undefined => {
+        let node: DOMNode | undefined
         try {
           const [item] = Array.from(
             Editor.nodes(editor, {at: [], match: (n) => n._key === element._key}) || []
@@ -273,7 +274,10 @@ export function createWithEditableAPI(
           const spans = Editor.nodes(editor, {
             at: editor.selection,
             match: (node) =>
-              Text.isText(node) && node.marks && Array.isArray(node.marks) && node.marks.length > 0,
+              Text.isText(node) &&
+              node.marks !== undefined &&
+              Array.isArray(node.marks) &&
+              node.marks.length > 0,
           })
           for (const [span, path] of spans) {
             const [block] = Editor.node(editor, path, {depth: 1})
@@ -334,6 +338,7 @@ export function createWithEditableAPI(
                 Editor.normalize(editor)
                 editor.onChange()
                 const newSelection = toPortableTextRange(editor)
+                // eslint-disable-next-line max-depth
                 if (newSelection && typeof blockElement._key === 'string') {
                   // Insert an empty string to continue writing non-annotated text
                   Editor.withoutNormalizing(editor, () => {
@@ -364,9 +369,9 @@ export function createWithEditableAPI(
           const range = toSlateRange(selection, editor)
           if (range) {
             const ptMode: string | undefined = (options && options.mode) || undefined
-            let mode
+            let mode: 'highest' | 'lowest' = 'highest'
             if (ptMode) {
-              mode = mode === 'block' ? 'highest' : 'lowest'
+              mode = ptMode === 'block' ? 'highest' : 'lowest'
             }
             Transforms.removeNodes(editor, {at: range, mode})
           }
@@ -396,13 +401,14 @@ export function createWithEditableAPI(
               at: selection,
               match: (node) =>
                 Text.isText(node) &&
-                node.marks &&
+                node.marks !== undefined &&
                 Array.isArray(node.marks) &&
                 node.marks.length > 0,
             })
             for (const [span, path] of spans) {
               const [block] = Editor.node(editor, path, {depth: 1})
               if (block && Array.isArray(block.markDefs)) {
+                // eslint-disable-next-line no-loop-func
                 block.markDefs.forEach((def) => {
                   if (
                     def._type === type.name &&
@@ -423,16 +429,19 @@ export function createWithEditableAPI(
               }
               // Merge similar adjecent spans
               if (changed) {
-                for (const [node, path] of Array.from(
+                // eslint-disable-next-line max-depth
+                for (const [node] of Array.from(
                   Editor.nodes(editor, {
                     at: Editor.range(editor, [selection.anchor.path[0]], [selection.focus.path[0]]),
                     match: Text.isText,
                   })
                 ).reverse()) {
                   const [parent] = Editor.node(editor, SlatePath.parent(path))
+                  // eslint-disable-next-line max-depth
                   if (Editor.isBlock(editor, parent)) {
                     const nextPath = [path[0], path[1] + 1]
                     const nextTextNode = parent.children[nextPath[1]]
+                    // eslint-disable-next-line max-depth
                     if (
                       nextTextNode &&
                       typeof nextTextNode.text === 'string' &&

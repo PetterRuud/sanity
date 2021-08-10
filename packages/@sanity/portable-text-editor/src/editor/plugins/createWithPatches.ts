@@ -1,3 +1,5 @@
+/* eslint-disable max-statements */
+/* eslint-disable complexity */
 import * as DMP from 'diff-match-patch'
 import {debounce, isEqual} from 'lodash'
 import {Subject} from 'rxjs'
@@ -11,7 +13,7 @@ import {
   findBlockAndIndexFromPath,
   findChildAndIndexFromPath,
 } from '../../utils/values'
-import {PortableTextFeatures} from '../../types/portableText'
+import {PortableTextBlock, PortableTextFeatures} from '../../types/portableText'
 import {EditorChange, PatchObservable, PortableTextSlateEditor} from '../../types/editor'
 import {debugWithName} from '../../utils/debug'
 import {createPatchToOperations} from '../../utils/patchToOperations'
@@ -20,10 +22,29 @@ import {KEY_TO_VALUE_ELEMENT} from '../../utils/weakMaps'
 
 const debug = debugWithName('plugin:withPatches')
 
+// eslint-disable-next-line new-cap
 const dmp = new DMP.diff_match_patch()
 
 const THROTTLE_EDITOR_MS = 500
 
+type PatchFn = (
+  editor: Editor,
+  operation: Operation,
+  previousChildren: (Node | Partial<Node>)[]
+) => Patch[]
+
+export type PatchFunctions = {
+  insertNodePatch: PatchFn
+  insertTextPatch: PatchFn
+  mergeNodePatch: PatchFn
+  moveNodePatch: PatchFn
+  removeNodePatch: PatchFn
+  removeTextPatch: PatchFn
+  setNodePatch: PatchFn
+  splitNodePatch: PatchFn
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function createWithPatches(
   {
     insertNodePatch,
@@ -34,11 +55,11 @@ export function createWithPatches(
     removeTextPatch,
     setNodePatch,
     splitNodePatch,
-  },
+  }: PatchFunctions,
   change$: Subject<EditorChange>,
   portableTextFeatures: PortableTextFeatures,
   incomingPatche$?: PatchObservable
-) {
+): (editor: PortableTextSlateEditor) => PortableTextSlateEditor {
   const patchToOperations = createPatchToOperations(portableTextFeatures)
   let previousChildren: (Node | Partial<Node>)[]
   let isThrottling = false
@@ -177,7 +198,7 @@ export function createWithPatches(
         change$.next({type: 'throttle', throttle: true})
         isThrottling = true
         // Emit all patches immediately
-        patches.map((patch) => {
+        patches.forEach((patch) => {
           change$.next({
             type: 'patch',
             patch,
@@ -191,6 +212,7 @@ export function createWithPatches(
         })
         cancelThrottle()
       }
+      return editor
     }
     return editor
   }
@@ -200,21 +222,21 @@ function adjustSelection(
   editor: Editor,
   patch: Patch,
   previousChildren: (Node | Partial<Node>)[]
-): void | Range {
+): Range | null {
   const selection = editor.selection
   if (selection === null) {
     debug('No selection, not adjusting selection')
-    return
+    return null
   }
   // Text patches on same line
   if (patch.type === 'diffMatchPatch') {
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
     if (!block) {
-      return
+      return null
     }
     const [child, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
     if (!child) {
-      return
+      return null
     }
     const onSameBlock =
       selection.focus.path[0] === blockIndex && selection.focus.path[1] === childIndex
@@ -224,6 +246,7 @@ function adjustSelection(
       if (parsed) {
         let testString = ''
         for (const diff of parsed.diffs) {
+          // eslint-disable-next-line max-depth
           if (diff[0] === 0) {
             testString += diff[1]
           } else {
@@ -232,6 +255,7 @@ function adjustSelection(
         }
         // This thing is exotic but actually works!
         const isBeforeUserSelection =
+          parsed.start1 !== null &&
           parsed.start1 + testString.length <= selection.focus.offset &&
           parsed.start1 + testString.length <= selection.anchor.offset
 
@@ -251,8 +275,8 @@ function adjustSelection(
           const newSelection = {...selection}
           newSelection.focus = {...selection.focus}
           newSelection.anchor = {...selection.anchor}
-          newSelection.anchor.offset = newSelection.anchor.offset + distance
-          newSelection.focus.offset = newSelection.focus.offset + distance
+          newSelection.anchor.offset += distance
+          newSelection.focus.offset += distance
           Transforms.select(editor, newSelection)
         }
         // TODO: account for intersecting selections!
@@ -265,7 +289,7 @@ function adjustSelection(
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], previousChildren)
     if (!block) {
       debug('No block found trying to adjust for unset child')
-      return
+      return null
     }
     if (selection.focus.path[0] === blockIndex) {
       const [, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
@@ -275,7 +299,7 @@ function adjustSelection(
       const newSelection = {...selection}
       if (Path.endsAt(selection.anchor.path, [blockIndex, prevIndexOrLastIndex])) {
         newSelection.anchor = {...selection.anchor}
-        newSelection.anchor.path = newSelection.anchor.path = [
+        newSelection.anchor.path = [
           newSelection.anchor.path[0],
           Math.max(0, prevIndexOrLastIndex - 1),
         ]
@@ -297,18 +321,12 @@ function adjustSelection(
       }
       if (Path.isAfter(selection.anchor.path, [blockIndex, prevIndexOrLastIndex])) {
         newSelection.anchor = {...selection.anchor}
-        newSelection.anchor.path = newSelection.anchor.path = [
-          newSelection.anchor.path[0],
-          prevIndexOrLastIndex,
-        ]
+        newSelection.anchor.path = [newSelection.anchor.path[0], prevIndexOrLastIndex]
         newSelection.anchor.offset = selection.anchor.offset + prevText.length
       }
       if (Path.isAfter(selection.focus.path, [blockIndex, prevIndexOrLastIndex])) {
         newSelection.focus = {...selection.anchor}
-        newSelection.focus.path = newSelection.anchor.path = [
-          newSelection.anchor.path[0],
-          prevIndexOrLastIndex,
-        ]
+        newSelection.anchor.path = [newSelection.anchor.path[0], prevIndexOrLastIndex]
         newSelection.anchor.offset = selection.anchor.offset + prevText.length
       }
       if (!isEqual(newSelection, selection)) {
@@ -320,7 +338,9 @@ function adjustSelection(
 
   // Unset patches on block level
   if (patch.type === 'unset' && patch.path.length === 1) {
-    let [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], previousChildren)
+    const blkAndIdx = findBlockAndIndexFromPath(patch.path[0], previousChildren)
+    let [, blockIndex] = blkAndIdx
+    const [block] = blkAndIdx
     if (!block || typeof blockIndex === 'undefined') {
       debug('no block found in editor trying to adjust selection for unset block')
       // Naively try to adjust as the block above us have been removed.
@@ -329,14 +349,14 @@ function adjustSelection(
     const newSelection = {...selection}
     if (Path.isAfter(selection.anchor.path, [blockIndex])) {
       newSelection.anchor = {...selection.anchor}
-      newSelection.anchor.path = newSelection.anchor.path = [
+      newSelection.anchor.path = [
         Math.max(0, newSelection.anchor.path[0] - 1),
         ...newSelection.anchor.path.slice(1),
       ]
     }
     if (Path.isAfter(selection.focus.path, [blockIndex])) {
       newSelection.focus = {...selection.focus}
-      newSelection.focus.path = newSelection.focus.path = [
+      newSelection.focus.path = [
         Math.max(0, newSelection.focus.path[0] - 1),
         ...newSelection.focus.path.slice(1),
       ]
@@ -351,19 +371,19 @@ function adjustSelection(
   if (patch.type === 'insert' && patch.path.length === 1) {
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
     if (!block || typeof blockIndex === 'undefined') {
-      return
+      return null
     }
     const newSelection = {...selection}
     if (Path.isAfter(selection.anchor.path, [blockIndex])) {
       newSelection.anchor = {...selection.anchor}
-      newSelection.anchor.path = newSelection.anchor.path = [
+      newSelection.anchor.path = [
         newSelection.anchor.path[0] + patch.items.length,
         ...newSelection.anchor.path.slice(1),
       ]
     }
     if (Path.isAfter(selection.focus.path, [blockIndex])) {
       newSelection.focus = {...selection.focus}
-      newSelection.focus.path = newSelection.focus.path = [
+      newSelection.focus.path = [
         newSelection.focus.path[0] + patch.items.length,
         ...newSelection.focus.path.slice(1),
       ]
@@ -378,27 +398,28 @@ function adjustSelection(
   if (patch.type === 'insert' && patch.path.length === 3) {
     const [block, blockIndex] = findBlockAndIndexFromPath(patch.path[0], editor.children)
     if (!block || typeof blockIndex === 'undefined') {
-      return
+      return null
     }
     const [child, childIndex] = findChildAndIndexFromPath(patch.path[2], block)
     if (!child) {
-      return
+      return null
     }
     if (selection.focus.path[0] === blockIndex && selection.focus.path[1] === childIndex) {
       const nextIndex = childIndex + patch.items.length
       const blockChildren = editor.children[blockIndex].children as Node[]
       const nextBlock = editor.children[blockIndex + 1]
+      const item = patch.items[0] as PortableTextBlock
       const isSplitOperation =
         !blockChildren[nextIndex] &&
         Editor.isBlock(editor, nextBlock) &&
         nextBlock.children &&
         nextBlock.children[0] &&
         typeof nextBlock.children[0]._key === 'string' &&
-        isEqual(nextBlock.children[0]._key, patch.items[0]._key)
+        isEqual(nextBlock.children[0]._key, item._key)
       const [node] = Editor.node(editor, selection)
       const nodeText = node.text as Text
       if (!nodeText) {
-        return
+        return null
       }
       if (selection.focus.offset >= nodeText.length) {
         if (!isSplitOperation) {
@@ -427,4 +448,5 @@ function adjustSelection(
   if (editor.selection && editor.selection !== selection) {
     return editor.selection
   }
+  return null
 }

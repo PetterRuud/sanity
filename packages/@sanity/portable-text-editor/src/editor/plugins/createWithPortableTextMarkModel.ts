@@ -138,7 +138,7 @@ export function createWithPortableTextMarkModel(
         if (
           selection &&
           Range.isCollapsed(selection) &&
-          Editor.marks(editor)?.marks?.some((mark) => !decorators.includes(mark))
+          Editor.marks(editor)?.marks?.some((mark: any) => !decorators.includes(mark))
         ) {
           const [node] = Array.from(
             Editor.nodes(editor, {
@@ -165,7 +165,7 @@ export function createWithPortableTextMarkModel(
               {
                 ...(Editor.marks(editor) || {}),
               }.marks || []
-            ).filter((mark) => decorators.includes(mark))
+            ).filter((mark: any) => decorators.includes(mark))
             Transforms.setNodes(
               editor,
               {marks: marksWithoutAnnotationMarks},

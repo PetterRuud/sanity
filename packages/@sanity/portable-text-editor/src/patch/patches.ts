@@ -18,6 +18,7 @@ export function setIfMissing(value: any, path: Path = []): SetIfMissingPatch {
   }
 }
 
+// eslint-disable-next-line new-cap
 const dmp = new DMP.diff_match_patch()
 
 export function diffMatchPatch(
@@ -27,7 +28,7 @@ export function diffMatchPatch(
 ): DiffMatchPatch {
   const patch = dmp
     .patch_make(currentValue, nextValue)
-    .map((patch) => patch.toString())
+    .map((_patch) => _patch.toString())
     .join('')
   return {type: 'diffMatchPatch', path, value: patch}
 }

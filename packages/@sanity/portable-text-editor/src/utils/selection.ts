@@ -1,10 +1,10 @@
 import {isEqual} from 'lodash'
 import {Editor, Point, Path as SlatePath, Range, Element, Node} from 'slate'
-import {isKeySegment} from '@sanity/types'
+import {isKeySegment, Path} from '@sanity/types'
 import {PortableTextBlock} from '../types/portableText'
 import {EditorSelection, EditorSelectionPoint} from '../types/editor'
 
-export function createKeyedPath(point: Point, editor: Editor) {
+export function createKeyedPath(point: Point, editor: Editor): Path | null {
   const blockPath = [point.path[0]]
   let block: Node
   try {
@@ -17,7 +17,7 @@ export function createKeyedPath(point: Point, editor: Editor) {
   }
   const keyedBlockPath = [{_key: block._key}]
   if (editor.isVoid(block)) {
-    return keyedBlockPath
+    return keyedBlockPath as Path
   }
   let keyedChildPath
   let child: Node
@@ -30,7 +30,7 @@ export function createKeyedPath(point: Point, editor: Editor) {
     }
     keyedChildPath = ['children', {_key: child._key}]
   }
-  return keyedChildPath ? [...keyedBlockPath, ...keyedChildPath] : keyedBlockPath
+  return (keyedChildPath ? [...keyedBlockPath, ...keyedChildPath] : keyedBlockPath) as Path
 }
 
 export function createArrayedPath(point: EditorSelectionPoint, editor: Editor): SlatePath {
@@ -67,7 +67,11 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
   }
   const newPath: any = []
   let newOffset: number = point.offset || 0
-  const block: PortableTextBlock | undefined = value.find((blk) => blk._key === point.path[0]._key)
+  const blockKey =
+    typeof point.path[0] === 'object' && '_key' in point.path[0] && point.path[0]._key
+  const childKey =
+    typeof point.path[2] === 'object' && '_key' in point.path[2] && point.path[2]._key
+  const block: PortableTextBlock | undefined = value.find((blk) => blk._key === blockKey)
   if (block) {
     newPath.push({_key: block._key})
   } else {
@@ -77,7 +81,7 @@ function normalizePoint(point: EditorSelectionPoint, value: PortableTextBlock[])
     if (!block.children || block.children.length === 0) {
       return null
     }
-    const child = block.children.find((cld) => cld._key === point.path[2]._key)
+    const child = block.children.find((cld: any) => cld._key === childKey)
     if (child) {
       newPath.push('children')
       newPath.push({_key: child._key})
@@ -114,23 +118,23 @@ export function normalizeSelection(
   return null
 }
 
-export function toPortableTextRange(editor: Editor): EditorSelection | null {
+export function toPortableTextRange(editor: Editor): EditorSelection {
   if (!editor.selection) {
     return editor.selection
   }
-  let anchor
-  let focus
+  let anchor: EditorSelectionPoint | null = null
+  let focus: EditorSelectionPoint | null = null
   const anchorPath = createKeyedPath(editor.selection.anchor, editor)
   if (anchorPath) {
     anchor = {
-      path: createKeyedPath(editor.selection.anchor, editor),
+      path: anchorPath,
       offset: editor.selection.anchor.offset,
     }
   }
   const focusPath = createKeyedPath(editor.selection.focus, editor)
   if (focusPath) {
     focus = {
-      path: createKeyedPath(editor.selection.focus, editor),
+      path: focusPath,
       offset: editor.selection.focus.offset,
     }
   }

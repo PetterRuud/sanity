@@ -14,7 +14,7 @@ export interface EditableAPI {
   blur: () => void
   delete: (selection?: EditorSelection, options?: {mode?: 'block' | 'children'}) => void
   findByPath: (path: Path) => [PortableTextBlock | PortableTextChild | undefined, Path | undefined]
-  findDOMNode: (element: PortableTextBlock | PortableTextChild) => Node
+  findDOMNode: (element: PortableTextBlock | PortableTextChild) => Node | undefined
   focus: () => void
   focusBlock: () => PortableTextBlock | undefined
   focusChild: () => PortableTextChild | undefined
@@ -279,7 +279,7 @@ export type RenderBlockFunction = (
   value: PortableTextBlock,
   type: Type,
   attributes: RenderAttributes,
-  defaultRender: (value: PortableTextBlock) => JSX.Element,
+  defaultRender: (val: PortableTextBlock) => JSX.Element,
   ref: React.RefObject<HTMLDivElement>
 ) => JSX.Element
 
@@ -287,7 +287,7 @@ export type RenderChildFunction = (
   value: PortableTextChild,
   type: Type,
   attributes: RenderAttributes,
-  defaultRender: (value: PortableTextChild) => JSX.Element,
+  defaultRender: (val: PortableTextChild) => JSX.Element,
   ref: React.RefObject<HTMLSpanElement>
 ) => JSX.Element
 

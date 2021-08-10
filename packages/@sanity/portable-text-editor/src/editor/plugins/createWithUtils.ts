@@ -23,7 +23,7 @@ export function createWithUtils(portableTextFeatures: PortableTextFeatures) {
         const focusOffset = focus.offset
         const charsBefore = textNode.text.slice(0, focusOffset)
         const charsAfter = textNode.text.slice(focusOffset, -1)
-        const isEmpty = (str) => str.match(/\s/g)
+        const isEmpty = (str: string) => str.match(/\s/g)
         const whiteSpaceBeforeIndex = charsBefore
           .split('')
           .reverse()

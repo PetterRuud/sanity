@@ -36,10 +36,12 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     return <>{children}</>
   }
 
-  debugRenders && debug('render')
+  if (debugRenders) {
+    debug('render')
+  }
 
   // Note: this is called not for the dragging block, but for the targets when the block is dragged over them
-  const handleDragOver = (event) => {
+  const handleDragOver = (event: any) => {
     const isMyDragOver = IS_DRAGGING_BLOCK_ELEMENT.get(editor)
     // debug('Drag over', isMyDragOver)
     if (!isMyDragOver) {
@@ -54,7 +56,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     const height = elementRect.height
     const Y = event.pageY
     const loc = Math.abs(offset - Y)
-    let position
+    let position: 'top' | 'bottom' = 'bottom'
     if (element === editor.children[0]) {
       position = 'top'
     } else if (loc < height / 2) {
@@ -73,12 +75,12 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
   }
 
   // Note: this is called not for the dragging block, but for the targets when the block is dragged over them
-  const handleDragLeave = (event) => {
+  const handleDragLeave = (event: any) => {
     setIsDragOver(false)
   }
 
   // Note: this is called for the dragging block
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: any) => {
     IS_DRAGGING.set(editor, false)
     event.preventDefault()
     event.stopPropagation()
@@ -134,7 +136,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     debug('No target element, not doing anything')
   }
   // Note: this is called not for the dragging block, but for the drop target
-  const handleDrop = (event) => {
+  const handleDrop = (event: any) => {
     if (IS_DRAGGING_BLOCK_ELEMENT.get(editor)) {
       debug('On drop (prevented)', element)
       event.preventDefault()
@@ -143,7 +145,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     }
   }
   // Note: this is called for the dragging block
-  const handleDrag = (event) => {
+  const handleDrag = (event: any) => {
     if (!isVoid) {
       IS_DRAGGING_BLOCK_ELEMENT.delete(editor)
       return
@@ -154,7 +156,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
   }
 
   // Note: this is called for the dragging block
-  const handleDragStart = (event) => {
+  const handleDragStart = (event: any) => {
     if (!isVoid || isInline) {
       debug('Not dragging block')
       IS_DRAGGING_BLOCK_ELEMENT.delete(editor)
@@ -169,9 +171,9 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
     // Specify dragImage so that single elements in the preview will not be the drag image,
     // but always the whole block preview itself.
     // Also clone it so that it will not be visually clipped by scroll-containers etc.
-    const element = event.currentTarget
-    if (element && element instanceof HTMLElement) {
-      const dragGhost = element.cloneNode(true) as HTMLElement
+    const _element = event.currentTarget
+    if (_element && _element instanceof HTMLElement) {
+      const dragGhost = _element.cloneNode(true) as HTMLElement
       dragGhostRef.current = dragGhost
       dragGhost.style.width = `${element.clientWidth}px`
       dragGhost.style.height = `${element.clientHeight}px`
@@ -180,7 +182,7 @@ export const DraggableBlock: FunctionComponent<ElementProps> = ({children, eleme
       dragGhost.style.left = '-99999px'
       if (document.body) {
         document.body.appendChild(dragGhost)
-        const rect = element.getBoundingClientRect()
+        const rect = _element.getBoundingClientRect()
         const x = event.clientX - rect.left
         const y = event.clientY - rect.top
         dragGhost.style.width = `${rect.width}px`

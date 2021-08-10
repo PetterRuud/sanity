@@ -14,6 +14,7 @@ import {
 import {set, insert, unset, diffMatchPatch, setIfMissing} from '../patch/PatchEvent'
 import {PortableTextFeatures, PortableTextBlock, PortableTextChild} from '../types/portableText'
 import {Patch, InsertPosition} from '../types/patch'
+import {PatchFunctions} from '../editor/plugins/createWithPatches'
 import {fromSlateValue} from './values'
 import {debugWithName} from './debug'
 
@@ -21,17 +22,21 @@ const debug = debugWithName('operationToPatches')
 
 // TODO: optimize how nodes are found and make sure everything here uses those finders.
 
-function findBlock(path, value: PortableTextBlock[] | undefined) {
-  if (path[0] && path[0]._key) {
-    return value?.find((blk) => blk._key === path[0]._key)
+function findBlock(path: Path, value: PortableTextBlock[] | undefined) {
+  const _key = typeof path[0] === 'object' && '_key' in path[0] && path[0]._key
+  if (_key) {
+    return value?.find((blk) => blk._key === _key)
   }
   if (Number.isInteger(path[0])) {
-    return value && value[path[0]]
+    const index = path[0] as number
+    return value && value[index]
   }
   throw new Error('Invalid first path segment')
 }
 
-export function createOperationToPatches(portableTextFeatures: PortableTextFeatures) {
+export function createOperationToPatches(
+  portableTextFeatures: PortableTextFeatures
+): PatchFunctions {
   function insertTextPatch(
     editor: Editor,
     operation: InsertTextOperation,
@@ -211,7 +216,7 @@ export function createOperationToPatches(portableTextFeatures: PortableTextFeatu
         if (targetValue) {
           patches.push(insert([targetValue], 'after', [{_key: splitBlock._key}]))
           const spansToUnset = beforeValue[operation.path[0]].children.slice(operation.position)
-          spansToUnset.forEach((span) => {
+          spansToUnset.forEach((span: any) => {
             const path = [{_key: oldBlock._key}, 'children', {_key: span._key}]
             patches.push(unset(path))
           })

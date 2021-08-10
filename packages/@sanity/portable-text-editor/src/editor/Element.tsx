@@ -1,4 +1,4 @@
-import React, {ReactElement, FunctionComponent, useRef, useMemo} from 'react'
+import React, {ReactElement, FunctionComponent, useRef} from 'react'
 import {Element as SlateElement, Editor, Range} from 'slate'
 import {Path} from '@sanity/types'
 import {useSelected, useEditor, ReactEditor} from '@sanity/slate-react'
@@ -27,7 +27,7 @@ type ElementProps = {
   renderChild?: RenderChildFunction
 }
 
-const defaultRender = (value) => {
+const defaultRender = (value: any) => {
   return <Object value={value} />
 }
 
@@ -60,14 +60,16 @@ export const Element: FunctionComponent<ElementProps> = ({
     const path = ReactEditor.findPath(editor, element)
     const [block] = Editor.node(editor, path, {depth: 1})
     const type = portableTextFeatures.types.inlineObjects.find(
-      (type) => type.name === element._type
+      (_type) => _type.name === element._type
     )
     if (!type) {
       throw new Error('Could not find type for inline block element')
     }
     if (block && typeof block._key === 'string') {
-      const path: Path = [{_key: block._key}, 'children', {_key: element._key}]
-      debugRenders && debug(`Render ${element._key} (inline object)`)
+      const elmPath: Path = [{_key: block._key}, 'children', {_key: element._key}]
+      if (debugRenders) {
+        debug(`Render ${element._key} (inline object)`)
+      }
       const inlineBlockStyle = {display: 'inline-block'}
       return (
         <span {...attributes} style={inlineBlockStyle}>
@@ -91,7 +93,7 @@ export const Element: FunctionComponent<ElementProps> = ({
                     KEY_TO_VALUE_ELEMENT.get(editor)
                   )[0],
                   type,
-                  {focused, selected, path},
+                  {focused, selected, path: elmPath},
                   defaultRender,
                   inlineBlockObjectRef
                 )}
@@ -116,114 +118,108 @@ export const Element: FunctionComponent<ElementProps> = ({
 
   // If not inline, it's either a block (text) or a block object (non-text)
   // NOTE: text blocks aren't draggable with DraggableBlock (yet?)
-  switch (element._type) {
-    case portableTextFeatures.types.block.name:
-      debugRenders && debug(`Render ${element._key} (text block)`)
-      const textBlock = (
-        <TextBlock
-          element={element}
-          portableTextFeatures={portableTextFeatures}
-          readOnly={readOnly}
-        >
-          {children}
-        </TextBlock>
+  if (element._type === portableTextFeatures.types.block.name) {
+    if (debugRenders) {
+      debug(`Render ${element._key} (text block)`)
+    }
+    const textBlock = (
+      <TextBlock element={element} portableTextFeatures={portableTextFeatures} readOnly={readOnly}>
+        {children}
+      </TextBlock>
+    )
+    const renderedBlock =
+      renderBlock &&
+      renderBlock(
+        fromSlateValue([element], element._type, KEY_TO_VALUE_ELEMENT.get(editor))[0],
+        portableTextFeatures.types.block,
+        {
+          focused,
+          selected,
+          path: [{_key: element._key}],
+        },
+        () => textBlock,
+        blockObjectRef
       )
-      const renderedBlock =
-        renderBlock &&
-        renderBlock(
-          fromSlateValue([element], element._type, KEY_TO_VALUE_ELEMENT.get(editor))[0],
-          portableTextFeatures.types.block,
-          {
-            focused,
-            selected,
-            path: [{_key: element._key}],
-          },
-          () => textBlock,
-          blockObjectRef
-        )
-      className = `pt-block pt-text-block pt-text-block-style-${element.style}`
-      if (element.listItem) {
-        className += ` pt-list-item pt-list-item-${element.listItem}`
-      }
-      return (
+    className = `pt-block pt-text-block pt-text-block-style-${element.style}`
+    if (element.listItem) {
+      className += ` pt-list-item pt-list-item-${element.listItem}`
+    }
+    return (
+      <>
+        {renderBlock && !element.listItem && (
+          <div ref={blockObjectRef} {...attributes} className={className} key={element._key}>
+            {renderedBlock}
+          </div>
+        )}
+        {renderBlock && element.listItem && (
+          <ListItem
+            ref={blockObjectRef}
+            className={className}
+            listStyle={(element.listItem as string) || 'bullet'}
+            listLevel={(element.level as number) || 0}
+            {...attributes}
+            key={element._key}
+          >
+            <ListItemInner className="pt-list-item-inner">{renderedBlock}</ListItemInner>
+          </ListItem>
+        )}
+        {!renderBlock && (
+          <div {...attributes} className={className}>
+            {textBlock}
+          </div>
+        )}
+      </>
+    )
+  }
+  const type = portableTextFeatures.types.blockObjects.find((_type) => _type.name === element._type)
+  if (!type) {
+    throw new Error(`Could not find schema type for block element of _type ${element._type}`)
+  }
+  className = 'pt-block pt-object-block'
+  if (debugRenders) {
+    debug(`Render ${element._key} (object block)`)
+  }
+  const block = fromSlateValue(
+    [element],
+    portableTextFeatures.types.block.name,
+    KEY_TO_VALUE_ELEMENT.get(editor)
+  )[0]
+  const renderedBlockFromProps =
+    renderBlock &&
+    renderBlock(
+      block,
+      type,
+      {
+        focused,
+        selected,
+        path: [{_key: block._key}],
+      },
+      defaultRender,
+      blockObjectRef
+    )
+  return (
+    <div {...attributes} className={className} key={element._key}>
+      <DraggableBlock element={element} readOnly={readOnly}>
         <>
-          {renderBlock && !element.listItem && (
-            <div ref={blockObjectRef} {...attributes} className={className} key={element._key}>
-              {renderedBlock}
+          {renderedBlockFromProps && (
+            <div ref={blockObjectRef} contentEditable={false}>
+              {renderedBlockFromProps}
             </div>
-          )}
-          {renderBlock && element.listItem && (
-            <ListItem
-              ref={blockObjectRef}
-              className={className}
-              listStyle={element.listItem}
-              listLevel={element.level}
-              {...attributes}
-              key={element._key}
-            >
-              <ListItemInner className="pt-list-item-inner">{renderedBlock}</ListItemInner>
-            </ListItem>
           )}
           {!renderBlock && (
-            <div {...attributes} className={className}>
-              {textBlock}
-            </div>
+            <BlockObjectContainer selected={selected} className={className}>
+              {defaultRender(
+                fromSlateValue(
+                  [element],
+                  portableTextFeatures.types.block.name,
+                  KEY_TO_VALUE_ELEMENT.get(editor)
+                )[0]
+              )}
+            </BlockObjectContainer>
           )}
+          {children}
         </>
-      )
-    default:
-      const type = portableTextFeatures.types.blockObjects.find(
-        (type) => type.name === element._type
-      )
-      if (!type) {
-        throw new Error(`Could not find schema type for block element of _type ${element._type}`)
-      }
-      className = 'pt-block pt-object-block'
-      debugRenders && debug(`Render ${element._key} (object block)`)
-      const block = fromSlateValue(
-        [element],
-        portableTextFeatures.types.block.name,
-        KEY_TO_VALUE_ELEMENT.get(editor)
-      )[0]
-      const renderedBlockFromProps =
-        renderBlock &&
-        useMemo(() => {
-          return renderBlock(
-            block,
-            type,
-            {
-              focused,
-              selected,
-              path: [{_key: block._key}],
-            },
-            defaultRender,
-            blockObjectRef
-          )
-        }, [block, focused, selected, renderBlock])
-      return (
-        <div {...attributes} className={className} key={element._key}>
-          <DraggableBlock element={element} readOnly={readOnly}>
-            <>
-              {renderedBlockFromProps && (
-                <div ref={blockObjectRef} contentEditable={false}>
-                  {renderedBlockFromProps}
-                </div>
-              )}
-              {!renderBlock && (
-                <BlockObjectContainer selected={selected} className={className}>
-                  {defaultRender(
-                    fromSlateValue(
-                      [element],
-                      portableTextFeatures.types.block.name,
-                      KEY_TO_VALUE_ELEMENT.get(editor)
-                    )[0]
-                  )}
-                </BlockObjectContainer>
-              )}
-              {children}
-            </>
-          </DraggableBlock>
-        </div>
-      )
-  }
+      </DraggableBlock>
+    </div>
+  )
 }

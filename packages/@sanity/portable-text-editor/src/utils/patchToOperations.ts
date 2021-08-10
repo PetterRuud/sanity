@@ -1,4 +1,4 @@
-import {Editor, Transforms} from 'slate'
+import {Editor, Transforms, Node} from 'slate'
 import {Path, KeyedSegment, PathSegment} from '@sanity/types'
 import {Patch, InsertPatch, UnsetPatch} from '../types/patch'
 import {PortableTextFeatures, PortableTextBlock} from '../types/portableText'
@@ -12,11 +12,11 @@ export function createPatchToOperations(portableTextFeatures: PortableTextFeatur
   function insertPatch(editor: Editor, patch: InsertPatch) {
     if (patch.path.length === 1) {
       const {items, position} = patch
-      const blocksToInsert = toSlateValue(
+      const blocksToInsert = (toSlateValue(
         items as PortableTextBlock[],
         portableTextFeatures.types.block.name,
         KEY_TO_SLATE_ELEMENT.get(editor)
-      )
+      ) as unknown) as Node[]
       const posKey = findLastKey(patch.path)
       const index = editor.children.findIndex((node, indx) => {
         return posKey ? node._key === posKey : indx === patch.path[0]

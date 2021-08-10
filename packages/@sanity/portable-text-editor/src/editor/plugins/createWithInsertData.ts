@@ -40,7 +40,8 @@ export function createWithInsertData(
                     ? {
                         ...child,
                         marks: child.marks.includes(oldKey)
-                          ? [...child.marks].filter((mark) => mark !== oldKey).concat(newKey)
+                          ? // eslint-disable-next-line max-nested-callbacks
+                            [...child.marks].filter((mark) => mark !== oldKey).concat(newKey)
                           : child.marks,
                       }
                     : child
@@ -90,7 +91,7 @@ export function createWithInsertData(
 
       if (slateFragment || html || text) {
         let portableText: PortableTextBlock[]
-        let fragment
+        let fragment: Node[]
         let insertedType
 
         if (slateFragment) {
@@ -103,10 +104,13 @@ export function createWithInsertData(
           // HTML (TODO: get rid of @sanity/block-tools)
           portableText = htmlToBlocks(html, portableTextFeatures.types.portableText)
             // Ensure it has keys
-            .map((block) =>
+            .map((block: any) =>
               normalizeBlock(block, {blockTypeName: portableTextFeatures.types.block.name})
             )
-          fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
+          fragment = (toSlateValue(
+            portableText,
+            portableTextFeatures.types.block.name
+          ) as unknown) as Node[]
           insertedType = 'HTML'
         } else {
           // plain text
@@ -118,7 +122,10 @@ export function createWithInsertData(
             .join('')
           const textToHtml = `<html><body>${blocks}</body></html>`
           portableText = htmlToBlocks(textToHtml, portableTextFeatures.types.portableText)
-          fragment = toSlateValue(portableText, portableTextFeatures.types.block.name)
+          fragment = (toSlateValue(
+            portableText,
+            portableTextFeatures.types.block.name
+          ) as unknown) as Node[]
           insertedType = 'text'
         }
 
@@ -208,7 +215,7 @@ export function createWithInsertData(
   }
 }
 
-const entityMap = {
+const entityMap: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
@@ -218,8 +225,6 @@ const entityMap = {
   '`': '&#x60;',
   '=': '&#x3D;',
 }
-function escapeHtml(string) {
-  return String(string).replace(/[&<>"'`=\/]/g, function (s) {
-    return entityMap[s]
-  })
+function escapeHtml(str: string) {
+  return String(str).replace(/[&<>"'`=/]/g, (s: string) => entityMap[s])
 }

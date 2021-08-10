@@ -20,6 +20,7 @@ import {debugWithName} from '../../utils/debug'
 import {isPatching} from '../../utils/withoutPatching'
 
 const debug = debugWithName('plugin:withUndoRedo')
+// eslint-disable-next-line new-cap
 const dmp = new DMP.diff_match_patch()
 
 const SAVING = new WeakMap<Editor, boolean | undefined>()
@@ -59,14 +60,15 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
       let save = isSaving(editor)
       let merge = isMerging(editor)
 
-      if (save == null) {
+      if (save === null) {
         save = shouldSave(op, lastOp)
       }
 
       if (save) {
-        if (merge == null) {
-          if (step == null) {
+        if (merge === null) {
+          if (step === null) {
             merge = false
+            // eslint-disable-next-line no-negated-condition
           } else if (operations.length !== 0) {
             merge = true
           } else {
@@ -80,16 +82,17 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
           }
           step.operations.push(op)
         } else {
-          const operations = [
+          const _operations = [
+            // eslint-disable-next-line no-negated-condition
             ...(editor.selection !== null ? [createSelectOperation(editor)] : []),
             op,
           ]
-          const step = {
-            operations,
+          const _step = {
+            operations: _operations,
             timestamp: new Date(),
           }
-          undos.push(step)
-          debug('Created new undo step', step)
+          undos.push(_step)
+          debug('Created new undo step', _step)
         }
 
         while (undos.length > UNDO_STEP_LIMIT) {
@@ -181,6 +184,7 @@ export function createWithUndoRedo(incomingPatche$?: PatchObservable) {
 // This will adjust the user selection according to patcehes done by others.
 // TODO: complete all necessary steps of the algorithm and write tests.
 
+// eslint-disable-next-line max-statements
 function transformOperation(editor: Editor, patch: Patch, operation: Operation): Operation[] {
   // debug(`Rebasing selection for patch ${patch.type} against operation ${operation.type}`)
 
@@ -232,15 +236,19 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
       ) {
         if (operation.type === 'insert_text') {
           let insertOffset = 0
+          // eslint-disable-next-line max-depth
           for (const diff of parsed.diffs) {
+            // eslint-disable-next-line max-depth
             if (diff[0] === 0) {
               insertOffset = diff[1].length
             }
+            // eslint-disable-next-line max-depth
             if (diff[0] === 1) {
               break
             }
           }
-          if (insertOffset + parsed.start1 <= operation.offset) {
+          // eslint-disable-next-line max-depth
+          if (parsed.start1 !== null && insertOffset + parsed.start1 <= operation.offset) {
             const insertTextOperation = transformedOperation as InsertTextOperation
             insertTextOperation.offset += distance
             transformedOperation = insertTextOperation
@@ -251,15 +259,19 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
 
         if (operation.type === 'remove_text') {
           let insertOffset = 0
+          // eslint-disable-next-line max-depth
           for (const diff of parsed.diffs) {
+            // eslint-disable-next-line max-depth
             if (diff[0] === 0) {
               insertOffset = diff[1].length
             }
+            // eslint-disable-next-line max-depth
             if (diff[0] === -1) {
               break
             }
           }
-          if (insertOffset + parsed.start1 <= operation.offset) {
+          // eslint-disable-next-line max-depth
+          if (parsed.start1 !== null && insertOffset + parsed.start1 <= operation.offset) {
             const removeTextOperation = transformedOperation as RemoveTextOperation
             removeTextOperation.offset -= distance
             transformedOperation = removeTextOperation
@@ -286,12 +298,18 @@ function transformOperation(editor: Editor, patch: Patch, operation: Operation):
   return [operation]
 }
 
-function adjustBlockPath(editor, patch, operation, level): Operation {
+function adjustBlockPath(
+  editor: Editor,
+  patch: Patch,
+  operation: Operation,
+  level: number
+): Operation {
   const transformedOperation = {...operation}
   const myIndex = editor.children.findIndex((blk) => isEqual({_key: blk._key}, patch.path[0]))
   if (
     myIndex >= 0 &&
     operation.path &&
+    Array.isArray(operation.path) &&
     operation.path[0] !== undefined &&
     operation.path[0] >= myIndex + level
   ) {
@@ -367,7 +385,7 @@ function withoutSaving(editor: Editor, fn: () => void): void {
   SAVING.set(editor, prev)
 }
 
-function createSelectOperation(editor): SelectionOperation {
+function createSelectOperation(editor: Editor): SelectionOperation {
   return {
     type: 'set_selection',
     properties: {...editor.selection},

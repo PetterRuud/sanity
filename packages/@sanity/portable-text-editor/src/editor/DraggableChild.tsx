@@ -28,14 +28,16 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   const isVoid = useMemo(() => Editor.isVoid(editor, element), [])
   const isSpan = element._type === spanType
 
-  debugRenders && debug('render')
+  if (debugRenders) {
+    debug('render')
+  }
 
   if (readOnly && !(isSpan || isInline)) {
     return <>{children}</>
   }
 
   // Note: this is called not for the dragging block, but for the targets when the block is dragged over them
-  const handleDragOver = (event) => {
+  const handleDragOver = (event: any) => {
     const isMyDragOver = IS_DRAGGING_CHILD_ELEMENT.get(editor)
     if (!isMyDragOver) {
       return
@@ -74,7 +76,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   }
 
   // Note: this is called for the dragging child
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: any) => {
     IS_DRAGGING.set(editor, false)
     event.preventDefault()
     event.stopPropagation()
@@ -99,7 +101,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
   }
 
   // Note: this is called for the dragging child
-  const handleDragStart = (event) => {
+  const handleDragStart = (event: any) => {
     debug('Drag start')
     if (!isVoid) {
       debug('Not dragging child')
@@ -138,7 +140,7 @@ export const DraggableChild: FunctionComponent<ElementProps> = ({
     return <span onDragOver={handleDragOver}>{children}</span>
   }
 
-  const stopEventIfVoid = (event) => {
+  const stopEventIfVoid = (event: any) => {
     if (isVoid) {
       event.stopPropagation()
       event.preventDefault()

@@ -120,8 +120,8 @@ export function validateValue(
         const allUsedMarks: string[] = uniq(
           flatten(
             blk.children
-              .filter((cld) => cld._type === portableTextFeatures.types.span.name)
-              .map((cld) => cld.marks || [])
+              .filter((cld: any) => cld._type === portableTextFeatures.types.span.name)
+              .map((cld: any) => cld.marks || [])
           )
         )
         // // Test that all markDefs are in use
@@ -147,18 +147,19 @@ export function validateValue(
           (mark) => !portableTextFeatures.decorators.map((dec) => dec.value).includes(mark)
         )
         const orphanedMarks = annotationMarks.filter(
-          (mark) => !blk.markDefs.find((def) => def._key === mark)
+          (mark) => !blk.markDefs.find((def: any) => def._key === mark)
         )
         if (orphanedMarks.length > 0) {
           const children = blk.children.filter(
-            (cld) =>
-              Array.isArray(cld.marks) && cld.marks.some((mark) => orphanedMarks.includes(mark))
+            (cld: any) =>
+              Array.isArray(cld.marks) &&
+              cld.marks.some((mark: any) => orphanedMarks.includes(mark))
           ) as PortableTextChild[]
           if (children) {
             resolution = {
               patches: children.map((child) => {
                 return set(
-                  child.marks.filter((cmrk) => !orphanedMarks.includes(cmrk)),
+                  child.marks.filter((cmrk: any) => !orphanedMarks.includes(cmrk)),
                   [{_key: blk._key}, 'children', {_key: child._key}, 'marks']
                 )
               }),
@@ -189,7 +190,7 @@ export function validateValue(
         }
         // Test every child
         if (
-          blk.children.some((child, cIndex) => {
+          blk.children.some((child: any, cIndex: number) => {
             if (!child._key) {
               const newchild = {...child, _key: keyGenerator()}
               resolution = {

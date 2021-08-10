@@ -112,7 +112,7 @@ export function createWithPortableTextLists(
           match: (node) =>
             Element.isElement(node) &&
             node._type === portableTextFeatures.types.block.name &&
-            node.listItem &&
+            !!node.listItem &&
             node.children.length === 1 &&
             node.children[0].text === '',
         }),

@@ -183,7 +183,7 @@ export const PortableTextEditable = (props: Props) => {
     [value, renderChild, renderDecorator, renderAnnotation]
   )
 
-  const handleChange = (val) => {
+  const handleChange = (val: any) => {
     if (val !== stateValue) {
       setStateValue(val)
     }
@@ -222,7 +222,10 @@ export const PortableTextEditable = (props: Props) => {
   // )
 
   const setValueFromProps = () => {
-    if (VALUE_TO_SLATE_VALUE.get(value || []) !== stateValue) {
+    const fromMap = VALUE_TO_SLATE_VALUE.get(value || []) as any
+    if (fromMap === stateValue) {
+      debug('Value in sync, not updating value from props')
+    } else {
       debug('Setting value from props')
       const slateValueFromProps = toSlateValue(
         value,
@@ -230,21 +233,19 @@ export const PortableTextEditable = (props: Props) => {
         KEY_TO_SLATE_ELEMENT.get(editor)
       )
       setStateValue(slateValueFromProps)
-      VALUE_TO_SLATE_VALUE.set(value || [], slateValueFromProps)
+      VALUE_TO_SLATE_VALUE.set(value || [], slateValueFromProps as any)
       change$.next({type: 'value', value: value})
-    } else {
-      debug('Value in sync, not updating value from props')
     }
   }
 
   useEffect(() => {
-    KEY_TO_SLATE_ELEMENT.set(editor, {})
-    KEY_TO_VALUE_ELEMENT.set(editor, {})
+    KEY_TO_SLATE_ELEMENT.set(editor, undefined)
+    KEY_TO_VALUE_ELEMENT.set(editor, undefined)
     return () => {
       KEY_TO_SLATE_ELEMENT.delete(editor)
       KEY_TO_VALUE_ELEMENT.delete(editor)
     }
-  }, [])
+  }, [editor])
 
   // Restore value from props
   useEffect(() => {
@@ -290,7 +291,6 @@ export const PortableTextEditable = (props: Props) => {
     if (hasEditableTarget(editor, event.target)) {
       // Set Portable Text on the clipboard
       setFragmentData(event.clipboardData, editor, portableTextFeatures)
-      return editor
     }
   }
 
@@ -298,15 +298,15 @@ export const PortableTextEditable = (props: Props) => {
   const handlePaste = (event: React.SyntheticEvent): Promise<any> | void => {
     event.persist() // Keep the event through the plugin chain after calling next()
     const {onPaste} = props
-    const selection = PortableTextEditor.getSelection(portableTextEditor)
+    const _selection = PortableTextEditor.getSelection(portableTextEditor)
     const type = portableTextFeatures.types.portableText
-    if (!selection) {
+    if (!_selection) {
       return
     }
     if (onPaste) {
       const resolveOnPasteResultOrError = (): OnPasteResultOrPromise | Error => {
         try {
-          return onPaste({event, value, path: selection.focus.path, type})
+          return onPaste({event, value, path: _selection.focus.path, type})
         } catch (error) {
           return error as Error
         }
@@ -315,7 +315,7 @@ export const PortableTextEditable = (props: Props) => {
       const resolved: OnPasteResultOrPromise | Error = Promise.resolve(
         resolveOnPasteResultOrError()
       )
-      return resolved
+      resolved
         .then((result: OnPasteResult) => {
           debug('Custom paste function from client resolved', result)
           change$.next({type: 'loading', isLoading: true})
@@ -325,7 +325,7 @@ export const PortableTextEditable = (props: Props) => {
           if (result instanceof Error) {
             throw result
           }
-          if (typeof result === 'object' && result.insert) {
+          if (result && result.insert) {
             event.preventDefault() // Stop the chain
             const allowedDecorators = portableTextFeatures.decorators.map((item) => item.value)
             const blocksToInsertNormalized = result.insert.map((block) =>
@@ -340,7 +340,7 @@ export const PortableTextEditable = (props: Props) => {
             editor.insertData(dataTransfer)
             change$.next({type: 'loading', isLoading: false})
             editor.onChange()
-            return result
+            return
           }
           console.warn('Your onPaste function returned something unexpected:', result)
         })
@@ -431,7 +431,7 @@ export const PortableTextEditable = (props: Props) => {
       onSelectStart(event)
     }
   }
-  const onSelectEndWithKeys = (event) => {
+  const onSelectEndWithKeys = (event: KeyboardEvent) => {
     if (isSelectingWithKeys && event.key === 'Shift') {
       onSelectEnd()
       isSelectingWithKeys = false
@@ -466,6 +466,8 @@ export const PortableTextEditable = (props: Props) => {
     }
   }
 
+  const handleKeyDown = editor.pteWithHotKeys
+
   // The editor
   const slateEditable = useMemo(
     () => (
@@ -484,7 +486,7 @@ export const PortableTextEditable = (props: Props) => {
           onCopy={handleCopy}
           onCut={handleCut}
           onFocus={handleOnFocus}
-          onKeyDown={editor.pteWithHotKeys}
+          onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onSelect={handleSelect}
           placeholder={placeholderText}
@@ -503,7 +505,7 @@ export const PortableTextEditable = (props: Props) => {
   return slateEditable
 }
 
-function getValueOrIntitialValue(value, initialValue) {
+function getValueOrIntitialValue(value: any, initialValue: any) {
   if (Array.isArray(value) && value.length > 0) {
     return value
   }

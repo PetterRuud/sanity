@@ -2,11 +2,11 @@ import React from 'react'
 import {Path} from '@sanity/types'
 import {Subscription, Subject} from 'rxjs'
 import {distinctUntilChanged} from 'rxjs/operators'
-import {randomKey} from '../utils/randomKey'
+import {randomKey} from '@sanity/util/content'
 import {compileType} from '../utils/schema'
 import {getPortableTextFeatures} from '../utils/getPortableTextFeatures'
 import {PortableTextBlock, PortableTextFeatures, PortableTextChild} from '../types/portableText'
-import {Type, RawType as RawSchemaType} from '../types/schema'
+import {Type, RawType as RawSchemaType, PortableTextType} from '../types/schema'
 import {Patch} from '../types/patch'
 import {
   EditorSelection,
@@ -144,7 +144,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
   private changeSubscription: Subscription
   private pendingPatches: Patch[] = []
 
-  public type: Type | RawSchemaType
+  public type: PortableTextType
   public portableTextFeatures: PortableTextFeatures
   public change$: EditorChanges = new Subject()
   public isThrottling = false
@@ -157,10 +157,7 @@ export class PortableTextEditor extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props)
     // Test if we have a compiled schema type, if not, conveniently compile it
-    this.type = props.type
-    if (!props.type.hasOwnProperty('jsonType')) {
-      this.type = compileType(props.type)
-    }
+    this.type = props.type.hasOwnProperty('jsonType') ? props.type : compileType(props.type)
     // Indicate that we are loading
     this.change$.next({type: 'loading', isLoading: true})
 
@@ -217,12 +214,13 @@ export class PortableTextEditor extends React.Component<Props, State> {
           resolution: validation.resolution,
           value: this.props.value,
         })
+        // eslint-disable-next-line react/no-did-update-set-state
         this.setState({invalidValueResolution: validation.resolution})
       }
     }
   }
 
-  public setEditable = (editable) => {
+  public setEditable = (editable: EditableAPI) => {
     this.editable = {...this.editable, ...editable}
     this.change$.next({type: 'ready'})
   }
@@ -239,10 +237,10 @@ export class PortableTextEditor extends React.Component<Props, State> {
     const {onChange} = this.props
     switch (next.type) {
       case 'mutation':
-        if (!this.isThrottling) {
-          this.flush()
-        } else {
+        if (this.isThrottling) {
           this.pendingPatches = [...this.pendingPatches, ...next.patches]
+        } else {
+          this.flush()
         }
         break
       case 'throttle':

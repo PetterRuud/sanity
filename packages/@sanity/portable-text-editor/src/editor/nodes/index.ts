@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 
 export const DraggableBlockWrapper = styled.div`
-  border-top: ${(props) => {
+  border-top: ${(props: {isDraggingOverTop: boolean; isDraggingOverBottom: boolean}) => {
     if (props.isDraggingOverTop) {
       return '1px solid black'
     }
@@ -17,7 +17,7 @@ export const DraggableBlockWrapper = styled.div`
 
 export const BlockObject = styled.div`
   user-select: none;
-  border: ${(props) => {
+  border: ${(props: {selected: boolean}) => {
     if (props.selected) {
       return '1px solid blue'
     }
@@ -27,7 +27,7 @@ export const BlockObject = styled.div`
 
 export const InlineObject = styled.span`
   background: #999;
-  border: ${(props) => {
+  border: ${(props: {selected: boolean}) => {
     if (props.selected) {
       return '1px solid blue'
     }
@@ -45,7 +45,7 @@ export const ListItem = styled.div`
       in Webkit: https://stackoverflow.com/a/21947628/831480
     */
     transform: translateZ(0);
-    margin-left: ${(props) => getLeftPositionForListLevel(props.listLevel)};
+    margin-left: ${(props: {listLevel: number}) => getLeftPositionForListLevel(props.listLevel)};
   }
   &.pt-list-item > .pt-list-item-inner {
     display: flex;
@@ -57,7 +57,8 @@ export const ListItem = styled.div`
     }
   }
   &.pt-list-item-bullet > .pt-list-item-inner:before {
-      content: '${(props) => getContentForListLevelAndStyle(props.listLevel, props.listStyle)}';
+      content: '${(props: {listLevel: number; listStyle: string}) =>
+        getContentForListLevelAndStyle(props.listLevel, props.listStyle)}';
       font-size: 0.4375rem; /* 7px */
       line-height: 1.5rem; /* Same as body text */
       /* Optical alignment */
@@ -70,8 +71,9 @@ export const ListItem = styled.div`
     }
   }
   &.pt-list-item-number {
-    counter-increment: ${(props) => getCounterIncrementForListLevel(props.listLevel)};
-    counter-rest: ${(props) => getCounterResetForListLevel(props.listLevel)};
+    counter-increment: ${(props: {listLevel: number}) =>
+      getCounterIncrementForListLevel(props.listLevel)};
+    counter-rest: ${(props: {listLevel: number}) => getCounterResetForListLevel(props.listLevel)};
   }
   & + :not(.pt-list-item-number) {
     counter-reset: listItemNumber;
@@ -116,7 +118,7 @@ function getLeftPositionForListLevel(level: number) {
 
 const bullets = ['●', '○', '■']
 
-function getContentForListLevelAndStyle(level, style) {
+function getContentForListLevelAndStyle(level: number, style: string) {
   const normalizedLevel = (level - 1) % 3
   if (style === 'bullet') {
     return bullets[normalizedLevel]
@@ -124,7 +126,7 @@ function getContentForListLevelAndStyle(level, style) {
   return '*'
 }
 
-function getCounterIncrementForListLevel(level) {
+function getCounterIncrementForListLevel(level: number) {
   switch (level) {
     case 1:
       return 'listItemNumber'
@@ -149,7 +151,7 @@ function getCounterIncrementForListLevel(level) {
   }
 }
 
-function getCounterResetForListLevel(level) {
+function getCounterResetForListLevel(level: number) {
   switch (level) {
     case 1:
       return 'listItemAlpha'
@@ -174,7 +176,7 @@ function getCounterResetForListLevel(level) {
   }
 }
 
-function getCounterContentForListLevel(level) {
+function getCounterContentForListLevel(level: number) {
   switch (level) {
     case 1:
       return `counter(listItemNumber) '. '`

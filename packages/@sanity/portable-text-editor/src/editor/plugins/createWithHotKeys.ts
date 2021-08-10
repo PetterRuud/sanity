@@ -1,7 +1,9 @@
-import {Editor, Transforms, Path, Range} from 'slate'
+/* eslint-disable max-statements */
+/* eslint-disable complexity */
+import {Editor, Transforms, Path, Range, Element} from 'slate'
 import isHotkey from 'is-hotkey'
 import {ReactEditor} from '@sanity/slate-react'
-import {PortableTextFeatures} from 'src/types/portableText'
+import {PortableTextFeatures} from '../../types/portableText'
 import {PortableTextSlateEditor} from '../../types/editor'
 import {HotkeyOptions} from '../../types/options'
 import {debugWithName} from '../../utils/debug'
@@ -30,14 +32,15 @@ export function createWithHotkeys(
   keyGenerator: () => string,
   portableTextEditor: PortableTextEditor,
   hotkeysFromOptions?: HotkeyOptions
-) {
+): (editor: PortableTextSlateEditor & ReactEditor) => any {
   const reservedHotkeys = ['enter', 'tab', 'shift', 'delete', 'end']
   const activeHotkeys = hotkeysFromOptions || DEFAULT_HOTKEYS // TODO: Merge where possible? A union?
   return function withHotKeys(editor: PortableTextSlateEditor & ReactEditor) {
-    editor.pteWithHotKeys = (event: React.KeyboardEvent<HTMLDivElement>): void | boolean => {
+    editor.pteWithHotKeys = (event: React.KeyboardEvent<HTMLDivElement>): void => {
       // Wire up custom marks hotkeys
       Object.keys(activeHotkeys).forEach((cat) => {
         if (cat === 'marks') {
+          // eslint-disable-next-line guard-for-in
           for (const hotkey in activeHotkeys[cat]) {
             if (reservedHotkeys.includes(hotkey)) {
               throw new Error(`The hotkey ${hotkey} is reserved!`)
@@ -54,6 +57,7 @@ export function createWithHotkeys(
           }
         }
         if (cat === 'custom') {
+          // eslint-disable-next-line guard-for-in
           for (const hotkey in activeHotkeys[cat]) {
             if (reservedHotkeys.includes(hotkey)) {
               throw new Error(`The hotkey ${hotkey} is reserved!`)
@@ -113,7 +117,7 @@ export function createWithHotkeys(
           Transforms.removeNodes(editor, {match: (n) => n === focusBlock})
           Transforms.select(editor, prevPath)
           editor.onChange()
-          return true
+          return
         }
       }
       if (
@@ -137,7 +141,7 @@ export function createWithHotkeys(
           Transforms.removeNodes(editor, {match: (n) => n === focusBlock})
           Transforms.select(editor, focusBlockPath)
           editor.onChange()
-          return true
+          return
         }
       }
 
@@ -149,12 +153,13 @@ export function createWithHotkeys(
         Transforms.delete(editor, {at: editor.selection, voids: false, hanging: true})
         Transforms.collapse(editor)
         editor.onChange()
-        return true
+        return
       }
 
       // Tab for lists
       if (isTab || isShiftTab) {
-        editor.pteIncrementBlockLevels(isShiftTab) && event.preventDefault()
+        editor.pteIncrementBlockLevels(isShiftTab)
+        event.preventDefault()
       }
 
       // Deal with enter key combos
@@ -167,7 +172,8 @@ export function createWithHotkeys(
         }
         // List item enter key
         if (focusBlock && focusBlock.listItem) {
-          editor.pteEndList() && event.preventDefault()
+          editor.pteEndList()
+          event.preventDefault()
           return
         }
         // Block object enter key
@@ -191,7 +197,7 @@ export function createWithHotkeys(
             ],
             portableTextFeatures.types.block.name
           )[0]
-          Editor.insertNode(editor, block)
+          Editor.insertNode(editor, (block as unknown) as Element)
           event.preventDefault()
           return
         }

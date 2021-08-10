@@ -1,4 +1,4 @@
-import React, {ReactElement} from 'react'
+import React, {ReactElement, useCallback} from 'react'
 import {Element, Range} from 'slate'
 import {useSelected, useEditor} from '@sanity/slate-react'
 import {uniq} from 'lodash'
@@ -34,6 +34,16 @@ export const Leaf = (props: LeafProps) => {
   const spanRef = React.useRef(null)
   let returnedChildren = children
   const focused = (selected && editor.selection && Range.isCollapsed(editor.selection)) || false
+  const handleMouseDown = useCallback(
+    (event: any) => {
+      // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
+      if (focused) {
+        event.stopPropagation()
+        event.preventDefault()
+      }
+    },
+    [focused]
+  )
   if (leaf._type === portableTextFeatures.types.span.name) {
     const blockElement = children.props.parent
     const path = [{_key: blockElement._key}, 'children', {_key: leaf._key}]
@@ -41,7 +51,7 @@ export const Leaf = (props: LeafProps) => {
     const marks: string[] = uniq(
       (Array.isArray(leaf.marks) ? leaf.marks : []).filter((mark) => decoratorValues.includes(mark))
     )
-    marks.map((mark) => {
+    marks.forEach((mark) => {
       const type = portableTextFeatures.decorators.find((dec) => dec.value === mark)
       if (type) {
         // TODO: look into this API!
@@ -67,19 +77,12 @@ export const Leaf = (props: LeafProps) => {
           !decoratorValues.includes(mark) &&
           blockElement &&
           blockElement.markDefs &&
-          blockElement.markDefs.find((def) => def._key === mark)
+          blockElement.markDefs.find((def: any) => def._key === mark)
       )
       .filter(Boolean)
 
-    const handleMouseDown = (event) => {
-      // Slate will deselect this when it is already selected and clicked again, so prevent that. 2020/05/04
-      if (focused) {
-        event.stopPropagation()
-        event.preventDefault()
-      }
-    }
     if (annotations.length > 0) {
-      annotations.map((annotation) => {
+      annotations.forEach((annotation) => {
         const type = portableTextFeatures.types.annotations.find((t) => t.name === annotation._type)
         // TODO: look into this API!
         const CustomComponent = type?.blockEditor?.render
@@ -94,15 +97,7 @@ export const Leaf = (props: LeafProps) => {
           )
 
         if (type) {
-          if (!props.renderAnnotation) {
-            returnedChildren = (
-              <DefaultAnnotation attributes={attributes} annotation={annotation}>
-                <span ref={spanRef} key={keyGenerator()} onMouseDown={handleMouseDown}>
-                  {defaultRender()}
-                </span>
-              </DefaultAnnotation>
-            )
-          } else {
+          if (props.renderAnnotation) {
             returnedChildren = (
               <span ref={spanRef} key={keyGenerator()}>
                 {props.renderAnnotation(
@@ -114,12 +109,20 @@ export const Leaf = (props: LeafProps) => {
                 )}
               </span>
             )
+          } else {
+            returnedChildren = (
+              <DefaultAnnotation annotation={annotation}>
+                <span ref={spanRef} key={keyGenerator()} onMouseDown={handleMouseDown}>
+                  {defaultRender()}
+                </span>
+              </DefaultAnnotation>
+            )
           }
         }
       })
     }
     if (renderChild) {
-      const child = blockElement.children.find((child) => child._key === leaf._key) // Ensure object equality
+      const child = blockElement.children.find((_child: any) => _child._key === leaf._key) // Ensure object equality
       returnedChildren = renderChild(
         child,
         portableTextFeatures.types.span,
@@ -129,7 +132,9 @@ export const Leaf = (props: LeafProps) => {
       )
     }
   }
-  debugRenders && debug(`Render ${leaf._key} (span)`)
+  if (debugRenders) {
+    debug(`Render ${leaf._key} (span)`)
+  }
   const key = (leaf._key as string) || keyGenerator()
   // TODO: remove hightlight stuff as test for decorations
   return (

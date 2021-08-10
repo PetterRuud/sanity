@@ -1,28 +1,30 @@
 import * as DMP from 'diff-match-patch'
 
+// eslint-disable-next-line new-cap
 const dmp = new DMP.diff_match_patch()
 
-const OPERATIONS = {
-  replace(currentValue, nextValue) {
+type fn = (oldVal: any, newVal: any) => any
+const OPERATIONS: Record<string, fn> = {
+  replace(currentValue: any, nextValue: any) {
     return nextValue
   },
-  set(currentValue, nextValue) {
+  set(currentValue: any, nextValue: any) {
     return nextValue
   },
-  setIfMissing(currentValue, nextValue) {
+  setIfMissing(currentValue: undefined, nextValue: any) {
     return currentValue === undefined ? nextValue : currentValue
   },
-  unset(currentValue, nextValue) {
+  unset(currentValue: any, nextValue: any) {
     return undefined
   },
-  diffMatchPatch(currentValue, nextValue) {
+  diffMatchPatch(currentValue: string, nextValue: string) {
     return dmp.patch_apply(dmp.patch_fromText(nextValue), currentValue)[0]
   },
 }
 
 const SUPPORTED_PATCH_TYPES = Object.keys(OPERATIONS)
 
-export default function apply(value, patch) {
+export default function apply(value: string, patch: {type: string; path: any[]; value: any}) {
   if (!SUPPORTED_PATCH_TYPES.includes(patch.type)) {
     throw new Error(
       `Received patch of unsupported type: "${JSON.stringify(
@@ -38,6 +40,8 @@ export default function apply(value, patch) {
       }" and path "${patch.path.join('.')} that targeted the value "${JSON.stringify(value)}"`
     )
   }
-
-  return OPERATIONS[patch.type](value, patch.value)
+  const func = OPERATIONS[patch.type]
+  if (func) {
+    func(value, patch.value)
+  }
 }
