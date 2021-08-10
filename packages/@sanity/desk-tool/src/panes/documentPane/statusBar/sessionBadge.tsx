@@ -1,15 +1,14 @@
-import {Flex, rem, Text, Theme} from '@sanity/ui'
-import {IconComponent, RestoreIcon} from '@sanity/icons'
-import {ChunkType} from '@sanity/field/diff'
-import React, {createElement, isValidElement, useMemo} from 'react'
+import {Flex, rem, Text, Theme, ThemeColorToneKey} from '@sanity/ui'
+import {IconComponent} from '@sanity/icons'
+import React, {createElement, isValidElement} from 'react'
 import {isValidElementType} from 'react-is'
 import styled, {css, keyframes} from 'styled-components'
-import {getTimelineEventIconComponent} from '../timeline/helpers'
 
 export interface SessionBadgeProps {
-  type: 'live' | ChunkType
   icon?: IconComponent
+  iconHover?: IconComponent
   style?: React.CSSProperties
+  tone?: ThemeColorToneKey
   title?: string
 }
 
@@ -23,121 +22,112 @@ const rotateAnimation = keyframes`
   }
 `
 
-const Root = styled(Flex)(({theme}: {theme: Theme}) => {
-  return css`
-    --session-badge-size: ${rem(theme.sanity.avatar.sizes[0].size)};
-    --session-badge-bg-color: var(--card-fg-color);
-    --session-badge-fg-color: var(--card-bg-color);
+const Root = styled(Flex)<{$tone: ThemeColorToneKey}>(
+  ({$tone, theme}: {$tone: ThemeColorToneKey; theme: Theme}) => {
+    const {color} = theme.sanity
+    const tone = color.solid[$tone] || color.solid.default
 
-    background-color: var(--session-badge-bg-color);
-    color: var(--session-badge-fg-color);
-    border-radius: calc(var(--session-badge-size) / 2);
-    width: var(--session-badge-size);
-    height: var(--session-badge-size);
-    box-shadow: 0 0 0 1px var(--card-bg-color);
+    return css`
+      --session-badge-size: ${rem(theme.sanity.avatar.sizes[0].size)};
+      --session-badge-bg-color: ${tone.enabled.bg};
+      --session-badge-fg-color: ${tone.enabled.fg};
 
-    [data-badge-icon-hover] {
-      display: none;
-    }
+      background-color: var(--session-badge-bg-color);
+      color: var(--session-badge-fg-color);
+      border-radius: calc(var(--session-badge-size) / 2);
+      width: var(--session-badge-size);
+      height: var(--session-badge-size);
+      box-shadow: 0 0 0 1px var(--card-bg-color);
 
-    @media (hover: hover) {
-      button:not([data-disabled='true']):hover & {
-        &[data-type] [data-badge-icon] {
-          display: none;
-        }
-
-        &[data-type]:last-of-type [data-badge-icon-hover] {
-          display: block;
-        }
-      }
-    }
-
-    button:not([data-disabled='true'])[data-selected] & {
-      &[data-type] [data-badge-icon] {
+      [data-badge-icon-hover] {
         display: none;
       }
 
-      &[data-type]:last-of-type [data-badge-icon-hover] {
-        display: block;
+      @media (hover: hover) {
+        button:not([data-disabled='true']):hover & {
+          --session-badge-bg-color: var(--card-fg-color);
+          --session-badge-fg-color: var(--card-bg-color);
+
+          [data-badge-icon] {
+            display: none;
+          }
+
+          &:last-of-type [data-badge-icon-hover] {
+            display: block;
+          }
+        }
       }
-    }
 
-    // Only show icon inside a badge if it's the last one/on the top
-    &:not([data-type='publish']):not([data-type='live']):not(:last-of-type) [data-badge-icon] {
-      display: none;
-    }
-
-    &[data-syncing='true']:last-of-type [data-sanity-icon] {
-      animation-name: ${rotateAnimation};
-      animation-duration: 1500ms;
-      animation-timing-function: linear;
-      animation-iteration-count: infinite;
-    }
-
-    /* Modify variables */
-
-    &[data-type='publish'],
-    &[data-type='live'] {
-      --session-badge-bg-color: ${theme.sanity.color.solid.positive.enabled.bg};
-    }
-
-    &[data-type='editDraft'],
-    &[data-type='unpublish'] {
-      --session-badge-bg-color: ${theme.sanity.color.solid.caution.enabled.bg};
-    }
-
-    @media (hover: hover) {
-      button:not([data-disabled='true']):hover & {
+      button:not([data-disabled='true'])[data-selected] & {
         --session-badge-bg-color: var(--card-fg-color);
         --session-badge-fg-color: var(--card-bg-color);
+
+        [data-badge-icon] {
+          display: none;
+        }
+
+        &:last-of-type [data-badge-icon-hover] {
+          display: block;
+        }
       }
-    }
 
-    button:not([data-disabled='true'])[data-selected] & {
-      --session-badge-bg-color: var(--card-fg-color) !important;
-    }
+      // Only show icon inside a badge if it's the last one/on the top
+      &:not(:last-of-type) [data-badge-icon] {
+        display: none;
+      }
 
-    [data-ui='DocumentSparkline'][data-disabled='true'] & {
-      opacity: 0.2;
-    }
-  `
-})
+      &[data-syncing='true']:last-of-type [data-sanity-icon] {
+        animation-name: ${rotateAnimation};
+        animation-duration: 1500ms;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+      }
+
+      @media (hover: hover) {
+        button:not([data-disabled='true']):hover & {
+          /* --session-badge-bg-color: ${tone.hovered.fg}; */
+          /* --session-badge-fg-color: ${tone.hovered.bg}; */
+        }
+      }
+
+      button:not([data-disabled='true'])[data-selected] & {
+        /* --session-badge-bg-color: ${tone.selected.fg}; */
+        /* --session-badge-fg-color: ${tone.selected.bg}; */
+      }
+
+      [data-ui='DocumentSparkline'][data-disabled='true'] & {
+        opacity: 0.2;
+      }
+    `
+  }
+)
 
 const IconText = styled(Text)`
   color: inherit;
 `
 
 export const SessionBadge = (props: SessionBadgeProps) => {
-  const {type, title, icon: iconProp, ...restProps} = props
-
-  const icon = useMemo(() => {
-    if (iconProp) {
-      return iconProp
-    }
-
-    if (type && type !== 'live') {
-      return getTimelineEventIconComponent(type) || <code>{type}</code>
-    }
-
-    return null
-  }, [iconProp, type])
+  const {iconHover, icon, title, tone = 'default', ...restProps} = props
 
   return (
     <Root
-      data-type={type}
       data-ui="SessionBadge"
+      {...restProps}
+      $tone={tone}
       align="center"
       justify="center"
       title={title}
-      {...restProps}
     >
-      <IconText size={1} data-badge-icon>
-        {isValidElement(icon) && icon}
-        {isValidElementType(icon) && createElement(icon)}
-      </IconText>
+      {icon && (
+        <IconText size={1} data-badge-icon>
+          {isValidElement(icon) && icon}
+          {isValidElementType(icon) && createElement(icon)}
+        </IconText>
+      )}
 
       <IconText size={1} data-badge-icon-hover>
-        <RestoreIcon />
+        {isValidElement(iconHover) && iconHover}
+        {isValidElementType(iconHover) && createElement(iconHover)}
       </IconText>
     </Root>
   )

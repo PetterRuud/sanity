@@ -2,7 +2,7 @@ import {useSyncState} from '@sanity/react-hooks'
 import {DocumentBadgeDescription} from '@sanity/base'
 import {useTimeAgo} from '@sanity/base/hooks'
 import {EditStateFor} from '@sanity/base/lib/datastores/document/document-pair/editState'
-import {EditIcon, PlayIcon, PublishIcon} from '@sanity/icons'
+import {EditIcon, PlayIcon, PublishIcon, RestoreIcon} from '@sanity/icons'
 import {Box, ElementQuery, Flex, Stack, Text, Button} from '@sanity/ui'
 import SyncIcon from 'part:@sanity/base/sync-icon'
 import React, {useEffect, useState} from 'react'
@@ -65,10 +65,14 @@ const SessionLayout = ({
     <Box style={{margin: -3}}>{badge}</Box>
 
     <Stack flex={1} marginLeft={2} space={1}>
-      <Text size={0} weight="semibold">
+      <Text muted size={0} weight="semibold">
         {title}
       </Text>
-      {subtitle && <Text size={0}>{subtitle}</Text>}
+      {subtitle && (
+        <Text muted size={0}>
+          {subtitle}
+        </Text>
+      )}
     </Stack>
   </Flex>
 )
@@ -141,9 +145,9 @@ export function DocumentSparkline({badges, lastUpdated, editState}: DocumentSpar
           <SessionLayout
             badge={
               <SessionBadge
-                type={isLiveDocument ? 'live' : 'publish'}
                 icon={isLiveDocument ? PlayIcon : PublishIcon}
                 title={isLiveDocument ? undefined : formatTimelineEventLabel('publish')}
+                tone={isLiveDocument ? 'critical' : 'positive'}
               />
             }
             subtitle={isLiveDocument && lastUpdated ? lastUpdatedTimeAgo : lastPublishedTimeAgo}
@@ -162,11 +166,12 @@ export function DocumentSparkline({badges, lastUpdated, editState}: DocumentSpar
               padding={0}
               selected={showingChangePanel}
               title="Review changes"
+              tone="caution"
               type="button"
             >
               {sessionsSliced.length === 0 && (
                 <SessionLayout
-                  badge={<SessionBadge icon={EditIcon} type="editDraft" />}
+                  badge={<SessionBadge icon={EditIcon} iconHover={RestoreIcon} tone="caution" />}
                   subtitle={<>&nbsp;</>}
                   title="Changes"
                 />
@@ -176,18 +181,18 @@ export function DocumentSparkline({badges, lastUpdated, editState}: DocumentSpar
                 <SessionLayout
                   badge={
                     <BadgeStack>
-                      {sessionsSliced.map((session, i) => {
-                        // const spacing = i * SESSION_BADGE_MARGIN
+                      {sessionsSliced.map((session) => {
                         const title = formatTimelineEventLabel(session.type) || session.type
 
                         return (
                           <SessionBadge
                             data-syncing={syncState.isSyncing}
                             data-session-badge
-                            icon={syncState?.isSyncing ? SyncIcon : undefined}
+                            icon={syncState?.isSyncing ? SyncIcon : EditIcon}
+                            iconHover={syncState?.isSyncing ? undefined : RestoreIcon}
                             key={session.index}
                             title={title}
-                            type="editDraft" // always use editDraft
+                            tone="caution"
                           />
                         )
                       })}

@@ -1,7 +1,8 @@
 import React, {useCallback, createElement} from 'react'
 import {useTimeAgo} from '@sanity/base/hooks'
 import {Chunk, ChunkType} from '@sanity/field/diff'
-import {formatTimelineEventLabel, getTimelineEventIconComponent} from './helpers'
+import {TIMELINE_LABELS} from './constants'
+import {getTimelineEventIconComponent} from './helpers'
 import {TimelineItemState} from './types'
 import {UserAvatarStack} from './userAvatarStack'
 
@@ -49,9 +50,7 @@ export function TimelineItem(props: {
             {iconComponent && createElement(iconComponent)}
           </div>
           <div className={styles.textContainer}>
-            <div className={styles.typeName}>
-              {formatTimelineEventLabel(type) || <code>{type}</code>}
-            </div>
+            <div className={styles.typeName}>{TIMELINE_LABELS[type] || <code>{type}</code>}</div>
             <div className={styles.timestamp}>{timeAgo}</div>
           </div>
           <div className={styles.avatarStackContainer}>
